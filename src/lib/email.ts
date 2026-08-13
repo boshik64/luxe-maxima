@@ -1,0 +1,81 @@
+import nodemailer from "nodemailer";
+import { logger } from "@/lib/logger";
+import { PRODUCTS } from "@/lib/products";
+import type { Application } from "@prisma/client";
+
+function recipients() {
+  return (process.env.NOTIFY_EMAILS ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function transport() {
+  if (!process.env.SMTP_HOST) return null;
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: process.env.SMTP_SECURE === "true",
+    auth:
+      process.env.SMTP_USER && process.env.SMTP_PASSWORD
+        ? {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASSWORD,
+          }
+        : undefined,
+  });
+}
+
+function applicationUrl(id: string) {
+  const base = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  return `${base}/admin/applications/${id}`;
+}
+
+function body(application: Application) {
+  const product = PRODUCTS[application.productId].title;
+  const lines = [
+    `Новая заявка: ${product}`,
+    `Номер: ${application.id}`,
+    `Источник: ${application.source}`,
+    `Город: ${application.cityName}`,
+    `Кинотеатр: ${application.cinemaName}`,
+    application.hallName ? `Зал: ${application.hallName}` : null,
+    application.filmName ? `Фильм: ${application.filmName}` : null,
+    application.sessionLabel || application.sessionCustom
+      ? `Сеанс: ${application.sessionLabel || application.sessionCustom}`
+      : null,
+    application.rentalDate
+      ? `Аренда: ${application.rentalDate} ${application.rentalTime ?? ""} ${application.rentalDuration ?? ""}`.trim()
+      : null,
+    application.guests ? `Гостей: ${application.guests}` : null,
+    application.ticketType ? `Тип билета: ${application.ticketType}` : null,
+    `Контакт: ${application.contactName}`,
+    `Телефон: ${application.phone}`,
+    `Email: ${application.email}`,
+    application.comment ? `Комментарий: ${application.comment}` : null,
+    `Карточка: ${applicationUrl(application.id)}`,
+  ].filter(Boolean);
+
+  return lines.join("\n");
+}
+
+export async function notifyNewApplication(application: Application) {
+  const to = recipients();
+  const mailer = transport();
+  if (!to.length || !mailer) {
+    logger.info("Email skipped: SMTP or recipients are not configured");
+    return;
+  }
+
+  try {
+    await mailer.sendMail({
+      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+      to,
+      replyTo: application.email,
+      subject: `Новая заявка — ${PRODUCTS[application.productId].title}`,
+      text: body(application),
+    });
+  } catch (error) {
+    logger.error("Failed to send application email", error);
+  }
+}

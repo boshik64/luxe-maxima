@@ -1,0 +1,382 @@
+"use client";
+
+import { useId, useMemo, useState } from "react";
+import { Field, inputClassName } from "@/components/form/Field";
+import { type CascadeValue } from "@/components/form/CascadeSelect";
+import { ScheduleFields } from "@/components/form/ScheduleFields";
+import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
+import {
+  applicationInputSchema,
+  flattenErrors,
+} from "@/lib/applications/schema";
+import {
+  PRODUCT_LIST,
+  PRODUCTS,
+  TICKET_TYPES,
+  type ProductId,
+} from "@/lib/products";
+
+const emptyCascade: CascadeValue = { id: "", name: "", custom: "" };
+
+function readUtm() {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  return {
+    source: params.get("utm_source") ?? "",
+    medium: params.get("utm_medium") ?? "",
+    campaign: params.get("utm_campaign") ?? "",
+    content: params.get("utm_content") ?? "",
+    term: params.get("utm_term") ?? "",
+  };
+}
+
+function getIdempotencyKey() {
+  const key = "luxe-maxima-idempotency";
+  const existing = sessionStorage.getItem(key);
+  if (existing) return existing;
+  const created = crypto.randomUUID();
+  sessionStorage.setItem(key, created);
+  return created;
+}
+
+export function ApplicationForm({
+  productId,
+  onProductChange,
+  lockProduct = false,
+  source = "/",
+}: {
+  productId: ProductId;
+  onProductChange?: (id: ProductId) => void;
+  lockProduct?: boolean;
+  source?: string;
+}) {
+  const formId = useId();
+  const product = PRODUCTS[productId];
+  const [contactName, setContactName] = useState("");
+  const [phone, setPhone] = useState("+7");
+  const [email, setEmail] = useState("");
+  const [guests, setGuests] = useState("");
+  const [ticketType, setTicketType] = useState("");
+  const [rentalDate, setRentalDate] = useState("");
+  const [rentalTime, setRentalTime] = useState("");
+  const [rentalDuration, setRentalDuration] = useState("");
+  const [comment, setComment] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [website, setWebsite] = useState("");
+  const [schedule, setSchedule] = useState({
+    city: emptyCascade,
+    cinema: emptyCascade,
+    hall: emptyCascade,
+    film: emptyCascade,
+    session: emptyCascade,
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
+    "idle",
+  );
+  const [applicationId, setApplicationId] = useState("");
+  const [formError, setFormError] = useState("");
+
+  const payload = useMemo(
+    () => ({
+      productId,
+      source,
+      contactName,
+      phone: digitsToPhone(phone),
+      email,
+      guests,
+      ticketType,
+      rentalDate,
+      rentalTime,
+      rentalDuration,
+      comment,
+      city: schedule.city,
+      cinema: schedule.cinema,
+      hall: schedule.hall,
+      film: schedule.film,
+      session: schedule.session,
+      consent: consent ? true : undefined,
+      website,
+    }),
+    [
+      productId,
+      source,
+      contactName,
+      phone,
+      email,
+      guests,
+      ticketType,
+      rentalDate,
+      rentalTime,
+      rentalDuration,
+      comment,
+      schedule,
+      consent,
+      website,
+    ],
+  );
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setFormError("");
+    const parsed = applicationInputSchema.safeParse({
+      ...payload,
+      consent: consent || undefined,
+      idempotencyKey: getIdempotencyKey(),
+      utm: readUtm(),
+    });
+    if (!parsed.success) {
+      setErrors(flattenErrors(parsed.error));
+      setStatus("error");
+      return;
+    }
+
+    setErrors({});
+    setStatus("loading");
+    try {
+      const response = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed.data),
+      });
+      const data = (await response.json()) as {
+        id?: string;
+        error?: string;
+        fields?: Record<string, string>;
+      };
+      if (!response.ok) {
+        setErrors(data.fields ?? {});
+        setFormError(data.error ?? "Не удалось отправить заявку");
+        setStatus("error");
+        return;
+      }
+      setApplicationId(data.id ?? "");
+      sessionStorage.removeItem("luxe-maxima-idempotency");
+      setStatus("success");
+    } catch {
+      setFormError("Нет соединения с сервером. Данные формы сохранены — попробуйте ещё раз.");
+      setStatus("error");
+    }
+  }
+
+  if (status === "success") {
+    return (
+      <div className="rounded-3xl border border-line bg-card p-8 text-center" role="status">
+        <p className="font-[family-name:var(--font-display)] text-2xl">
+          Заявка отправлена
+        </p>
+        <p className="mt-3 text-muted">
+          Обращение по услуге «{product.title}» получено. Менеджер свяжется с вами.
+        </p>
+        {applicationId ? (
+          <p className="mt-4 text-sm text-gold">Номер заявки: {applicationId}</p>
+        ) : null}
+        <button
+          type="button"
+          className="mt-8 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white"
+          onClick={() => {
+            setStatus("idle");
+            setApplicationId("");
+          }}
+        >
+          Отправить ещё одну
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      id="application-form"
+      onSubmit={handleSubmit}
+      noValidate
+      className="space-y-8 rounded-3xl border border-line bg-card p-6 sm:p-8"
+    >
+      {lockProduct || !onProductChange ? null : (
+        <fieldset>
+          <legend className="mb-4 text-sm font-medium">Услуга</legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {PRODUCT_LIST.map((item) => (
+              <label
+                key={item.id}
+                className={`cursor-pointer rounded-2xl border px-4 py-3 text-sm transition ${
+                  item.id === productId
+                    ? "border-primary bg-primary/10"
+                    : "border-line hover:border-gold"
+                }`}
+              >
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name={`${formId}-product`}
+                  value={item.id}
+                  checked={item.id === productId}
+                  onChange={() => {
+                    setErrors({});
+                    setStatus("idle");
+                    setFormError("");
+                    onProductChange(item.id);
+                  }}
+                />
+                {item.title}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      <ScheduleFields productId={productId} errors={errors} onChange={setSchedule} />
+
+      {product.fields.rentalTime ? (
+        <div className="grid gap-5 sm:grid-cols-3">
+          <Field id="rentalDate" label="Дата аренды" required error={errors.rentalDate}>
+            <input
+              id="rentalDate"
+              className={inputClassName}
+              type="date"
+              value={rentalDate}
+              onChange={(event) => setRentalDate(event.target.value)}
+            />
+          </Field>
+          <Field id="rentalTime" label="Время начала" required error={errors.rentalTime}>
+            <input
+              id="rentalTime"
+              className={inputClassName}
+              type="time"
+              value={rentalTime}
+              onChange={(event) => setRentalTime(event.target.value)}
+            />
+          </Field>
+          <Field id="rentalDuration" label="Длительность" error={errors.rentalDuration}>
+            <input
+              id="rentalDuration"
+              className={inputClassName}
+              placeholder="Например, 2 часа"
+              value={rentalDuration}
+              onChange={(event) => setRentalDuration(event.target.value)}
+            />
+          </Field>
+        </div>
+      ) : null}
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field id="contactName" label="Контактное лицо" required error={errors.contactName}>
+          <input
+            id="contactName"
+            className={inputClassName}
+            autoComplete="name"
+            value={contactName}
+            onChange={(event) => setContactName(event.target.value)}
+            aria-invalid={Boolean(errors.contactName)}
+          />
+        </Field>
+        <Field id="phone" label="Телефон" required error={errors.phone}>
+          <input
+            id="phone"
+            className={inputClassName}
+            type="tel"
+            autoComplete="tel"
+            value={formatPhoneDisplay(phone)}
+            onChange={(event) => setPhone(digitsToPhone(event.target.value))}
+            aria-invalid={Boolean(errors.phone)}
+          />
+        </Field>
+        <Field id="email" label="Email" required error={errors.email}>
+          <input
+            id="email"
+            className={inputClassName}
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            aria-invalid={Boolean(errors.email)}
+          />
+        </Field>
+        <Field id="guests" label="Количество гостей" required error={errors.guests}>
+          <input
+            id="guests"
+            className={inputClassName}
+            inputMode="numeric"
+            value={guests}
+            onChange={(event) => setGuests(event.target.value.replace(/\D/g, ""))}
+          />
+        </Field>
+        {product.fields.ticketType ? (
+          <Field id="ticketType" label="Тип билета" required error={errors.ticketType}>
+            <select
+              id="ticketType"
+              className={inputClassName}
+              value={ticketType}
+              onChange={(event) => setTicketType(event.target.value)}
+            >
+              <option value="">Выберите</option>
+              {TICKET_TYPES.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
+      </div>
+
+      <Field id="comment" label="Комментарий" error={errors.comment}>
+        <textarea
+          id="comment"
+          className={`${inputClassName} min-h-28 resize-y`}
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+        />
+      </Field>
+
+      <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+        <label htmlFor="website">Сайт</label>
+        <input
+          id="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={website}
+          onChange={(event) => setWebsite(event.target.value)}
+        />
+      </div>
+
+      <label className="flex items-start gap-3 text-sm text-muted">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={consent}
+          onChange={(event) => setConsent(event.target.checked)}
+        />
+        <span>
+          Согласен на обработку персональных данных согласно{" "}
+          <a
+            className="text-gold underline underline-offset-4"
+            href="https://static.karofilm.ru/uploads/filemanager/offer/politika_pers_dannih.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            политике КАРО
+          </a>
+          .
+          {errors.consent ? (
+            <span className="mt-1 block text-primary">{errors.consent}</span>
+          ) : null}
+        </span>
+      </label>
+
+      {formError ? (
+        <p role="alert" className="text-sm text-primary">
+          {formError}
+        </p>
+      ) : null}
+
+      <button
+        type="submit"
+        disabled={status === "loading"}
+        className="w-full rounded-full bg-primary px-6 py-4 font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
+      >
+        {status === "loading" ? "Отправляем…" : "Отправить заявку"}
+      </button>
+    </form>
+  );
+}

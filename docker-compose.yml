@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: luxe
+      POSTGRES_PASSWORD: luxe
+      POSTGRES_DB: luxe_maxima
+    ports:
+      - "5432:5432"
+    volumes:
+      - luxe_pg:/var/lib/postgresql/data
+
+volumes:
+  luxe_pg:
