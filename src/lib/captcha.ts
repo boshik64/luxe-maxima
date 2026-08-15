@@ -57,6 +57,16 @@ export function solveCaptchaProof(token: string, difficulty: number) {
   throw new Error("captcha-pow");
 }
 
+export function solveIssuedCaptcha(token: string) {
+  const payload = parseToken(token);
+  if (!payload || payload.exp < Date.now()) return null;
+  try {
+    return solveCaptchaProof(token, payload.d);
+  } catch {
+    return null;
+  }
+}
+
 export function issueCaptcha(difficulty = DEFAULT_DIFFICULTY) {
   prune();
   const now = Date.now();

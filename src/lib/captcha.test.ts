@@ -5,6 +5,7 @@ import {
   issueCaptcha,
   proofPrefix,
   solveCaptchaProof,
+  solveIssuedCaptcha,
   verifyCaptcha,
 } from "./captcha";
 
@@ -20,4 +21,14 @@ test("rejects a missing or wrong captcha proof", () => {
   const { token } = issueCaptcha(2);
   assert.equal(verifyCaptcha(token, "0").ok, false);
   assert.equal(verifyCaptcha(undefined, undefined).ok, false);
+});
+
+test("solves an issued captcha on the server", () => {
+  const { token, difficulty } = issueCaptcha(2);
+  const proof = solveIssuedCaptcha(token);
+  assert.ok(proof);
+  assert.equal(
+    hashCaptchaProof(token, proof).startsWith(proofPrefix(difficulty)),
+    true,
+  );
 });

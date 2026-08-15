@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 type Challenge = {
   token: string;
-  difficulty: number;
 };
 
 export type CaptchaSolution = {
@@ -13,30 +12,6 @@ export type CaptchaSolution = {
 };
 
 const TEAR_PX = 92;
-
-function proofPrefix(difficulty: number) {
-  return "0".repeat(Math.max(1, Math.min(6, difficulty)));
-}
-
-async function sha256Hex(value: string) {
-  const bytes = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
-  );
-  return [...new Uint8Array(bytes)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-async function solveProof(token: string, difficulty: number) {
-  const prefix = proofPrefix(difficulty);
-  for (let nonce = 0; nonce < 8_000_000; nonce += 1) {
-    const hex = await sha256Hex(`${token}:${nonce}`);
-    if (hex.startsWith(prefix)) return String(nonce);
-    if (nonce % 250 === 0) await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-  throw new Error("captcha-pow");
-}
 
 export function TicketCaptcha({
   error,
@@ -53,6 +28,7 @@ export function TicketCaptcha({
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<"idle" | "solving" | "ready">("idle");
+  const completingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,7 +39,7 @@ export function TicketCaptcha({
         if (!response.ok || !data.token) {
           throw new Error(data.error ?? "captcha");
         }
-        setChallenge({ token: data.token, difficulty: data.difficulty });
+        setChallenge({ token: data.token });
       })
       .catch(() => {
         if (!cancelled) {
@@ -75,15 +51,26 @@ export function TicketCaptcha({
     };
   }, []);
 
-  async function complete(token: string, difficulty: number) {
+  async function complete(token: string) {
+    if (completingRef.current) return;
+    completingRef.current = true;
     offsetRef.current = TEAR_PX + 24;
     setOffset(TEAR_PX + 24);
     setPhase("solving");
     try {
-      const proof = await solveProof(token, difficulty);
+      const response = await fetch("/api/captcha", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      const data = (await response.json()) as { proof?: string; error?: string };
+      if (!response.ok || !data.proof) {
+        throw new Error(data.error ?? "captcha");
+      }
       setPhase("ready");
-      onSolved({ token, proof });
+      onSolved({ token, proof: data.proof });
     } catch {
+      completingRef.current = false;
       setPhase("idle");
       offsetRef.current = 0;
       setOffset(0);
@@ -93,9 +80,9 @@ export function TicketCaptcha({
   }
 
   function tearIfNeeded(nextOffset: number) {
-    if (!challenge || phase !== "idle") return;
+    if (!challenge || phase !== "idle" || completingRef.current) return;
     if (nextOffset >= TEAR_PX) {
-      void complete(challenge.token, challenge.difficulty);
+      void complete(challenge.token);
     }
   }
 
