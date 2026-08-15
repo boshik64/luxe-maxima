@@ -9,6 +9,7 @@ import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
 import { parseResponseJson } from "@/lib/api-json";
 import { createClientId } from "@/lib/id";
 import { CONTACTS, KARO_SITE_URL } from "@/lib/contacts";
+import { feedbackInputSchema, flattenFeedbackErrors } from "@/lib/feedback/schema";
 
 function getIdempotencyKey() {
   const key = "luxe-feedback-idempotency";
@@ -43,25 +44,33 @@ export function FeedbackPage() {
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setFormError("");
+    const parsed = feedbackInputSchema.safeParse({
+      name,
+      email,
+      phone: phone.replace(/\D/g, "").length > 1 ? digitsToPhone(phone) : "",
+      message,
+      consent: consent || undefined,
+      website,
+      source: "/feedback",
+      idempotencyKey: getIdempotencyKey(),
+    });
+    const nextErrors = parsed.success ? {} : flattenFeedbackErrors(parsed.error);
     if (!captcha) {
-      setErrors({ captcha: "Оторвите корешок билета, чтобы отправить форму" });
+      nextErrors.captcha = "Оторвите корешок билета, чтобы отправить форму";
+    }
+    if (Object.keys(nextErrors).length) {
+      setErrors(nextErrors);
       setStatus("error");
       return;
     }
+    if (!parsed.success || !captcha) return;
     setStatus("loading");
     try {
       const response = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          email,
-          phone: phone.replace(/\D/g, "").length > 1 ? digitsToPhone(phone) : "",
-          message,
-          consent: consent || undefined,
-          website,
-          source: "/feedback",
-          idempotencyKey: getIdempotencyKey(),
+          ...parsed.data,
           captchaToken: captcha.token,
           captchaProof: captcha.proof,
         }),
@@ -267,7 +276,7 @@ export function FeedbackPage() {
                 />
                 <button
                   type="submit"
-                  disabled={status === "loading" || !captcha}
+                  disabled={status === "loading"}
                   className="rounded-full bg-primary px-6 py-4 font-semibold text-white disabled:opacity-60"
                 >
                   {status === "loading" ? "Отправляем…" : "Отправить сообщение"}

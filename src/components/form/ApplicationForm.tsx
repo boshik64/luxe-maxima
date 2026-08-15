@@ -142,7 +142,11 @@ export function ApplicationForm({
       utm: readUtm(),
     });
     if (!parsed.success) {
-      setErrors(flattenErrors(parsed.error));
+      const nextErrors = flattenErrors(parsed.error);
+      if (!captcha) {
+        nextErrors.captcha = "Оторвите корешок билета, чтобы отправить форму";
+      }
+      setErrors(nextErrors);
       setStatus("error");
       return;
     }
@@ -456,7 +460,7 @@ export function ApplicationForm({
 
       <button
         type="submit"
-        disabled={status === "loading" || !captcha}
+        disabled={status === "loading"}
         className="w-full rounded-full bg-primary px-6 py-4 font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
       >
         {status === "loading" ? "Отправляем…" : "Отправить заявку"}

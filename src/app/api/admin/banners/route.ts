@@ -101,7 +101,9 @@ export async function POST(request: NextRequest) {
       alt: alt || "Баннер КАРО",
       enabled,
     });
+    revalidatePath("/", "layout");
     revalidatePath("/");
+    revalidatePath("/api/banners");
     return NextResponse.json({
       item: {
         ...item,
@@ -118,7 +120,9 @@ export async function DELETE() {
   try {
     await requireSession();
     await clearBanner(HOME_BANNER_SLOT);
+    revalidatePath("/", "layout");
     revalidatePath("/");
+    revalidatePath("/api/banners");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return bannerErrorResponse(error);

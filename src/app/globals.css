@@ -101,10 +101,11 @@ select {
   --ticket-paper: #f3ead8;
   --ticket-ink: #1c1710;
   --ticket-hole: var(--card);
+  position: relative;
   display: flex;
   min-height: 8.5rem;
   overflow: visible;
-  padding-right: 4.5rem;
+  padding-right: 6.6rem;
   user-select: none;
   touch-action: none;
 }
@@ -175,12 +176,15 @@ select {
 }
 
 .ticket-captcha-stub {
-  position: relative;
+  position: absolute;
+  top: 0;
+  right: 0;
   z-index: 3;
   display: flex;
   width: 6.6rem;
-  flex-shrink: 0;
+  height: 100%;
   cursor: grab;
+  touch-action: none;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -260,7 +264,7 @@ select {
 @media (max-width: 640px) {
   .ticket-captcha {
     min-height: 6.75rem;
-    padding-right: 3.1rem;
+    padding-right: 4.4rem;
   }
 
   .ticket-captcha-body {

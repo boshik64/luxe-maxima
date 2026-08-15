@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ApplicationForm } from "@/components/form/ApplicationForm";
 import { Footer } from "@/components/landing/Footer";
 import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { HomeBanner } from "@/components/landing/HomeBanner";
 import { Products } from "@/components/landing/Products";
+import { parseResponseJson } from "@/lib/api-json";
 import type { PublicBanner } from "@/lib/banner/types";
 import { PRODUCTS, type ProductId } from "@/lib/products";
 
@@ -22,7 +23,24 @@ export function LandingPage({
   banner?: PublicBanner | null;
 }) {
   const [productId, setProductId] = useState<ProductId>(initialProduct ?? "keys");
+  const [liveBanner, setLiveBanner] = useState<PublicBanner | null>(banner);
   const product = PRODUCTS[productId];
+
+  useEffect(() => {
+    if (lockProduct) return;
+    let cancelled = false;
+    fetch("/api/banners", { cache: "no-store" })
+      .then(async (response) => {
+        const data = await parseResponseJson<{ item?: PublicBanner | null }>(response);
+        if (!cancelled && response.ok) setLiveBanner(data.item ?? null);
+      })
+      .catch(() => {
+        // оставляем серверное значение, если живой API недоступен
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lockProduct]);
 
   function selectProduct(id: ProductId) {
     setProductId(id);
@@ -47,7 +65,7 @@ export function LandingPage({
           }
           ctaHref={lockProduct ? "#form" : "#products"}
         />
-        {lockProduct || !banner ? null : <HomeBanner banner={banner} />}
+        {lockProduct || !liveBanner ? null : <HomeBanner banner={liveBanner} />}
         {lockProduct ? null : <Products onSelect={selectProduct} />}
         <section id="form" className="mx-auto max-w-6xl px-4 pb-24">
           <p className="mb-3 font-[family-name:var(--font-display)] text-xs tracking-[0.28em] text-gold uppercase">
