@@ -45,7 +45,7 @@ export function BannerEditor() {
       if (next) {
         setHref(next.href || KARO_SITE_URL);
         setAlt(next.alt || "Кинокрыша КАРО");
-        setEnabled(next.enabled);
+        setEnabled(next.enabled !== false);
       }
     });
   }, [router]);
@@ -92,9 +92,15 @@ export function BannerEditor() {
       setError(data.error ?? "Не удалось сохранить баннер");
       return;
     }
-    setItem(data.item ?? null);
+    const saved = data.item ?? null;
+    setItem(saved);
+    if (saved) setEnabled(saved.enabled !== false);
     setFile(null);
-    setNotice("Баннер сохранён и показан на главной, если включён.");
+    setNotice(
+      saved?.enabled === false
+        ? "Баннер сохранён и скрыт с главной."
+        : "Баннер сохранён и показан на главной.",
+    );
   }
 
   async function onDelete() {

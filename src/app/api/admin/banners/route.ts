@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/admin/auth";
 import {
@@ -62,7 +63,13 @@ export async function GET() {
     await requireSession();
     const item = await getBanner(HOME_BANNER_SLOT);
     return NextResponse.json({
-      item: item ? { ...item, imageUrl: bannerPublicUrl(item.imageUrl) } : null,
+      item: item
+        ? {
+            ...item,
+            imageUrl: bannerPublicUrl(item.imageUrl),
+            enabled: item.enabled !== false,
+          }
+        : null,
     });
   } catch (error) {
     return bannerErrorResponse(error);
@@ -94,8 +101,13 @@ export async function POST(request: NextRequest) {
       alt: alt || "Баннер КАРО",
       enabled,
     });
+    revalidatePath("/");
     return NextResponse.json({
-      item: { ...item, imageUrl: bannerPublicUrl(item.imageUrl) },
+      item: {
+        ...item,
+        imageUrl: bannerPublicUrl(item.imageUrl),
+        enabled: item.enabled !== false,
+      },
     });
   } catch (error) {
     return bannerErrorResponse(error);
@@ -106,6 +118,7 @@ export async function DELETE() {
   try {
     await requireSession();
     await clearBanner(HOME_BANNER_SLOT);
+    revalidatePath("/");
     return NextResponse.json({ ok: true });
   } catch (error) {
     return bannerErrorResponse(error);

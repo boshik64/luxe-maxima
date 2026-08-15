@@ -7,13 +7,14 @@ import { Field, inputClassName } from "@/components/form/Field";
 import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCaptcha";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
 import { parseResponseJson } from "@/lib/api-json";
+import { createClientId } from "@/lib/id";
 import { CONTACTS, KARO_SITE_URL } from "@/lib/contacts";
 
 function getIdempotencyKey() {
   const key = "luxe-feedback-idempotency";
   const existing = sessionStorage.getItem(key);
   if (existing) return existing;
-  const created = crypto.randomUUID();
+  const created = createClientId();
   sessionStorage.setItem(key, created);
   return created;
 }
