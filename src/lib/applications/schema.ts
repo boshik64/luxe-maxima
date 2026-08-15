@@ -51,6 +51,14 @@ const optionalCatalog = z
   })
   .optional();
 
+function isFilledCatalog(
+  field?: { id?: string; custom?: string } | null,
+) {
+  if (!field) return false;
+  if (field.id === CUSTOM_OPTION_ID) return Boolean(field.custom?.trim());
+  return Boolean(field.id);
+}
+
 export const applicationInputSchema = z
   .object({
     productId: z.enum(PRODUCT_IDS),
@@ -61,12 +69,16 @@ export const applicationInputSchema = z
     guests: z.string().trim().optional().or(z.literal("")),
     ticketType: z.string().trim().optional().or(z.literal("")),
     comment: optionalText(),
+    watchCustom: optionalText(200),
     rentalDate: z.string().trim().optional().or(z.literal("")),
     rentalTime: z.string().trim().optional().or(z.literal("")),
     rentalDuration: z.string().trim().optional().or(z.literal("")),
+    rentalStart: z.string().trim().optional().or(z.literal("")),
+    rentalEnd: z.string().trim().optional().or(z.literal("")),
     city: catalogOrCustom("город"),
-    cinema: catalogOrCustom("кинотеатр"),
+    cinema: optionalCatalog,
     hall: optionalCatalog,
+    hallFormat: optionalCatalog,
     film: optionalCatalog,
     session: optionalCatalog,
     consent: z.literal(true, "Нужно согласие на обработку персональных данных"),
@@ -100,17 +112,14 @@ export const applicationInputSchema = z
       });
     }
 
-    if (value.productId === "keys" || value.productId === "event") {
-      if (!value.hall?.id && !value.hall?.custom) {
+    if (value.productId === "group") {
+      if (!isFilledCatalog(value.cinema)) {
         ctx.addIssue({
           code: "custom",
-          message: "Выберите зал",
-          path: ["hall", "id"],
+          message: "Выберите кинотеатр",
+          path: ["cinema", "id"],
         });
       }
-    }
-
-    if (value.productId === "keys" || value.productId === "group") {
       const sessionOk =
         value.session?.id === CUSTOM_OPTION_ID
           ? Boolean(value.session.custom?.trim())
@@ -124,20 +133,83 @@ export const applicationInputSchema = z
       }
     }
 
-    if (value.productId === "event") {
-      if (!value.rentalDate) {
+    if (value.productId === "keys" || value.productId === "event") {
+      if (!value.cinema?.id || value.cinema.id === CUSTOM_OPTION_ID) {
         ctx.addIssue({
           code: "custom",
-          message: "Укажите дату аренды",
-          path: ["rentalDate"],
+          message: "Выберите кинотеатр из списка",
+          path: ["cinema", "id"],
         });
       }
-      if (!value.rentalTime) {
+      if (!value.hallFormat?.id || value.hallFormat.id === CUSTOM_OPTION_ID) {
         ctx.addIssue({
           code: "custom",
-          message: "Укажите время начала",
-          path: ["rentalTime"],
+          message: "Выберите формат зала",
+          path: ["hallFormat", "id"],
         });
+      }
+      if (!value.hall?.id || value.hall.id === CUSTOM_OPTION_ID) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Выберите зал",
+          path: ["hall", "id"],
+        });
+      }
+    }
+
+    if (value.productId === "keys") {
+      const hasFilm = Boolean(value.film?.id && value.film.id !== CUSTOM_OPTION_ID);
+      const hasWatchCustom = Boolean(value.watchCustom?.trim());
+      if (hasFilm === hasWatchCustom) {
+        ctx.addIssue({
+          code: "custom",
+          message: hasFilm
+            ? "Заполните только одно поле: фильм из репертуара или свой контент"
+            : "Выберите фильм из репертуара или укажите, что будете смотреть",
+          path: hasFilm ? ["watchCustom"] : ["film", "id"],
+        });
+      }
+    }
+
+    if (value.productId === "event") {
+      if (!value.rentalStart) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Укажите дату и время начала",
+          path: ["rentalStart"],
+        });
+      }
+      if (!value.rentalEnd) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Укажите дату и время окончания",
+          path: ["rentalEnd"],
+        });
+      }
+      if (value.rentalStart && value.rentalEnd) {
+        const start = Date.parse(value.rentalStart);
+        const end = Date.parse(value.rentalEnd);
+        if (!Number.isFinite(start)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Некорректная дата начала",
+            path: ["rentalStart"],
+          });
+        }
+        if (!Number.isFinite(end)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Некорректная дата окончания",
+            path: ["rentalEnd"],
+          });
+        }
+        if (Number.isFinite(start) && Number.isFinite(end) && end < start) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Окончание не может быть раньше начала",
+            path: ["rentalEnd"],
+          });
+        }
       }
     }
   });

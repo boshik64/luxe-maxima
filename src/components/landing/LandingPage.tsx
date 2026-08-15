@@ -41,6 +41,7 @@ export function LandingPage({
               ? product.summary
               : "Три лендинга услуг и сводная страница. Все заявки падают в одну административную панель."
           }
+          ctaHref={lockProduct ? "#form" : "#products"}
         />
         {lockProduct ? null : <Products onSelect={selectProduct} />}
         <section id="form" className="mx-auto max-w-6xl px-4 pb-24">
@@ -51,8 +52,9 @@ export function LandingPage({
             {product.title}
           </h2>
           <p className="mt-3 mb-8 max-w-2xl text-muted">
-            Поля зависят от услуги. Город, кинотеатр, фильм и сеанс подгружаются
-            из расписания КАРО. Если сеанса нет — укажите своё время.
+            {lockProduct
+              ? product.summary
+              : "Сначала выберите услугу выше. Поля формы зависят от продукта: аренда зала — из каталога, групповой поход — из расписания КАРО."}
           </p>
           <ApplicationForm
             productId={productId}

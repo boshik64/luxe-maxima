@@ -2,10 +2,12 @@ export function Hero({
   kicker = "Роскошный максимум",
   title = "Три услуги КАРО — одна заявка менеджеру",
   text = "Ключи от зала, групповой поход и мероприятие. Заявка сразу попадает в административную панель.",
+  ctaHref = "#products",
 }: {
   kicker?: string;
   title?: string;
   text?: string;
+  ctaHref?: string;
 }) {
   return (
     <section className="relative overflow-hidden border-b border-line">
@@ -26,7 +28,7 @@ export function Hero({
         <p className="mt-6 max-w-2xl text-lg text-muted">{text}</p>
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <a
-            href="#form"
+            href={ctaHref}
             className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:brightness-110"
           >
             Оставить заявку

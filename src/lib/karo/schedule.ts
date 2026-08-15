@@ -1,5 +1,10 @@
-import { fetchCinemaSchedule, fetchHallAttributes } from "@/lib/karo/client";
 import {
+  fetchCinemaSchedule,
+  fetchDirectory,
+  fetchHallAttributes,
+} from "@/lib/karo/client";
+import {
+  ART_FILM_CATEGORY_ID,
   CUSTOM_OPTION,
   CUSTOM_SESSION_OPTION,
   type ScheduleOption,
@@ -43,12 +48,31 @@ export async function listHalls(cinemaId: number): Promise<ScheduleOption[]> {
   return withCustom(halls);
 }
 
-export async function listFilms(cinemaId: number): Promise<ScheduleOption[]> {
+export async function searchRepertoire(query = ""): Promise<ScheduleOption[]> {
+  const directory = await fetchDirectory();
+  const needle = query.trim().toLowerCase();
+  return (directory.movie ?? [])
+    .filter((movie) => movie.film_category_id !== ART_FILM_CATEGORY_ID)
+    .filter((movie) =>
+      needle ? movie.name.toLowerCase().includes(needle) : true,
+    )
+    .slice(0, 20)
+    .map((movie) => ({ id: String(movie.id), name: movie.name }));
+}
+
+export async function listFilms(
+  cinemaId: number,
+  query = "",
+): Promise<ScheduleOption[]> {
   const schedule = await fetchCinemaSchedule(cinemaId);
-  const films = (schedule.items ?? []).map((film) => ({
-    id: String(film.id),
-    name: film.name,
-  }));
+  const needle = query.trim().toLowerCase();
+  const films = (schedule.items ?? [])
+    .map((film) => ({
+      id: String(film.id),
+      name: film.name,
+    }))
+    .filter((film) => (needle ? film.name.toLowerCase().includes(needle) : true))
+    .slice(0, 20);
   return withCustom(films);
 }
 

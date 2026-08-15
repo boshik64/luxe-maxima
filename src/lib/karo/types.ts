@@ -28,7 +28,12 @@ export type KaroAttribute = {
 export type KaroMovie = {
   id: number;
   name: string;
+  film_category_id?: number;
+  is_artfilm?: number;
 };
+
+/** Категория АРТ в /directory. Уточнить у заказчика, если id изменится. */
+export const ART_FILM_CATEGORY_ID = 1;
 
 export type KaroFlatSession = {
   id: number;

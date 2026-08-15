@@ -5,6 +5,7 @@ import {
   CascadeSelect,
   type CascadeValue,
 } from "@/components/form/CascadeSelect";
+import { FilmSearch } from "@/components/form/FilmSearch";
 import {
   CUSTOM_OPTION,
   CUSTOM_OPTION_ID,
@@ -49,13 +50,11 @@ export function ScheduleFields({
   const [cities, setCities] = useState<ScheduleOption[]>([]);
   const [cinemas, setCinemas] = useState<ScheduleOption[]>([]);
   const [halls, setHalls] = useState<ScheduleOption[]>([]);
-  const [films, setFilms] = useState<ScheduleOption[]>([]);
   const [sessions, setSessions] = useState<ScheduleOption[]>([]);
   const [loading, setLoading] = useState({
     cities: true,
     cinemas: false,
     halls: false,
-    films: false,
     sessions: false,
   });
   const [scheduleError, setScheduleError] = useState("");
@@ -126,25 +125,11 @@ export function ScheduleFields({
           }),
       );
     }
-    if (config.fields.film) {
-      tasks.push(
-        loadOptions(`/api/schedule/films?cinemaId=${cinema.id}`)
-          .then((items) => {
-            if (!cancelled) setFilms(items);
-          })
-          .catch(() => {
-            if (!cancelled) setFilms([CUSTOM_OPTION]);
-          })
-          .finally(() => {
-            if (!cancelled) setLoading((state) => ({ ...state, films: false }));
-          }),
-      );
-    }
     void Promise.all(tasks);
     return () => {
       cancelled = true;
     };
-  }, [cinema.id, config.fields.film, config.fields.hall]);
+  }, [cinema.id, config.fields.hall]);
 
   useEffect(() => {
     if (!config.fields.session || !isCatalogId(cinema.id)) return;
@@ -209,7 +194,6 @@ export function ScheduleFields({
             setSession(empty);
             setCinemas(isCatalogId(value.id) ? [] : [CUSTOM_OPTION]);
             setHalls([CUSTOM_OPTION]);
-            setFilms([CUSTOM_OPTION]);
             setSessions([
               {
                 id: CUSTOM_OPTION_ID,
@@ -220,7 +204,6 @@ export function ScheduleFields({
               ...state,
               cinemas: isCatalogId(value.id),
               halls: false,
-              films: false,
               sessions: false,
             }));
             emit({
@@ -249,7 +232,6 @@ export function ScheduleFields({
             setSession(empty);
             const manual = !isCatalogId(value.id);
             setHalls(manual ? [CUSTOM_OPTION] : []);
-            setFilms(manual ? [CUSTOM_OPTION] : []);
             setSessions(
               manual
                 ? [
@@ -263,7 +245,6 @@ export function ScheduleFields({
             setLoading((state) => ({
               ...state,
               halls: config.fields.hall && isCatalogId(value.id),
-              films: config.fields.film && isCatalogId(value.id),
               sessions: false,
             }));
             emit({
@@ -298,15 +279,22 @@ export function ScheduleFields({
           />
         ) : null}
         {config.fields.film ? (
-          <CascadeSelect
+          <FilmSearch
             id="film"
             label="Фильм"
             value={film}
-            options={films}
-            loading={loading.films}
+            required={false}
+            allowCustom
             disabled={!cinema.id}
-            errorId={errors["film.id"]}
+            error={errors["film.id"]}
             errorCustom={errors["film.custom"]}
+            endpoint={
+              isCatalogId(cinema.id)
+                ? `/api/schedule/films?cinemaId=${cinema.id}`
+                : cinema.id === CUSTOM_OPTION_ID
+                  ? "/api/schedule/repertoire"
+                  : null
+            }
             onChange={(value) => {
               setFilm(value);
               setSession(empty);

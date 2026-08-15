@@ -26,11 +26,22 @@ function sanitize(input: unknown): unknown {
   return input;
 }
 
+function serialize(extra: unknown): unknown {
+  if (extra instanceof Error) {
+    return {
+      name: extra.name,
+      message: extra.message,
+      code: (extra as Error & { code?: string }).code,
+    };
+  }
+  return sanitize(extra);
+}
+
 export const logger = {
   info(message: string, extra?: unknown) {
-    console.info(message, extra ? sanitize(extra) : "");
+    console.info(message, extra ? serialize(extra) : "");
   },
   error(message: string, extra?: unknown) {
-    console.error(message, extra ? sanitize(extra) : "");
+    console.error(message, extra ? serialize(extra) : "");
   },
 };

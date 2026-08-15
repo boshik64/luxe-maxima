@@ -40,13 +40,21 @@ function body(application: Application) {
     `Город: ${application.cityName}`,
     `Кинотеатр: ${application.cinemaName}`,
     application.hallName ? `Зал: ${application.hallName}` : null,
-    application.filmName ? `Фильм: ${application.filmName}` : null,
+    application.hallFormatName ? `Формат: ${application.hallFormatName}` : null,
+    application.hallCapacity ? `Вместимость: ${application.hallCapacity}` : null,
+    application.hallRentalPrice != null
+      ? `Стоимость аренды: ${application.hallRentalPrice} ₽`
+      : null,
+    application.filmName ? `Фильм / контент: ${application.filmName}` : null,
     application.sessionLabel || application.sessionCustom
       ? `Сеанс: ${application.sessionLabel || application.sessionCustom}`
       : null,
-    application.rentalDate
-      ? `Аренда: ${application.rentalDate} ${application.rentalTime ?? ""} ${application.rentalDuration ?? ""}`.trim()
-      : null,
+    application.rentalStart
+      ? `Начало: ${application.rentalStart}`
+      : application.rentalDate
+        ? `Аренда: ${application.rentalDate} ${application.rentalTime ?? ""} ${application.rentalDuration ?? ""}`.trim()
+        : null,
+    application.rentalEnd ? `Окончание: ${application.rentalEnd}` : null,
     application.guests ? `Гостей: ${application.guests}` : null,
     application.ticketType ? `Тип билета: ${application.ticketType}` : null,
     `Контакт: ${application.contactName}`,

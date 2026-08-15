@@ -11,17 +11,53 @@ const base = {
   idempotencyKey: "11111111-1111-4111-8111-111111111111",
   guests: "20",
   city: { id: "1", name: "Москва", custom: "" },
-  cinema: { id: "3", name: "7 Атриум", custom: "" },
+  cinema: { id: "cinema-1", name: "7 Атриум", custom: "" },
 };
 
-test("accepts keys application with session", () => {
+test("accepts keys application with hall catalog and repertoire film", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "keys",
-    hall: { id: "29", name: "Стандарт", custom: "" },
-    session: { id: "123", name: "12.08 22:35", custom: "" },
+    hallFormat: { id: "fmt-1", name: "IMAX", custom: "" },
+    hall: { id: "hall-1", name: "IMAX", custom: "" },
+    film: { id: "16395", name: "Электрический поцелуй", custom: "" },
   });
   assert.equal(parsed.success, true);
+});
+
+test("accepts keys application with custom watch content", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    productId: "keys",
+    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
+    hall: { id: "hall-1", name: "Зал 1", custom: "" },
+    watchCustom: "Корпоративный ролик",
+  });
+  assert.equal(parsed.success, true);
+});
+
+test("rejects keys application with both film and watchCustom", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    productId: "keys",
+    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
+    hall: { id: "hall-1", name: "Зал 1", custom: "" },
+    film: { id: "1", name: "Фильм", custom: "" },
+    watchCustom: "Свой контент",
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("rejects keys application with custom cinema", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    productId: "keys",
+    cinema: { id: "__custom__", name: "", custom: "Мой кинотеатр" },
+    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
+    hall: { id: "hall-1", name: "Зал 1", custom: "" },
+    watchCustom: "Фильм",
+  });
+  assert.equal(parsed.success, false);
 });
 
 test("accepts group application with ticket type", () => {
@@ -34,15 +70,28 @@ test("accepts group application with ticket type", () => {
   assert.equal(parsed.success, true);
 });
 
-test("event does not require session but requires rental time", () => {
+test("event requires hall cascade and end not before start", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "event",
-    hall: { id: "28", name: "Премиум", custom: "" },
-    rentalDate: "2026-09-01",
-    rentalTime: "18:00",
+    hallFormat: { id: "fmt-1", name: "Премиум", custom: "" },
+    hall: { id: "hall-1", name: "Зал Премиум", custom: "" },
+    rentalStart: "2026-09-01T18:00",
+    rentalEnd: "2026-09-01T22:00",
   });
   assert.equal(parsed.success, true);
+});
+
+test("event rejects end before start", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    productId: "event",
+    hallFormat: { id: "fmt-1", name: "Премиум", custom: "" },
+    hall: { id: "hall-1", name: "Зал Премиум", custom: "" },
+    rentalStart: "2026-09-01T22:00",
+    rentalEnd: "2026-09-01T18:00",
+  });
+  assert.equal(parsed.success, false);
 });
 
 test("rejects invalid phone", () => {

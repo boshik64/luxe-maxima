@@ -54,12 +54,18 @@ export async function PATCH(
     cityName: typeof body.cityName === "string" ? body.cityName : undefined,
     cinemaName: typeof body.cinemaName === "string" ? body.cinemaName : undefined,
     hallName: typeof body.hallName === "string" ? body.hallName : undefined,
+    hallFormatName:
+      typeof body.hallFormatName === "string" ? body.hallFormatName : undefined,
     filmName: typeof body.filmName === "string" ? body.filmName : undefined,
     sessionLabel: typeof body.sessionLabel === "string" ? body.sessionLabel : undefined,
     sessionCustom: typeof body.sessionCustom === "string" ? body.sessionCustom : undefined,
     rentalDate: typeof body.rentalDate === "string" ? body.rentalDate : undefined,
     rentalTime: typeof body.rentalTime === "string" ? body.rentalTime : undefined,
+    rentalStart: typeof body.rentalStart === "string" ? body.rentalStart : undefined,
+    rentalEnd: typeof body.rentalEnd === "string" ? body.rentalEnd : undefined,
     ticketType: typeof body.ticketType === "string" ? body.ticketType : undefined,
+    adminComment: typeof body.adminComment === "string" ? body.adminComment : undefined,
+    watchCustom: typeof body.watchCustom === "string" ? body.watchCustom : undefined,
   });
   return NextResponse.json({ item: updated });
 }

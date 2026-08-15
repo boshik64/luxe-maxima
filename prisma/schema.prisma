@@ -35,40 +35,89 @@ model User {
   updatedAt    DateTime @updatedAt
 }
 
+model HallFormat {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  benefits  String[]
+  imageUrl  String?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  halls     Hall[]
+}
+
+model RentalCinema {
+  id           String   @id @default(uuid())
+  karoCinemaId String   @unique
+  name         String
+  cityId       String
+  cityName     String
+  address      String?
+  enabled      Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  halls        Hall[]
+
+  @@index([cityId, enabled])
+}
+
+model Hall {
+  id          String        @id @default(uuid())
+  name        String
+  capacity    Int
+  rentalPrice Int
+  enabled     Boolean       @default(true)
+  cinemaId    String
+  cinema      RentalCinema  @relation(fields: [cinemaId], references: [id], onDelete: Cascade)
+  formatId    String
+  format      HallFormat    @relation(fields: [formatId], references: [id], onDelete: Restrict)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([cinemaId, formatId])
+}
+
 model Application {
-  id             String             @id @default(uuid())
-  productId      ProductId
-  status         ApplicationStatus  @default(NEW)
-  source         String
-  cityId         String?
-  cityName       String
-  cinemaId       String?
-  cinemaName     String
-  hallId         String?
-  hallName       String?
-  filmId         String?
-  filmName       String?
-  sessionId      String?
-  sessionLabel   String?
-  sessionCustom  String?
-  rentalDate     String?
-  rentalTime     String?
-  rentalDuration String?
-  guests         Int?
-  ticketType     String?
-  contactName    String
-  phone          String
-  email          String
-  comment        String?
-  consent        Boolean
-  utmSource      String?
-  utmMedium      String?
-  utmCampaign    String?
-  utmContent     String?
-  utmTerm        String?
-  idempotencyKey String             @unique
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  id              String             @id @default(uuid())
+  productId       ProductId
+  status          ApplicationStatus  @default(NEW)
+  source          String
+  cityId          String?
+  cityName        String
+  cinemaId        String?
+  cinemaName      String
+  hallId          String?
+  hallName        String?
+  hallFormatName  String?
+  hallCapacity    Int?
+  hallRentalPrice Int?
+  filmId          String?
+  filmName        String?
+  watchCustom     String?
+  sessionId       String?
+  sessionLabel    String?
+  sessionCustom   String?
+  rentalDate      String?
+  rentalTime      String?
+  rentalDuration  String?
+  rentalStart     String?
+  rentalEnd       String?
+  guests          Int?
+  ticketType      String?
+  contactName     String
+  phone           String
+  email           String
+  comment         String?
+  adminComment    String?
+  consent         Boolean
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  utmContent      String?
+  utmTerm         String?
+  idempotencyKey  String             @unique
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   @@index([status, createdAt])
   @@index([productId, createdAt])

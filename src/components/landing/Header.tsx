@@ -25,12 +25,12 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-          <a
-            href="#form"
+          <Link
+            href="/#products"
             className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
           >
             Оставить заявку
-          </a>
+          </Link>
         </nav>
       </div>
     </header>

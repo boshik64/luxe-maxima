@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ApplicationValidationError } from "@/lib/applications/errors";
 import {
   applicationInputSchema,
   flattenErrors,
@@ -43,6 +44,12 @@ export async function POST(request: NextRequest) {
     const result = await createApplication(parsed.data);
     return NextResponse.json(result, { status: result.duplicate ? 200 : 201 });
   } catch (error) {
+    if (error instanceof ApplicationValidationError) {
+      return NextResponse.json(
+        { error: error.message, fields: error.fields },
+        { status: 422 },
+      );
+    }
     logger.error("Application create failed", error);
     return NextResponse.json(
       { error: "Не удалось отправить заявку. Попробуйте ещё раз." },

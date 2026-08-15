@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef } from "react";
 import type { Application, ApplicationStatus } from "@prisma/client";
+import { GuestField } from "@/components/admin/GuestField";
 import { Field, inputClassName } from "@/components/form/Field";
 import { STATUS_LABEL } from "@/lib/admin/status";
 import { PRODUCTS, TICKET_TYPES } from "@/lib/products";
@@ -39,6 +40,13 @@ export function ApplicationModal({
       window.removeEventListener("keydown", onKey);
     };
   }, [onClose]);
+
+  const rentalValue =
+    item.rentalStart && item.rentalEnd
+      ? `${item.rentalStart} — ${item.rentalEnd}`
+      : [item.rentalDate, item.rentalTime, item.rentalDuration]
+          .filter(Boolean)
+          .join(" ") || "";
 
   return (
     <div
@@ -97,127 +105,149 @@ export function ApplicationModal({
               ))}
             </select>
           </Field>
-          <Field id="contactName" label="Контактное лицо">
-            <input
-              id="contactName"
-              className={inputClassName}
-              defaultValue={item.contactName}
-              onBlur={(event) => onSave({ contactName: event.target.value })}
-            />
-          </Field>
-          <Field id="phone" label="Телефон">
-            <input
-              id="phone"
-              className={inputClassName}
-              defaultValue={item.phone}
-              onBlur={(event) => onSave({ phone: event.target.value })}
-            />
-          </Field>
-          <Field id="email" label="Email">
-            <input
-              id="email"
-              className={inputClassName}
-              defaultValue={item.email}
-              onBlur={(event) => onSave({ email: event.target.value })}
-            />
-          </Field>
-          <Field id="cityName" label="Город">
-            <input
-              id="cityName"
-              className={inputClassName}
-              defaultValue={item.cityName}
-              onBlur={(event) => onSave({ cityName: event.target.value })}
-            />
-          </Field>
-          <Field id="cinemaName" label="Кинотеатр">
-            <input
-              id="cinemaName"
-              className={inputClassName}
-              defaultValue={item.cinemaName}
-              onBlur={(event) => onSave({ cinemaName: event.target.value })}
-            />
-          </Field>
-          <Field id="hallName" label="Зал">
-            <input
-              id="hallName"
-              className={inputClassName}
-              defaultValue={item.hallName ?? ""}
-              onBlur={(event) => onSave({ hallName: event.target.value })}
-            />
-          </Field>
-          <Field id="filmName" label="Фильм">
-            <input
-              id="filmName"
-              className={inputClassName}
-              defaultValue={item.filmName ?? ""}
-              onBlur={(event) => onSave({ filmName: event.target.value })}
-            />
-          </Field>
-          <Field id="sessionLabel" label="Сеанс">
-            <input
-              id="sessionLabel"
-              className={inputClassName}
-              defaultValue={item.sessionLabel || item.sessionCustom || ""}
-              onBlur={(event) =>
-                onSave({
-                  sessionLabel: event.target.value,
-                  sessionCustom: event.target.value,
-                })
-              }
-            />
-          </Field>
-          <Field id="guests" label="Гостей">
-            <input
-              id="guests"
-              className={inputClassName}
-              inputMode="numeric"
-              defaultValue={item.guests ?? ""}
-              onBlur={(event) => {
-                const guests = Number(event.target.value);
-                if (Number.isInteger(guests) && guests > 0) onSave({ guests });
-              }}
-            />
-          </Field>
-          <Field id="ticketType" label="Тип билета">
-            <input
-              id="ticketType"
-              className={inputClassName}
-              defaultValue={
-                item.ticketType
-                  ? (TICKET_LABEL[item.ticketType] ?? item.ticketType)
-                  : ""
-              }
-              onBlur={(event) => onSave({ ticketType: event.target.value })}
-            />
-          </Field>
-          <Field id="rental" label="Аренда">
-            <input
+          <GuestField
+            id="contactName"
+            label="Контактное лицо"
+            value={item.contactName}
+            onSave={(value) => onSave({ contactName: value })}
+          />
+          <GuestField
+            id="phone"
+            label="Телефон"
+            value={item.phone}
+            onSave={(value) => onSave({ phone: value })}
+          />
+          <GuestField
+            id="email"
+            label="Email"
+            value={item.email}
+            onSave={(value) => onSave({ email: value })}
+          />
+          <GuestField
+            id="cityName"
+            label="Город"
+            value={item.cityName}
+            onSave={(value) => onSave({ cityName: value })}
+          />
+          <GuestField
+            id="cinemaName"
+            label="Кинотеатр"
+            value={item.cinemaName}
+            onSave={(value) => onSave({ cinemaName: value })}
+          />
+          <GuestField
+            id="hallName"
+            label="Зал"
+            value={item.hallName ?? ""}
+            onSave={(value) => onSave({ hallName: value })}
+          />
+          <GuestField
+            id="hallFormatName"
+            label="Формат зала"
+            value={item.hallFormatName ?? ""}
+            onSave={(value) => onSave({ hallFormatName: value })}
+          />
+          <GuestField
+            id="filmName"
+            label="Фильм / контент"
+            value={item.filmName ?? item.watchCustom ?? ""}
+            onSave={(value) => onSave({ filmName: value })}
+          />
+          <GuestField
+            id="sessionLabel"
+            label="Сеанс"
+            value={item.sessionLabel || item.sessionCustom || ""}
+            onSave={(value) =>
+              onSave({
+                sessionLabel: value,
+                sessionCustom: value,
+              })
+            }
+          />
+          <GuestField
+            id="guests"
+            label="Гостей"
+            value={item.guests != null ? String(item.guests) : ""}
+            onSave={(value) => {
+              const guests = Number(value);
+              if (Number.isInteger(guests) && guests > 0) onSave({ guests });
+            }}
+          />
+          <GuestField
+            id="ticketType"
+            label="Тип билета"
+            value={
+              item.ticketType
+                ? (TICKET_LABEL[item.ticketType] ?? item.ticketType)
+                : ""
+            }
+            onSave={(value) => onSave({ ticketType: value })}
+          />
+          {item.rentalStart || item.rentalEnd ? (
+            <>
+              <GuestField
+                id="rentalStart"
+                label="Начало аренды"
+                value={item.rentalStart ?? ""}
+                onSave={(value) => onSave({ rentalStart: value })}
+              />
+              <GuestField
+                id="rentalEnd"
+                label="Окончание аренды"
+                value={item.rentalEnd ?? ""}
+                onSave={(value) => onSave({ rentalEnd: value })}
+              />
+            </>
+          ) : (
+            <GuestField
               id="rental"
-              className={inputClassName}
-              defaultValue={
-                [item.rentalDate, item.rentalTime, item.rentalDuration]
-                  .filter(Boolean)
-                  .join(" ") || ""
-              }
-              onBlur={(event) => onSave({ rentalDuration: event.target.value })}
+              label="Аренда"
+              value={rentalValue}
+              onSave={(value) => onSave({ rentalDuration: value })}
             />
-          </Field>
+          )}
+          {item.hallCapacity != null ? (
+            <Field id="hallCapacity" label="Вместимость">
+              <p className="min-h-12 rounded-2xl border border-line bg-background/60 px-4 py-3 text-sm">
+                {item.hallCapacity}
+              </p>
+            </Field>
+          ) : null}
+          {item.hallRentalPrice != null ? (
+            <Field id="hallRentalPrice" label="Стоимость аренды, ₽">
+              <p className="min-h-12 rounded-2xl border border-line bg-background/60 px-4 py-3 text-sm">
+                {item.hallRentalPrice}
+              </p>
+            </Field>
+          ) : null}
         </div>
 
         <div className="mt-5">
-          <Field id="comment" label="Комментарий">
+          <GuestField
+            id="comment"
+            label="Комментарий клиента"
+            value={item.comment ?? ""}
+            multiline
+            onSave={(value) => onSave({ comment: value })}
+          />
+        </div>
+
+        <div className="mt-5">
+          <Field id="adminComment" label="Комментарий администратора">
             <textarea
-              id="comment"
+              id="adminComment"
               className={`${inputClassName} min-h-28`}
-              defaultValue={item.comment ?? ""}
-              onBlur={(event) => onSave({ comment: event.target.value })}
+              defaultValue={item.adminComment ?? ""}
+              onBlur={(event) => onSave({ adminComment: event.target.value })}
             />
           </Field>
         </div>
 
         {error ? <p className="mt-4 text-sm text-primary">{error}</p> : null}
         <p className="mt-3 text-sm text-muted">
-          {saving ? "Сохраняем…" : "Изменения пишутся при уходе с поля"}
+          {saving
+            ? "Сохраняем…"
+            : "Данные гостя меняются только через карандаш. Статус и комментарий администратора — сразу."}
         </p>
       </div>
     </div>

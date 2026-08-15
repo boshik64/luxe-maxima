@@ -14,6 +14,7 @@ type Props = {
   errorId?: string;
   errorCustom?: string;
   required?: boolean;
+  allowCustom?: boolean;
   onChange: (value: CascadeValue) => void;
   id: string;
 };
@@ -28,9 +29,10 @@ export function CascadeSelect({
   errorId,
   errorCustom,
   required,
+  allowCustom = true,
   onChange,
 }: Props) {
-  const isCustom = value.id === CUSTOM_OPTION_ID;
+  const isCustom = allowCustom && value.id === CUSTOM_OPTION_ID;
 
   return (
     <div className="space-y-3">

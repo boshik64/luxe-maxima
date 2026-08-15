@@ -3,6 +3,8 @@
 import { useId, useMemo, useState } from "react";
 import { Field, inputClassName } from "@/components/form/Field";
 import { type CascadeValue } from "@/components/form/CascadeSelect";
+import { ContentFields } from "@/components/form/ContentFields";
+import { RentalHallFields } from "@/components/form/RentalHallFields";
 import { ScheduleFields } from "@/components/form/ScheduleFields";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
 import {
@@ -52,21 +54,23 @@ export function ApplicationForm({
 }) {
   const formId = useId();
   const product = PRODUCTS[productId];
+  const isRental = productId === "keys" || productId === "event";
   const [contactName, setContactName] = useState("");
   const [phone, setPhone] = useState("+7");
   const [email, setEmail] = useState("");
   const [guests, setGuests] = useState("");
   const [ticketType, setTicketType] = useState("");
-  const [rentalDate, setRentalDate] = useState("");
-  const [rentalTime, setRentalTime] = useState("");
-  const [rentalDuration, setRentalDuration] = useState("");
+  const [rentalStart, setRentalStart] = useState("");
+  const [rentalEnd, setRentalEnd] = useState("");
   const [comment, setComment] = useState("");
+  const [watchCustom, setWatchCustom] = useState("");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [schedule, setSchedule] = useState({
     city: emptyCascade,
     cinema: emptyCascade,
     hall: emptyCascade,
+    hallFormat: emptyCascade,
     film: emptyCascade,
     session: emptyCascade,
   });
@@ -86,13 +90,14 @@ export function ApplicationForm({
       email,
       guests,
       ticketType,
-      rentalDate,
-      rentalTime,
-      rentalDuration,
+      rentalStart,
+      rentalEnd,
       comment,
+      watchCustom,
       city: schedule.city,
       cinema: schedule.cinema,
       hall: schedule.hall,
+      hallFormat: schedule.hallFormat,
       film: schedule.film,
       session: schedule.session,
       consent: consent ? true : undefined,
@@ -106,10 +111,10 @@ export function ApplicationForm({
       email,
       guests,
       ticketType,
-      rentalDate,
-      rentalTime,
-      rentalDuration,
+      rentalStart,
+      rentalEnd,
       comment,
+      watchCustom,
       schedule,
       consent,
       website,
@@ -215,6 +220,15 @@ export function ApplicationForm({
                     setErrors({});
                     setStatus("idle");
                     setFormError("");
+                    setWatchCustom("");
+                    setSchedule({
+                      city: emptyCascade,
+                      cinema: emptyCascade,
+                      hall: emptyCascade,
+                      hallFormat: emptyCascade,
+                      film: emptyCascade,
+                      session: emptyCascade,
+                    });
                     onProductChange(item.id);
                   }}
                 />
@@ -225,35 +239,79 @@ export function ApplicationForm({
         </fieldset>
       )}
 
-      <ScheduleFields productId={productId} errors={errors} onChange={setSchedule} />
+      {isRental ? (
+        <RentalHallFields
+          key={productId}
+          errors={errors}
+          onChange={(value) =>
+            setSchedule((current) => ({
+              ...current,
+              city: value.city,
+              cinema: value.cinema,
+              hallFormat: value.hallFormat,
+              hall: value.hall,
+            }))
+          }
+        />
+      ) : (
+        <ScheduleFields
+          key={productId}
+          productId={productId}
+          errors={errors}
+          onChange={(value) =>
+            setSchedule((current) => ({
+              ...current,
+              ...value,
+            }))
+          }
+        />
+      )}
 
-      {product.fields.rentalTime ? (
-        <div className="grid gap-5 sm:grid-cols-3">
-          <Field id="rentalDate" label="Дата аренды" required error={errors.rentalDate}>
+      {productId === "keys" ? (
+        <ContentFields
+          film={schedule.film}
+          watchCustom={watchCustom}
+          errors={errors}
+          onFilmChange={(value) =>
+            setSchedule((current) => ({ ...current, film: value }))
+          }
+          onWatchCustomChange={(value) => {
+            setWatchCustom(value);
+            if (value.trim()) {
+              setSchedule((current) => ({ ...current, film: emptyCascade }));
+            }
+          }}
+        />
+      ) : null}
+
+      {productId === "event" ? (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            id="rentalStart"
+            label="Дата и время начала"
+            required
+            error={errors.rentalStart}
+          >
             <input
-              id="rentalDate"
+              id="rentalStart"
               className={inputClassName}
-              type="date"
-              value={rentalDate}
-              onChange={(event) => setRentalDate(event.target.value)}
+              type="datetime-local"
+              value={rentalStart}
+              onChange={(event) => setRentalStart(event.target.value)}
             />
           </Field>
-          <Field id="rentalTime" label="Время начала" required error={errors.rentalTime}>
+          <Field
+            id="rentalEnd"
+            label="Дата и время окончания"
+            required
+            error={errors.rentalEnd}
+          >
             <input
-              id="rentalTime"
+              id="rentalEnd"
               className={inputClassName}
-              type="time"
-              value={rentalTime}
-              onChange={(event) => setRentalTime(event.target.value)}
-            />
-          </Field>
-          <Field id="rentalDuration" label="Длительность" error={errors.rentalDuration}>
-            <input
-              id="rentalDuration"
-              className={inputClassName}
-              placeholder="Например, 2 часа"
-              value={rentalDuration}
-              onChange={(event) => setRentalDuration(event.target.value)}
+              type="datetime-local"
+              value={rentalEnd}
+              onChange={(event) => setRentalEnd(event.target.value)}
             />
           </Field>
         </div>

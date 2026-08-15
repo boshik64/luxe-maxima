@@ -1,5 +1,7 @@
 import { ApplicationStatus, Prisma, ProductId } from "@prisma/client";
+import { ApplicationValidationError } from "@/lib/applications/errors";
 import type { ApplicationInput } from "@/lib/applications/schema";
+import { getEnabledHall } from "@/lib/catalog/service";
 import { prisma } from "@/lib/db";
 import { CUSTOM_OPTION_ID } from "@/lib/karo/types";
 import { notifyNewApplication } from "@/lib/email";
@@ -39,18 +41,53 @@ export async function createApplication(input: ApplicationInput) {
     return { id: recent.id, duplicate: true };
   }
 
+  const rental = input.productId === "keys" || input.productId === "event";
+  let hallName = catalogName(input.hall) || null;
+  let hallFormatName: string | null = catalogName(input.hallFormat) || null;
+  let hallCapacity: number | null = null;
+  let hallRentalPrice: number | null = null;
+  let cinemaName = catalogName(input.cinema);
+  let cinemaId = catalogId(input.cinema);
+
+  if (rental) {
+    const hallId = catalogId(input.hall);
+    const hall = hallId ? await getEnabledHall(hallId) : null;
+    if (!hall || hall.cinemaId !== cinemaId) {
+      throw new ApplicationValidationError({
+        "hall.id": "Зал недоступен для аренды. Обновите страницу и выберите зал снова.",
+      });
+    }
+    hallName = hall.name;
+    hallFormatName = hall.format.name;
+    hallCapacity = hall.capacity;
+    hallRentalPrice = hall.rentalPrice;
+    cinemaName = hall.cinema.name;
+    cinemaId = hall.cinema.id;
+  }
+
+  const watchCustom =
+    input.productId === "keys" ? input.watchCustom?.trim() || null : null;
+  const filmId = watchCustom ? null : catalogId(input.film);
+  const filmName = watchCustom
+    ? watchCustom
+    : catalogName(input.film) || null;
+
   const application = await prisma.application.create({
     data: {
       productId: input.productId,
       source: input.source || "/",
       cityId: catalogId(input.city),
       cityName: catalogName(input.city),
-      cinemaId: catalogId(input.cinema),
-      cinemaName: catalogName(input.cinema),
+      cinemaId,
+      cinemaName,
       hallId: catalogId(input.hall),
-      hallName: catalogName(input.hall) || null,
-      filmId: catalogId(input.film),
-      filmName: catalogName(input.film) || null,
+      hallName,
+      hallFormatName,
+      hallCapacity,
+      hallRentalPrice,
+      filmId,
+      filmName,
+      watchCustom,
       sessionId: catalogId(input.session),
       sessionLabel:
         input.session?.id === CUSTOM_OPTION_ID
@@ -60,10 +97,13 @@ export async function createApplication(input: ApplicationInput) {
         input.session?.id === CUSTOM_OPTION_ID
           ? input.session.custom?.trim() || null
           : null,
-      rentalDate: input.productId === "event" ? input.rentalDate || null : null,
-      rentalTime: input.productId === "event" ? input.rentalTime || null : null,
-      rentalDuration:
-        input.productId === "event" ? input.rentalDuration || null : null,
+      rentalDate:
+        input.productId === "event" ? input.rentalStart?.slice(0, 10) || null : null,
+      rentalTime:
+        input.productId === "event" ? input.rentalStart?.slice(11, 16) || null : null,
+      rentalDuration: null,
+      rentalStart: input.productId === "event" ? input.rentalStart || null : null,
+      rentalEnd: input.productId === "event" ? input.rentalEnd || null : null,
       guests: input.guests ? Number(input.guests) : null,
       ticketType: input.productId === "group" ? input.ticketType || null : null,
       contactName: input.contactName,
