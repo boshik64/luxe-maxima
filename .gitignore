@@ -38,6 +38,7 @@ yarn-error.log*
 .data/
 
 # uploaded banners and other user files
+/uploads/
 /public/uploads/*
 !/public/uploads/.gitkeep
 

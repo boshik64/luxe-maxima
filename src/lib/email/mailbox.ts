@@ -170,50 +170,64 @@ async function lookupMxHosts(domain: string) {
 }
 
 async function confirmMailbox(email: string, domain: string, hosts: string[]) {
+  if (process.env.MAILBOX_SMTP === "0") return null;
   if (shouldSkipSmtp(domain, hosts)) return null;
 
   const { helo, from } = smtpIdentity();
-  for (const host of hosts.slice(0, 2)) {
-    const result = await probeMailboxSmtp(host, email, { helo, from });
-    if (result === "missing") {
-      logger.info("Mailbox rejected by SMTP", { domain, mx: host });
-      return "Такого почтового ящика не существует";
-    }
-    if (result === "exists") return null;
+  const host = hosts[0];
+  if (!host) return null;
+  const result = await Promise.race([
+    probeMailboxSmtp(host, email, { helo, from, timeoutMs: 2000 }),
+    new Promise<"unknown">((resolve) => {
+      setTimeout(() => resolve("unknown"), 2500);
+    }),
+  ]);
+  if (result === "missing") {
+    logger.info("Mailbox rejected by SMTP", { domain, mx: host });
+    return "Такого почтового ящика не существует";
   }
-
   return null;
 }
 
 export async function checkMailbox(email: string): Promise<string | null> {
-  const parsed = emailFormatSchema.safeParse(email);
-  if (!parsed.success) {
-    return parsed.error.issues[0]?.message ?? "Укажите корректный email";
-  }
+  try {
+    const parsed = emailFormatSchema.safeParse(email);
+    if (!parsed.success) {
+      return parsed.error.issues[0]?.message ?? "Укажите корректный email";
+    }
 
-  const normalized = parsed.data;
-  const rawDomain = normalized.split("@")[1] ?? "";
-  const domain = domainToASCII(rawDomain).toLowerCase();
-  if (!domain || domain.includes("..") || !domain.includes(".")) {
-    return "Укажите корректный email";
-  }
-  if (BLOCKED_DOMAINS.has(rawDomain) || BLOCKED_DOMAINS.has(domain) || looksLikeReservedTld(rawDomain)) {
-    return "Укажите существующий рабочий email";
-  }
+    const normalized = parsed.data;
+    const rawDomain = normalized.split("@")[1] ?? "";
+    let domain = "";
+    try {
+      domain = domainToASCII(rawDomain).toLowerCase();
+    } catch {
+      return "Укажите корректный email";
+    }
+    if (!domain || domain.includes("..") || !domain.includes(".")) {
+      return "Укажите корректный email";
+    }
+    if (BLOCKED_DOMAINS.has(rawDomain) || BLOCKED_DOMAINS.has(domain) || looksLikeReservedTld(rawDomain)) {
+      return "Укажите существующий рабочий email";
+    }
 
-  const suggestion = DOMAIN_TYPOS[rawDomain] ?? DOMAIN_TYPOS[domain];
-  if (suggestion) {
-    return `Похоже на опечатку. Возможно, вы имели в виду ${suggestion}?`;
-  }
+    const suggestion = DOMAIN_TYPOS[rawDomain] ?? DOMAIN_TYPOS[domain];
+    if (suggestion) {
+      return `Похоже на опечатку. Возможно, вы имели в виду ${suggestion}?`;
+    }
 
-  if (DISPOSABLE_DOMAINS.has(rawDomain) || DISPOSABLE_DOMAINS.has(domain)) {
-    return "Укажите постоянный email, а не временный ящик";
-  }
+    if (DISPOSABLE_DOMAINS.has(rawDomain) || DISPOSABLE_DOMAINS.has(domain)) {
+      return "Укажите постоянный email, а не временный ящик";
+    }
 
-  const hosts = await lookupMxHosts(domain);
-  if (!hosts?.length) {
-    return "Такого почтового ящика не существует — у домена нет почтовых серверов";
-  }
+    const hosts = await lookupMxHosts(domain);
+    if (!hosts?.length) {
+      return "Такого почтового ящика не существует — у домена нет почтовых серверов";
+    }
 
-  return confirmMailbox(normalized, domain, hosts);
+    return confirmMailbox(normalized, domain, hosts);
+  } catch (error) {
+    logger.error("Mailbox check failed", error);
+    return null;
+  }
 }
