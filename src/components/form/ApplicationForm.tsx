@@ -6,7 +6,9 @@ import { type CascadeValue } from "@/components/form/CascadeSelect";
 import { ContentFields } from "@/components/form/ContentFields";
 import { RentalHallFields } from "@/components/form/RentalHallFields";
 import { ScheduleFields } from "@/components/form/ScheduleFields";
+import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCaptcha";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import {
   applicationInputSchema,
   flattenErrors,
@@ -80,6 +82,13 @@ export function ApplicationForm({
   );
   const [applicationId, setApplicationId] = useState("");
   const [formError, setFormError] = useState("");
+  const [captcha, setCaptcha] = useState<CaptchaSolution | null>(null);
+  const [captchaKey, setCaptchaKey] = useState(0);
+
+  function refreshCaptcha() {
+    setCaptcha(null);
+    setCaptchaKey((key) => key + 1);
+  }
 
   const payload = useMemo(
     () => ({
@@ -135,6 +144,11 @@ export function ApplicationForm({
       setStatus("error");
       return;
     }
+    if (!captcha) {
+      setErrors({ captcha: "Оторвите корешок билета, чтобы отправить форму" });
+      setStatus("error");
+      return;
+    }
 
     setErrors({});
     setStatus("loading");
@@ -142,7 +156,11 @@ export function ApplicationForm({
       const response = await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({
+          ...parsed.data,
+          captchaToken: captcha.token,
+          captchaProof: captcha.proof,
+        }),
       });
       const data = (await response.json()) as {
         id?: string;
@@ -150,6 +168,7 @@ export function ApplicationForm({
         fields?: Record<string, string>;
       };
       if (!response.ok) {
+        refreshCaptcha();
         setErrors(data.fields ?? {});
         setFormError(data.error ?? "Не удалось отправить заявку");
         setStatus("error");
@@ -182,6 +201,7 @@ export function ApplicationForm({
           onClick={() => {
             setStatus("idle");
             setApplicationId("");
+            refreshCaptcha();
           }}
         >
           Отправить ещё одну
@@ -361,19 +381,17 @@ export function ApplicationForm({
         </Field>
         {product.fields.ticketType ? (
           <Field id="ticketType" label="Тип билета" required error={errors.ticketType}>
-            <select
+            <CustomSelect
               id="ticketType"
-              className={inputClassName}
               value={ticketType}
-              onChange={(event) => setTicketType(event.target.value)}
-            >
-              <option value="">Выберите</option>
-              {TICKET_TYPES.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Выберите"
+              invalid={Boolean(errors.ticketType)}
+              options={TICKET_TYPES.map((item) => ({
+                value: item.value,
+                label: item.label,
+              }))}
+              onChange={setTicketType}
+            />
           </Field>
         ) : null}
       </div>
@@ -428,9 +446,15 @@ export function ApplicationForm({
         </p>
       ) : null}
 
+      <TicketCaptcha
+        resetKey={captchaKey}
+        error={errors.captcha}
+        onSolved={setCaptcha}
+      />
+
       <button
         type="submit"
-        disabled={status === "loading"}
+        disabled={status === "loading" || !captcha}
         className="w-full rounded-full bg-primary px-6 py-4 font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
       >
         {status === "loading" ? "Отправляем…" : "Отправить заявку"}

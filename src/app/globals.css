@@ -43,3 +43,194 @@ textarea,
 button {
   font: inherit;
 }
+
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239a958c' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='m4 6 4 4 4-4'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+.pretty-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--gold) 70%, transparent) transparent;
+}
+
+.pretty-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pretty-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.pretty-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--gold) 55%, transparent);
+  border-radius: 999px;
+}
+
+.pretty-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--gold);
+}
+
+.ticket-captcha {
+  --ticket-paper: #f3ead8;
+  --ticket-ink: #1c1710;
+  --ticket-hole: var(--card);
+  display: flex;
+  min-height: 8.5rem;
+  overflow: visible;
+  padding-right: 4.5rem;
+  user-select: none;
+  touch-action: none;
+}
+
+.ticket-captcha-body,
+.ticket-captcha-stub {
+  background:
+    radial-gradient(circle at 10px 12px, color-mix(in srgb, #c9b48a 35%, transparent) 1px, transparent 1.6px),
+    linear-gradient(180deg, #f7f1e4 0%, var(--ticket-paper) 48%, #e9dcc4 100%);
+  background-size: 18px 18px, 100% 100%;
+  color: var(--ticket-ink);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.ticket-captcha-body {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 10px 0 0 10px;
+  padding: 1.1rem 1.15rem 1.1rem 1.25rem;
+}
+
+.ticket-captcha-body::before,
+.ticket-captcha-stub::before {
+  position: absolute;
+  inset: 8px;
+  border: 1px dashed color-mix(in srgb, #9a2a2a 45%, transparent);
+  content: "";
+  pointer-events: none;
+}
+
+.ticket-captcha-body::before {
+  border-right: 0;
+  border-radius: 6px 0 0 6px;
+}
+
+.ticket-captcha-perf {
+  position: relative;
+  z-index: 2;
+  width: 18px;
+  flex-shrink: 0;
+  background:
+    radial-gradient(circle at center, var(--ticket-hole) 3.4px, transparent 3.6px) 0 6px / 18px 11px repeat-y,
+    linear-gradient(180deg, #f7f1e4 0%, var(--ticket-paper) 48%, #e9dcc4 100%);
+}
+
+.ticket-captcha-perf::before,
+.ticket-captcha-perf::after {
+  position: absolute;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ticket-hole);
+  content: "";
+  transform: translateX(-50%);
+}
+
+.ticket-captcha-perf::before {
+  top: -8px;
+}
+
+.ticket-captcha-perf::after {
+  bottom: -8px;
+}
+
+.ticket-captcha-stub {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  width: 6.6rem;
+  flex-shrink: 0;
+  cursor: grab;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0 10px 10px 0;
+  padding: 0.9rem 0.55rem;
+  text-align: center;
+  transform-origin: 12% 80%;
+}
+
+.ticket-captcha-stub:active {
+  cursor: grabbing;
+}
+
+.ticket-captcha-stub:disabled {
+  cursor: default;
+}
+
+.ticket-captcha-stub::before {
+  border-left: 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.ticket-captcha-stub-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #7a6a52;
+}
+
+.ticket-captcha-torn .ticket-captcha-body {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    97% 8%,
+    100% 16%,
+    96% 24%,
+    100% 32%,
+    97% 40%,
+    100% 48%,
+    96% 56%,
+    100% 64%,
+    97% 72%,
+    100% 80%,
+    96% 88%,
+    100% 100%,
+    0 100%
+  );
+}
+
+.ticket-captcha-torn .ticket-captcha-stub {
+  clip-path: polygon(
+    4% 0,
+    100% 0,
+    100% 100%,
+    4% 100%,
+    0 92%,
+    5% 84%,
+    0 76%,
+    4% 68%,
+    0 60%,
+    5% 52%,
+    0 44%,
+    4% 36%,
+    0 28%,
+    5% 20%,
+    0 12%,
+    4% 4%
+  );
+}
+
+.ticket-captcha-invalid .ticket-captcha-body,
+.ticket-captcha-invalid .ticket-captcha-stub {
+  outline: 1px solid color-mix(in srgb, var(--primary) 70%, transparent);
+}

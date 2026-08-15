@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ApplicationStatus } from "@prisma/client";
 import { requireRole, requireSession } from "@/lib/admin/auth";
+import {
+  applicationAdminPatchSchema,
+  flattenPatchErrors,
+} from "@/lib/applications/admin-patch";
 import {
   deleteApplication,
   getApplication,
   updateApplication,
 } from "@/lib/applications/service";
-
-const STATUSES = Object.values(ApplicationStatus);
+import { checkMailbox } from "@/lib/email/mailbox";
 
 export async function GET(
   _request: NextRequest,
@@ -37,36 +39,32 @@ export async function PATCH(
 
   const { id } = await context.params;
   const body = (await request.json()) as Record<string, unknown>;
-  if (body.status && !STATUSES.includes(body.status as ApplicationStatus)) {
-    return NextResponse.json({ error: "Некорректный статус" }, { status: 400 });
+  const parsed = applicationAdminPatchSchema.safeParse(body);
+  if (!parsed.success) {
+    const fields = flattenPatchErrors(parsed.error);
+    return NextResponse.json(
+      {
+        error: Object.values(fields)[0] ?? "Проверьте поля формы",
+        fields,
+      },
+      { status: 422 },
+    );
   }
 
   const existing = await getApplication(id);
   if (!existing) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
 
-  const updated = await updateApplication(id, {
-    status: body.status as ApplicationStatus | undefined,
-    contactName: typeof body.contactName === "string" ? body.contactName : undefined,
-    phone: typeof body.phone === "string" ? body.phone : undefined,
-    email: typeof body.email === "string" ? body.email : undefined,
-    comment: typeof body.comment === "string" ? body.comment : undefined,
-    guests: typeof body.guests === "number" ? body.guests : undefined,
-    cityName: typeof body.cityName === "string" ? body.cityName : undefined,
-    cinemaName: typeof body.cinemaName === "string" ? body.cinemaName : undefined,
-    hallName: typeof body.hallName === "string" ? body.hallName : undefined,
-    hallFormatName:
-      typeof body.hallFormatName === "string" ? body.hallFormatName : undefined,
-    filmName: typeof body.filmName === "string" ? body.filmName : undefined,
-    sessionLabel: typeof body.sessionLabel === "string" ? body.sessionLabel : undefined,
-    sessionCustom: typeof body.sessionCustom === "string" ? body.sessionCustom : undefined,
-    rentalDate: typeof body.rentalDate === "string" ? body.rentalDate : undefined,
-    rentalTime: typeof body.rentalTime === "string" ? body.rentalTime : undefined,
-    rentalStart: typeof body.rentalStart === "string" ? body.rentalStart : undefined,
-    rentalEnd: typeof body.rentalEnd === "string" ? body.rentalEnd : undefined,
-    ticketType: typeof body.ticketType === "string" ? body.ticketType : undefined,
-    adminComment: typeof body.adminComment === "string" ? body.adminComment : undefined,
-    watchCustom: typeof body.watchCustom === "string" ? body.watchCustom : undefined,
-  });
+  if (parsed.data.email) {
+    const mailboxError = await checkMailbox(parsed.data.email);
+    if (mailboxError) {
+      return NextResponse.json(
+        { error: mailboxError, fields: { email: mailboxError } },
+        { status: 422 },
+      );
+    }
+  }
+
+  const updated = await updateApplication(id, parsed.data);
   return NextResponse.json({ item: updated });
 }
 

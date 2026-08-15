@@ -46,6 +46,8 @@ export async function createApplication(input: ApplicationInput) {
   let hallFormatName: string | null = catalogName(input.hallFormat) || null;
   let hallCapacity: number | null = null;
   let hallRentalPrice: number | null = null;
+  let hallRentalPriceWeekday: number | null = null;
+  let hallRentalPriceWeekend: number | null = null;
   let cinemaName = catalogName(input.cinema);
   let cinemaId = catalogId(input.cinema);
 
@@ -60,7 +62,9 @@ export async function createApplication(input: ApplicationInput) {
     hallName = hall.name;
     hallFormatName = hall.format.name;
     hallCapacity = hall.capacity;
-    hallRentalPrice = hall.rentalPrice;
+    hallRentalPrice = hall.rentalPriceWeekday;
+    hallRentalPriceWeekday = hall.rentalPriceWeekday;
+    hallRentalPriceWeekend = hall.rentalPriceWeekend;
     cinemaName = hall.cinema.name;
     cinemaId = hall.cinema.id;
   }
@@ -85,6 +89,8 @@ export async function createApplication(input: ApplicationInput) {
       hallFormatName,
       hallCapacity,
       hallRentalPrice,
+      hallRentalPriceWeekday,
+      hallRentalPriceWeekend,
       filmId,
       filmName,
       watchCustom,

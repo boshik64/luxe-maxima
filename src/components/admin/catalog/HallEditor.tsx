@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field, inputClassName } from "@/components/form/Field";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import {
   CatalogBack,
   CatalogShell,
@@ -18,7 +19,8 @@ export function HallEditor({ id }: { id?: string }) {
   const [formatId, setFormatId] = useState("");
   const [name, setName] = useState("");
   const [capacity, setCapacity] = useState("");
-  const [rentalPrice, setRentalPrice] = useState("");
+  const [rentalPriceWeekday, setRentalPriceWeekday] = useState("");
+  const [rentalPriceWeekend, setRentalPriceWeekend] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -71,7 +73,8 @@ export function HallEditor({ id }: { id?: string }) {
       setFormatId(item.formatId);
       setName(item.name);
       setCapacity(String(item.capacity));
-      setRentalPrice(String(item.rentalPrice));
+      setRentalPriceWeekday(String(item.rentalPriceWeekday));
+      setRentalPriceWeekend(String(item.rentalPriceWeekend));
     });
   }, [id]);
 
@@ -99,7 +102,8 @@ export function HallEditor({ id }: { id?: string }) {
       formatId,
       name,
       capacity: Number(capacity),
-      rentalPrice: Number(rentalPrice),
+      rentalPriceWeekday: Number(rentalPriceWeekday),
+      rentalPriceWeekend: Number(rentalPriceWeekend),
     };
     const response = await fetch(
       isNew ? "/api/admin/catalog/halls" : `/api/admin/catalog/halls/${id}`,
@@ -140,7 +144,7 @@ export function HallEditor({ id }: { id?: string }) {
   return (
     <CatalogShell
       title={isNew ? "Новый зал" : name || "Зал"}
-      description="Вместимость и стоимость фиксированные: их видит клиент в форме заявки."
+      description="Вместимость и две стоимости аренды: будни и выходные. Их видит клиент на карточке зала."
     >
       <CatalogBack href="/admin/catalogs/halls" label="← К списку залов" />
       {loading ? (
@@ -151,34 +155,28 @@ export function HallEditor({ id }: { id?: string }) {
           className="grid max-w-3xl gap-5 rounded-3xl border border-line bg-card p-6 sm:p-8 sm:grid-cols-2"
         >
           <Field id="hall-cinema" label="Кинотеатр" required>
-            <select
+            <CustomSelect
               id="hall-cinema"
-              className={inputClassName}
               value={cinemaId}
-              onChange={(event) => setCinemaId(event.target.value)}
-            >
-              <option value="">Выберите</option>
-              {cinemas.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.cityName} — {item.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Выберите"
+              options={cinemas.map((item) => ({
+                value: item.id,
+                label: `${item.cityName} — ${item.name}`,
+              }))}
+              onChange={setCinemaId}
+            />
           </Field>
           <Field id="hall-format" label="Формат" required>
-            <select
+            <CustomSelect
               id="hall-format"
-              className={inputClassName}
               value={formatId}
-              onChange={(event) => setFormatId(event.target.value)}
-            >
-              <option value="">Выберите</option>
-              {formats.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Выберите"
+              options={formats.map((item) => ({
+                value: item.id,
+                label: item.name,
+              }))}
+              onChange={setFormatId}
+            />
           </Field>
           <Field id="hall-name" label="Название зала" required>
             <input
@@ -199,14 +197,25 @@ export function HallEditor({ id }: { id?: string }) {
               }
             />
           </Field>
-          <Field id="hall-price" label="Стоимость аренды, ₽" required>
+          <Field id="hall-price-weekday" label="Стоимость пн–пт, ₽" required>
             <input
-              id="hall-price"
+              id="hall-price-weekday"
               className={inputClassName}
               inputMode="numeric"
-              value={rentalPrice}
+              value={rentalPriceWeekday}
               onChange={(event) =>
-                setRentalPrice(event.target.value.replace(/\D/g, ""))
+                setRentalPriceWeekday(event.target.value.replace(/\D/g, ""))
+              }
+            />
+          </Field>
+          <Field id="hall-price-weekend" label="Стоимость сб–вс, ₽" required>
+            <input
+              id="hall-price-weekend"
+              className={inputClassName}
+              inputMode="numeric"
+              value={rentalPriceWeekend}
+              onChange={(event) =>
+                setRentalPriceWeekend(event.target.value.replace(/\D/g, ""))
               }
             />
           </Field>

@@ -1,4 +1,6 @@
 import { Logo } from "@/components/Logo";
+import { KARO_SITE_URL } from "@/lib/contacts";
+import Link from "next/link";
 
 export function Footer() {
   return (
@@ -7,6 +9,24 @@ export function Footer() {
         <Logo className="text-muted" />
         <div className="space-y-2 text-sm text-muted">
           <p>© 2007–2026 «КАРО Фильм Менеджмент»</p>
+          <p>
+            <a
+              className="underline decoration-line underline-offset-4 hover:text-foreground"
+              href={KARO_SITE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Вернуться на сайт КАРО
+            </a>
+          </p>
+          <p>
+            <Link
+              className="underline decoration-line underline-offset-4 hover:text-foreground"
+              href="/feedback"
+            >
+              Обратная связь
+            </Link>
+          </p>
           <p>
             <a
               className="underline decoration-line underline-offset-4 hover:text-foreground"

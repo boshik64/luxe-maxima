@@ -1,6 +1,7 @@
 "use client";
 
 import { Field, inputClassName } from "@/components/form/Field";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { CUSTOM_OPTION_ID, type ScheduleOption } from "@/lib/karo/types";
 
 export type CascadeValue = { id: string; name: string; custom: string };
@@ -33,19 +34,23 @@ export function CascadeSelect({
   onChange,
 }: Props) {
   const isCustom = allowCustom && value.id === CUSTOM_OPTION_ID;
+  const selectOptions = options.map((option) => ({
+    value: option.id,
+    label: option.name,
+  }));
 
   return (
     <div className="space-y-3">
       <Field id={id} label={label} error={errorId} required={required}>
-        <select
+        <CustomSelect
           id={id}
-          className={inputClassName}
           value={value.id}
+          options={selectOptions}
+          placeholder={loading ? "Загрузка…" : "Выберите из списка"}
           disabled={disabled || loading}
-          aria-invalid={Boolean(errorId)}
-          aria-describedby={errorId ? `${id}-error` : undefined}
-          onChange={(event) => {
-            const nextId = event.target.value;
+          invalid={Boolean(errorId)}
+          describedBy={errorId ? `${id}-error` : undefined}
+          onChange={(nextId) => {
             const option = options.find((item) => item.id === nextId);
             onChange({
               id: nextId,
@@ -53,16 +58,7 @@ export function CascadeSelect({
               custom: nextId === CUSTOM_OPTION_ID ? value.custom : "",
             });
           }}
-        >
-          <option value="">
-            {loading ? "Загрузка…" : "Выберите из списка"}
-          </option>
-          {options.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.name}
-            </option>
-          ))}
-        </select>
+        />
       </Field>
       {isCustom ? (
         <Field

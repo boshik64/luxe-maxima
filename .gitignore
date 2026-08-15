@@ -37,6 +37,11 @@ yarn-error.log*
 # local application fallback store
 .data/
 
+# uploaded banners and other user files
+/public/uploads/*
+!/public/uploads/.gitkeep
+
+
 # vercel
 .vercel
 

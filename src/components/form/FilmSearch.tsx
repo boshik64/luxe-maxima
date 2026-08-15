@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Field, inputClassName } from "@/components/form/Field";
 import type { CascadeValue } from "@/components/form/CascadeSelect";
 import {
@@ -38,6 +38,7 @@ export function FilmSearch({
   const [options, setOptions] = useState<ScheduleOption[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const isCustom = value.id === CUSTOM_OPTION_ID;
   const canSearch = Boolean(endpoint) && !disabled && !isCustom;
 
@@ -67,8 +68,24 @@ export function FilmSearch({
     };
   }, [canSearch, endpoint, query]);
 
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" ref={rootRef}>
       <div className="relative">
         <Field id={id} label={label} required={required} error={error}>
           <input
@@ -105,7 +122,7 @@ export function FilmSearch({
           </button>
         ) : null}
         {open && canSearch && !value.id ? (
-          <ul className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-2xl border border-line bg-card py-1 shadow-xl">
+          <ul className="pretty-scroll absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-2xl border border-line bg-card py-1 shadow-xl">
             {loading ? (
               <li className="px-4 py-2 text-sm text-muted">Ищем…</li>
             ) : (

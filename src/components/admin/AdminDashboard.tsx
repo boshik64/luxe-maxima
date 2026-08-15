@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { Application, ApplicationStatus, ProductId } from "@prisma/client";
 import { ApplicationModal } from "@/components/admin/ApplicationModal";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { STATUS_ACCENT, STATUS_LABEL, STATUSES } from "@/lib/admin/status";
 import { PRODUCTS } from "@/lib/products";
 
@@ -79,13 +80,14 @@ export function AdminDashboard() {
     if (!response.ok) {
       setError(data.error ?? "Не удалось сохранить");
       await load();
-      return;
+      return false;
     }
     if (data.item) {
       setItems((current) =>
         current.map((item) => (item.id === id ? data.item! : item)),
       );
     }
+    return true;
   }
 
   async function moveToStatus(id: string, status: ApplicationStatus) {
@@ -117,25 +119,26 @@ export function AdminDashboard() {
             перетаскиванием. Всего: {total}
           </p>
         </div>
-        <select
-          className="rounded-2xl border border-line bg-card px-4 py-2"
+        <CustomSelect
+          id="product-filter"
+          className="w-56"
           value={product}
-          onChange={(event) => setProduct(event.target.value)}
-        >
-          <option value="all">Все продукты</option>
-          {Object.values(PRODUCTS).map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.title}
-            </option>
-          ))}
-        </select>
+          options={[
+            { value: "all", label: "Все продукты" },
+            ...Object.values(PRODUCTS).map((item) => ({
+              value: item.id,
+              label: item.title,
+            })),
+          ]}
+          onChange={setProduct}
+        />
       </div>
 
       {error ? (
         <p className="mb-3 shrink-0 text-sm text-primary">{error}</p>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 gap-4 overflow-x-auto">
+      <div className="pretty-scroll flex min-h-0 flex-1 gap-4 overflow-x-auto">
         {columns.map((column) => (
           <section
             key={column.status}
@@ -171,7 +174,7 @@ export function AdminDashboard() {
                 {column.items.length}
               </span>
             </header>
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
+            <div className="pretty-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
               {column.items.map((item) => (
                 <article
                   key={item.id}
@@ -233,7 +236,7 @@ export function AdminDashboard() {
           saving={saving}
           error={error}
           onClose={closeModal}
-          onSave={(patch) => void save(openItem.id, patch)}
+          onSave={(patch) => save(openItem.id, patch)}
         />
       ) : null}
     </main>

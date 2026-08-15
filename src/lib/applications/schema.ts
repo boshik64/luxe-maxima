@@ -1,13 +1,7 @@
 import { z } from "zod";
 import { PRODUCT_IDS, type ProductId } from "@/lib/products";
 import { CUSTOM_OPTION_ID } from "@/lib/karo/types";
-
-const phoneSchema = z
-  .string()
-  .trim()
-  .regex(/^\+7\d{10}$/, "Укажите телефон в формате +7 XXX XXX-XX-XX");
-
-const emailSchema = z.email("Укажите корректный email").trim().toLowerCase();
+import { emailFormatSchema, ruPhoneSchema } from "@/lib/validation/contact";
 
 const requiredText = (message: string, max = 200) =>
   z.string().trim().min(1, message).max(max, "Слишком длинное значение");
@@ -64,8 +58,8 @@ export const applicationInputSchema = z
     productId: z.enum(PRODUCT_IDS),
     source: z.string().trim().max(120).optional().or(z.literal("")),
     contactName: requiredText("Укажите контактное лицо"),
-    phone: phoneSchema,
-    email: emailSchema,
+    phone: ruPhoneSchema,
+    email: emailFormatSchema,
     guests: z.string().trim().optional().or(z.literal("")),
     ticketType: z.string().trim().optional().or(z.literal("")),
     comment: optionalText(),

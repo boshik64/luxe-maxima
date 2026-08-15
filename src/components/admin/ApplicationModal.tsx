@@ -4,8 +4,15 @@ import { useEffect, useId, useRef } from "react";
 import type { Application, ApplicationStatus } from "@prisma/client";
 import { GuestField } from "@/components/admin/GuestField";
 import { Field, inputClassName } from "@/components/form/Field";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import { STATUS_LABEL } from "@/lib/admin/status";
 import { PRODUCTS, TICKET_TYPES } from "@/lib/products";
+import {
+  validateContactName,
+  validateEmailFormat,
+  validateGuests,
+  validateRuPhone,
+} from "@/lib/validation/contact";
 
 const TICKET_LABEL = Object.fromEntries(
   TICKET_TYPES.map((item) => [item.value, item.label]),
@@ -22,7 +29,7 @@ export function ApplicationModal({
   saving: boolean;
   error: string;
   onClose: () => void;
-  onSave: (patch: Partial<Application>) => void;
+  onSave: (patch: Partial<Application>) => boolean | void | Promise<boolean | void>;
 }) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -90,37 +97,39 @@ export function ApplicationModal({
 
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <Field id="status" label="Статус">
-            <select
+            <CustomSelect
               id="status"
-              className={inputClassName}
               value={item.status}
-              onChange={(event) =>
-                onSave({ status: event.target.value as ApplicationStatus })
+              options={Object.entries(STATUS_LABEL).map(([value, label]) => ({
+                value,
+                label,
+              }))}
+              onChange={(value) =>
+                onSave({ status: value as ApplicationStatus })
               }
-            >
-              {Object.entries(STATUS_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            />
           </Field>
           <GuestField
             id="contactName"
             label="Контактное лицо"
             value={item.contactName}
+            validate={validateContactName}
             onSave={(value) => onSave({ contactName: value })}
           />
           <GuestField
             id="phone"
             label="Телефон"
+            kind="phone"
             value={item.phone}
+            validate={validateRuPhone}
             onSave={(value) => onSave({ phone: value })}
           />
           <GuestField
             id="email"
             label="Email"
+            kind="email"
             value={item.email}
+            validate={validateEmailFormat}
             onSave={(value) => onSave({ email: value })}
           />
           <GuestField
@@ -167,11 +176,10 @@ export function ApplicationModal({
           <GuestField
             id="guests"
             label="Гостей"
+            kind="guests"
             value={item.guests != null ? String(item.guests) : ""}
-            onSave={(value) => {
-              const guests = Number(value);
-              if (Number.isInteger(guests) && guests > 0) onSave({ guests });
-            }}
+            validate={validateGuests}
+            onSave={(value) => onSave({ guests: Number(value) })}
           />
           <GuestField
             id="ticketType"
@@ -213,7 +221,16 @@ export function ApplicationModal({
               </p>
             </Field>
           ) : null}
-          {item.hallRentalPrice != null ? (
+          {item.hallRentalPriceWeekday != null ||
+          item.hallRentalPriceWeekend != null ? (
+            <Field id="hallRentalPrice" label="Стоимость аренды, ₽">
+              <p className="min-h-12 rounded-2xl border border-line bg-background/60 px-4 py-3 text-sm">
+                пн–пт: {item.hallRentalPriceWeekday ?? item.hallRentalPrice ?? "—"}
+                <br />
+                сб–вс: {item.hallRentalPriceWeekend ?? "—"}
+              </p>
+            </Field>
+          ) : item.hallRentalPrice != null ? (
             <Field id="hallRentalPrice" label="Стоимость аренды, ₽">
               <p className="min-h-12 rounded-2xl border border-line bg-background/60 px-4 py-3 text-sm">
                 {item.hallRentalPrice}

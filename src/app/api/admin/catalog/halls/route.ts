@@ -26,7 +26,16 @@ export async function POST(request: NextRequest) {
       formatId: requiredString(body.formatId, "формат зала"),
       name: requiredString(body.name, "название зала"),
       capacity: requiredInt(body.capacity, "Вместимость"),
-      rentalPrice: requiredInt(body.rentalPrice, "Стоимость аренды", 0),
+      rentalPriceWeekday: requiredInt(
+        body.rentalPriceWeekday,
+        "Стоимость пн–пт",
+        0,
+      ),
+      rentalPriceWeekend: requiredInt(
+        body.rentalPriceWeekend,
+        "Стоимость сб–вс",
+        0,
+      ),
     });
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {
