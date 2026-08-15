@@ -75,6 +75,28 @@ select {
   background: var(--gold);
 }
 
+.hall-cards-scroll {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--gold) 85%, transparent)
+    color-mix(in srgb, var(--line) 90%, transparent);
+}
+
+.hall-cards-scroll::-webkit-scrollbar {
+  height: 6px;
+  display: block;
+}
+
+.hall-cards-scroll::-webkit-scrollbar-track {
+  background: color-mix(in srgb, var(--line) 90%, transparent);
+  border-radius: 999px;
+}
+
+.hall-cards-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--gold) 80%, transparent);
+  border-radius: 999px;
+}
+
 .ticket-captcha {
   --ticket-paper: #f3ead8;
   --ticket-ink: #1c1710;
@@ -233,4 +255,28 @@ select {
 .ticket-captcha-invalid .ticket-captcha-body,
 .ticket-captcha-invalid .ticket-captcha-stub {
   outline: 1px solid color-mix(in srgb, var(--primary) 70%, transparent);
+}
+
+@media (max-width: 640px) {
+  .ticket-captcha {
+    min-height: 6.75rem;
+    padding-right: 3.1rem;
+  }
+
+  .ticket-captcha-body {
+    padding: 0.75rem 0.55rem 0.75rem 0.8rem;
+  }
+
+  .ticket-captcha-hint {
+    display: none;
+  }
+
+  .ticket-captcha-stub {
+    width: 4.4rem;
+    padding: 0.55rem 0.25rem;
+  }
+
+  .ticket-captcha-stub-label {
+    letter-spacing: 0.08em;
+  }
 }

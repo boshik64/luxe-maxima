@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: "/uploads/banners/:file",
+        destination: "/api/media/banners/:file",
+      },
+    ];
+  },
   async headers() {
     return [
       {

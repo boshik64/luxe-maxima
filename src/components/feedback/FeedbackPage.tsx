@@ -6,6 +6,7 @@ import { Header } from "@/components/landing/Header";
 import { Field, inputClassName } from "@/components/form/Field";
 import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCaptcha";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
+import { parseResponseJson } from "@/lib/api-json";
 import { CONTACTS, KARO_SITE_URL } from "@/lib/contacts";
 
 function getIdempotencyKey() {
@@ -64,10 +65,10 @@ export function FeedbackPage() {
           captchaProof: captcha.proof,
         }),
       });
-      const data = (await response.json()) as {
+      const data = await parseResponseJson<{
         error?: string;
         fields?: Record<string, string>;
-      };
+      }>(response);
       if (!response.ok) {
         refreshCaptcha();
         setErrors(data.fields ?? {});

@@ -9,6 +9,7 @@ import { ScheduleFields } from "@/components/form/ScheduleFields";
 import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCaptcha";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { parseResponseJson } from "@/lib/api-json";
 import {
   applicationInputSchema,
   flattenErrors,
@@ -162,11 +163,11 @@ export function ApplicationForm({
           captchaProof: captcha.proof,
         }),
       });
-      const data = (await response.json()) as {
+      const data = await parseResponseJson<{
         id?: string;
         error?: string;
         fields?: Record<string, string>;
-      };
+      }>(response);
       if (!response.ok) {
         refreshCaptcha();
         setErrors(data.fields ?? {});

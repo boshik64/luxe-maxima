@@ -9,7 +9,7 @@ import {
 import { CatalogError } from "@/lib/catalog/service";
 import { KARO_SITE_URL } from "@/lib/contacts";
 import { logger } from "@/lib/logger";
-import { saveBannerUpload, type BannerUpload } from "@/lib/uploads";
+import { bannerPublicUrl, saveBannerUpload, type BannerUpload } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
@@ -61,7 +61,9 @@ export async function GET() {
   try {
     await requireSession();
     const item = await getBanner(HOME_BANNER_SLOT);
-    return NextResponse.json({ item });
+    return NextResponse.json({
+      item: item ? { ...item, imageUrl: bannerPublicUrl(item.imageUrl) } : null,
+    });
   } catch (error) {
     return bannerErrorResponse(error);
   }
@@ -92,7 +94,9 @@ export async function POST(request: NextRequest) {
       alt: alt || "Баннер КАРО",
       enabled,
     });
-    return NextResponse.json({ item });
+    return NextResponse.json({
+      item: { ...item, imageUrl: bannerPublicUrl(item.imageUrl) },
+    });
   } catch (error) {
     return bannerErrorResponse(error);
   }

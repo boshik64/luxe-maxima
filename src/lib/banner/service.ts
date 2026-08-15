@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { SiteBanner } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
-import { removeBannerUpload } from "@/lib/uploads";
+import { removeBannerUpload, bannerPublicUrl } from "@/lib/uploads";
 import type { PublicBanner } from "@/lib/banner/types";
 
 export const HOME_BANNER_SLOT = "home-hero-products";
@@ -49,7 +49,7 @@ export async function getPublicBanner(
     const item = await findBanner(slot);
     if (!item?.imageUrl || !item.enabled) return null;
     return {
-      imageUrl: item.imageUrl,
+      imageUrl: bannerPublicUrl(item.imageUrl),
       href: item.href,
       alt: item.alt,
       updatedAt: item.updatedAt.toISOString(),

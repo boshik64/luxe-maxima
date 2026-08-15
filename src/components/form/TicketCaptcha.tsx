@@ -144,7 +144,7 @@ export function TicketCaptcha({
           <p className="mt-1 text-[11px] tracking-[0.12em] text-[#6b5c45] uppercase">
             Роскошный максимум
           </p>
-          <p className="mt-3 text-xs text-[#7a6a52]">{hint}</p>
+          <p className="ticket-captcha-hint mt-3 text-xs text-[#7a6a52]">{hint}</p>
         </div>
         <div className="ticket-captcha-perf" aria-hidden="true" />
         <button
@@ -184,14 +184,15 @@ export function TicketCaptcha({
         >
           <span className="ticket-captcha-stub-label">Корешок</span>
           <span className="mt-1 font-[family-name:var(--font-display)] text-sm tracking-[0.18em] text-[#9a2a2a] uppercase">
-            {phase === "ready" ? "КАРО" : "КАРО"}
+            КАРО
           </span>
-          <span className="mt-2 text-[10px] tracking-[0.16em] text-[#7a6a52] uppercase">
+          <span className="mt-2 hidden text-[10px] tracking-[0.16em] text-[#7a6a52] uppercase sm:block">
             {torn ? "оторван" : "оторвать →"}
           </span>
         </button>
       </div>
-      <p className="text-xs text-muted">
+      <p className="text-xs text-muted sm:hidden">{hint}</p>
+      <p className="hidden text-xs text-muted sm:block">
         Защита от ботов: оторвите корешок у билета. Можно стрелкой вправо.
       </p>
       {shownError ? (
