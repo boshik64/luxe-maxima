@@ -1,3 +1,5 @@
+import { HashLink } from "@/components/ui/HashLink";
+
 export function Hero({
   kicker = "Роскошный максимум",
   title = "Три услуги КАРО — одна заявка менеджеру",
@@ -26,13 +28,13 @@ export function Hero({
           {title}
         </h1>
         <p className="mt-6 max-w-2xl text-lg text-muted">{text}</p>
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-          <a
+        <div className="mt-10">
+          <HashLink
             href={ctaHref}
             className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:brightness-110"
           >
             Оставить заявку
-          </a>
+          </HashLink>
         </div>
       </div>
     </section>

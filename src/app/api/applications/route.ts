@@ -5,6 +5,8 @@ import {
   flattenErrors,
 } from "@/lib/applications/schema";
 import { createApplication } from "@/lib/applications/service";
+import { captchaFromBody, verifyCaptcha } from "@/lib/captcha";
+import { checkMailbox } from "@/lib/email/mailbox";
 import { logger } from "@/lib/logger";
 import { isRateLimited } from "@/lib/rate-limit";
 
@@ -40,6 +42,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id: parsed.data.idempotencyKey });
   }
 
+  const captcha = captchaFromBody(body);
+  const captchaCheck = verifyCaptcha(captcha.token, captcha.proof);
+  if (!captchaCheck.ok) {
+    return NextResponse.json(
+      { error: captchaCheck.message, fields: { captcha: captchaCheck.message } },
+      { status: 422 },
+    );
+  }
+
+  const mailboxError = await checkMailbox(parsed.data.email);
+  if (mailboxError) {
+    return NextResponse.json(
+      { error: mailboxError, fields: { email: mailboxError } },
+      { status: 422 },
+    );
+  }
+
   try {
     const result = await createApplication(parsed.data);
     return NextResponse.json(result, { status: result.duplicate ? 200 : 201 });
@@ -57,3 +76,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

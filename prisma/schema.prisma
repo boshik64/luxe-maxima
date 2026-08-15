@@ -61,18 +61,25 @@ model RentalCinema {
   @@index([cityId, enabled])
 }
 
+enum FeedbackStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+}
+
 model Hall {
-  id          String        @id @default(uuid())
-  name        String
-  capacity    Int
-  rentalPrice Int
-  enabled     Boolean       @default(true)
-  cinemaId    String
-  cinema      RentalCinema  @relation(fields: [cinemaId], references: [id], onDelete: Cascade)
-  formatId    String
-  format      HallFormat    @relation(fields: [formatId], references: [id], onDelete: Restrict)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id                   String        @id @default(uuid())
+  name                 String
+  capacity             Int
+  rentalPriceWeekday   Int
+  rentalPriceWeekend   Int
+  enabled              Boolean       @default(true)
+  cinemaId             String
+  cinema               RentalCinema  @relation(fields: [cinemaId], references: [id], onDelete: Cascade)
+  formatId             String
+  format               HallFormat    @relation(fields: [formatId], references: [id], onDelete: Restrict)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
 
   @@index([cinemaId, formatId])
 }
@@ -89,8 +96,10 @@ model Application {
   hallId          String?
   hallName        String?
   hallFormatName  String?
-  hallCapacity    Int?
-  hallRentalPrice Int?
+  hallCapacity           Int?
+  hallRentalPrice        Int?
+  hallRentalPriceWeekday Int?
+  hallRentalPriceWeekend Int?
   filmId          String?
   filmName        String?
   watchCustom     String?
@@ -121,4 +130,33 @@ model Application {
 
   @@index([status, createdAt])
   @@index([productId, createdAt])
+}
+
+model Feedback {
+  id             String          @id @default(uuid())
+  status         FeedbackStatus  @default(NEW)
+  name           String
+  email          String
+  phone          String?
+  topic          String
+  message        String
+  consent        Boolean
+  adminComment   String?
+  source         String
+  idempotencyKey String          @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([status, createdAt])
+}
+
+model SiteBanner {
+  id        String   @id @default(uuid())
+  slot      String   @unique
+  imageUrl  String
+  href      String?
+  alt       String   @default("")
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

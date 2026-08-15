@@ -78,42 +78,48 @@ async function seedCatalog() {
       format: byName["Стандарт"],
       name: "Зал 1",
       capacity: 120,
-      rentalPrice: 80000,
+      rentalPriceWeekday: 80000,
+      rentalPriceWeekend: 95000,
     },
     {
       cinema: cinemas[0],
       format: byName["IMAX"],
       name: "IMAX",
       capacity: 350,
-      rentalPrice: 250000,
+      rentalPriceWeekday: 250000,
+      rentalPriceWeekend: 290000,
     },
     {
       cinema: cinemas[1],
       format: byName["Комфорт+"],
       name: "Зал Комфорт+",
       capacity: 80,
-      rentalPrice: 120000,
+      rentalPriceWeekday: 120000,
+      rentalPriceWeekend: 140000,
     },
     {
       cinema: cinemas[1],
       format: byName["Премиум"],
       name: "Зал Премиум",
       capacity: 40,
-      rentalPrice: 150000,
+      rentalPriceWeekday: 150000,
+      rentalPriceWeekend: 175000,
     },
     {
       cinema: cinemas[2],
       format: byName["4DX"],
       name: "4DX",
       capacity: 96,
-      rentalPrice: 180000,
+      rentalPriceWeekday: 180000,
+      rentalPriceWeekend: 210000,
     },
     {
       cinema: cinemas[2],
       format: byName["Стандарт"],
       name: "Зал 3",
       capacity: 200,
-      rentalPrice: 90000,
+      rentalPriceWeekday: 90000,
+      rentalPriceWeekend: 110000,
     },
   ];
 
@@ -127,7 +133,8 @@ async function seedCatalog() {
         data: {
           formatId: hall.format.id,
           capacity: hall.capacity,
-          rentalPrice: hall.rentalPrice,
+          rentalPriceWeekday: hall.rentalPriceWeekday,
+          rentalPriceWeekend: hall.rentalPriceWeekend,
         },
       });
       continue;
@@ -138,7 +145,8 @@ async function seedCatalog() {
         formatId: hall.format.id,
         name: hall.name,
         capacity: hall.capacity,
-        rentalPrice: hall.rentalPrice,
+        rentalPriceWeekday: hall.rentalPriceWeekday,
+        rentalPriceWeekend: hall.rentalPriceWeekend,
       },
     });
   }

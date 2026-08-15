@@ -7,6 +7,7 @@ import {
   CatalogBack,
   CatalogShell,
 } from "@/components/admin/catalog/CatalogShell";
+import { CustomSelect } from "@/components/ui/CustomSelect";
 import type { CinemaItem } from "@/lib/catalog/admin-types";
 import { CUSTOM_OPTION_ID, type ScheduleOption } from "@/lib/karo/types";
 
@@ -172,39 +173,33 @@ export function CinemaEditor({ id }: { id?: string }) {
           {isNew ? (
             <>
               <Field id="rental-city" label="Город КАРО" required>
-                <select
+                <CustomSelect
                   id="rental-city"
-                  className={inputClassName}
                   value={cityId}
-                  onChange={(event) => {
-                    setCityId(event.target.value);
+                  placeholder="Выберите город"
+                  options={cities.map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  }))}
+                  onChange={(value) => {
+                    setCityId(value);
                     setKaroCinemaId("");
                     setKaroCinemas([]);
                   }}
-                >
-                  <option value="">Выберите город</option>
-                  {cities.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                />
               </Field>
               <Field id="rental-cinema" label="Кинотеатр сети" required>
-                <select
+                <CustomSelect
                   id="rental-cinema"
-                  className={inputClassName}
                   value={karoCinemaId}
+                  placeholder="Выберите кинотеатр"
                   disabled={!cityId}
-                  onChange={(event) => setKaroCinemaId(event.target.value)}
-                >
-                  <option value="">Выберите кинотеатр</option>
-                  {karoCinemas.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                  options={karoCinemas.map((item) => ({
+                    value: item.id,
+                    label: item.name,
+                  }))}
+                  onChange={setKaroCinemaId}
+                />
               </Field>
             </>
           ) : (

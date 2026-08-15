@@ -11,7 +11,7 @@ import {
   catalogRowClass,
 } from "@/components/admin/catalog/CatalogTable";
 import type { HallItem } from "@/lib/catalog/admin-types";
-import { formatRubles } from "@/lib/catalog/format";
+import { formatHallPrices } from "@/lib/catalog/format";
 
 export function HallsList() {
   const router = useRouter();
@@ -116,7 +116,7 @@ export function HallsList() {
               <td className="px-5 py-4 text-sm text-muted">{item.format.name}</td>
               <td className="px-5 py-4 text-sm text-muted">{item.capacity}</td>
               <td className="px-5 py-4 text-sm text-muted">
-                {formatRubles(item.rentalPrice)}
+                {formatHallPrices(item.rentalPriceWeekday, item.rentalPriceWeekend)}
               </td>
               <td className="px-5 py-4">
                 <PublishStatusButton

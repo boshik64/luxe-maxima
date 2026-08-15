@@ -5,7 +5,7 @@ import {
   CascadeSelect,
   type CascadeValue,
 } from "@/components/form/CascadeSelect";
-import { formatRubles } from "@/lib/catalog/format";
+import { HallCards, type HallCardItem } from "@/components/form/HallCards";
 import { CUSTOM_OPTION, type ScheduleOption } from "@/lib/karo/types";
 
 const empty: CascadeValue = { id: "", name: "", custom: "" };
@@ -13,11 +13,6 @@ const empty: CascadeValue = { id: "", name: "", custom: "" };
 type FormatOption = ScheduleOption & {
   benefits: string[];
   imageUrl?: string | null;
-};
-
-type HallOption = ScheduleOption & {
-  capacity: number;
-  rentalPrice: number;
 };
 
 async function loadJson<T>(url: string): Promise<T> {
@@ -49,7 +44,7 @@ export function RentalHallFields({
   const [cities, setCities] = useState<ScheduleOption[]>([]);
   const [cinemas, setCinemas] = useState<ScheduleOption[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
-  const [halls, setHalls] = useState<HallOption[]>([]);
+  const [halls, setHalls] = useState<HallCardItem[]>([]);
   const [loading, setLoading] = useState({
     cities: true,
     cinemas: false,
@@ -59,7 +54,6 @@ export function RentalHallFields({
   const [catalogError, setCatalogError] = useState("");
 
   const selectedFormat = formats.find((item) => item.id === hallFormat.id);
-  const selectedHall = halls.find((item) => item.id === hall.id);
 
   useEffect(() => {
     let cancelled = false;
@@ -132,7 +126,7 @@ export function RentalHallFields({
   useEffect(() => {
     if (!isCatalogId(cinema.id) || !isCatalogId(hallFormat.id)) return;
     let cancelled = false;
-    loadJson<{ items: HallOption[] }>(
+    loadJson<{ items: HallCardItem[] }>(
       `/api/catalog/halls?cinemaId=${cinema.id}&formatId=${hallFormat.id}`,
     )
       .then((data) => {
@@ -166,7 +160,6 @@ export function RentalHallFields({
         </p>
       ) : null}
       <div className="grid gap-5 sm:grid-cols-2">
-        {/* Город: «свой вариант» оставляем; кинотеатр и зал — только из справочника. */}
         <CascadeSelect
           id="city"
           label="Город"
@@ -227,7 +220,7 @@ export function RentalHallFields({
             });
           }}
         />
-        <div>
+        <div className="sm:col-span-2">
           <CascadeSelect
             id="hallFormat"
             label="Формат зала"
@@ -272,37 +265,22 @@ export function RentalHallFields({
             )}
           </div>
         </div>
-        <div>
-          <CascadeSelect
-            id="hall"
-            label="Зал"
-            required
-            allowCustom={false}
-            value={hall}
-            options={halls}
-            loading={loading.halls}
-            disabled={!hallFormat.id}
-            errorId={errors["hall.id"]}
-            onChange={(value) => {
-              setHall(value);
-              emit({ city, cinema, hallFormat, hall: value });
-            }}
-          />
-          <div className="mt-3 min-h-[4.5rem] rounded-2xl border border-line bg-background/60 px-4 py-3 text-sm">
-            {selectedHall ? (
-              <p>
-                Вместимость: {selectedHall.capacity} мест
-                <br />
-                Стоимость аренды: {formatRubles(selectedHall.rentalPrice)}
-              </p>
-            ) : (
-              <p className="text-muted">
-                После выбора зала здесь появятся вместимость и стоимость.
-              </p>
-            )}
-          </div>
-        </div>
       </div>
+      {hallFormat.id ? (
+        <HallCards
+          halls={halls}
+          selectedId={hall.id}
+          loading={loading.halls}
+          error={errors["hall.id"]}
+          onSelect={(item) => {
+            const next = item
+              ? { id: item.id, name: item.name, custom: "" }
+              : empty;
+            setHall(next);
+            emit({ city, cinema, hallFormat, hall: next });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

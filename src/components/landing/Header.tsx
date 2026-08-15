@@ -1,14 +1,26 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Logo } from "@/components/Logo";
+import { HashLink } from "@/components/ui/HashLink";
+import { KARO_SITE_URL } from "@/lib/contacts";
 
 const links = [
   { href: "/", label: "Все услуги" },
   { href: "/keys", label: "Ключи от зала" },
   { href: "/group", label: "Групповые походы" },
   { href: "/event", label: "Мероприятие" },
+  { href: "/feedback", label: "Обратная связь" },
 ];
 
 export function Header() {
+  const pathname = usePathname();
+  const applyHref =
+    pathname === "/keys" || pathname === "/group" || pathname === "/event"
+      ? `${pathname}#form`
+      : "/#products";
+
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-4">
@@ -25,12 +37,20 @@ export function Header() {
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/#products"
+          <a
+            href={KARO_SITE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden text-sm text-gold transition hover:text-foreground xl:inline"
+          >
+            Вернуться на сайт КАРО
+          </a>
+          <HashLink
+            href={applyHref}
             className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
           >
             Оставить заявку
-          </Link>
+          </HashLink>
         </nav>
       </div>
     </header>

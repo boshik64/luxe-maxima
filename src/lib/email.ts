@@ -1,7 +1,7 @@
 import nodemailer from "nodemailer";
 import { logger } from "@/lib/logger";
 import { PRODUCTS } from "@/lib/products";
-import type { Application } from "@prisma/client";
+import type { Application, Feedback } from "@prisma/client";
 
 function recipients() {
   return (process.env.NOTIFY_EMAILS ?? "")
@@ -42,9 +42,12 @@ function body(application: Application) {
     application.hallName ? `Зал: ${application.hallName}` : null,
     application.hallFormatName ? `Формат: ${application.hallFormatName}` : null,
     application.hallCapacity ? `Вместимость: ${application.hallCapacity}` : null,
-    application.hallRentalPrice != null
-      ? `Стоимость аренды: ${application.hallRentalPrice} ₽`
-      : null,
+    application.hallRentalPriceWeekday != null ||
+    application.hallRentalPriceWeekend != null
+      ? `Стоимость аренды: пн–пт ${application.hallRentalPriceWeekday ?? application.hallRentalPrice ?? "—"} ₽, сб–вс ${application.hallRentalPriceWeekend ?? "—"} ₽`
+      : application.hallRentalPrice != null
+        ? `Стоимость аренды: ${application.hallRentalPrice} ₽`
+        : null,
     application.filmName ? `Фильм / контент: ${application.filmName}` : null,
     application.sessionLabel || application.sessionCustom
       ? `Сеанс: ${application.sessionLabel || application.sessionCustom}`
@@ -65,6 +68,39 @@ function body(application: Application) {
   ].filter(Boolean);
 
   return lines.join("\n");
+}
+
+export async function notifyNewFeedback(item: Feedback) {
+  const to = recipients();
+  const mailer = transport();
+  if (!to.length || !mailer) {
+    logger.info("Email skipped: SMTP or recipients are not configured");
+    return;
+  }
+
+  const base = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+
+  try {
+    await mailer.sendMail({
+      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
+      to,
+      replyTo: item.email,
+      subject: `Обратная связь — ${item.name}`,
+      text: [
+        `Новое обращение с сайта`,
+        `Имя: ${item.name}`,
+        `Email: ${item.email}`,
+        item.phone ? `Телефон: ${item.phone}` : null,
+        `Сообщение:`,
+        item.message,
+        `Карточка: ${base}/admin/feedback/${item.id}`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+    });
+  } catch (error) {
+    logger.error("Failed to send feedback email", error);
+  }
 }
 
 export async function notifyNewApplication(application: Application) {
