@@ -10,6 +10,7 @@ import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCap
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { parseResponseJson } from "@/lib/api-json";
+import { createClientId } from "@/lib/id";
 import {
   applicationInputSchema,
   flattenErrors,
@@ -39,7 +40,7 @@ function getIdempotencyKey() {
   const key = "luxe-maxima-idempotency";
   const existing = sessionStorage.getItem(key);
   if (existing) return existing;
-  const created = crypto.randomUUID();
+  const created = createClientId();
   sessionStorage.setItem(key, created);
   return created;
 }
