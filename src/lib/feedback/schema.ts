@@ -16,4 +16,13 @@ export const feedbackInputSchema = z.object({
   idempotencyKey: z.uuid("Некорректный ключ запроса"),
 });
 
+export function flattenFeedbackErrors(error: z.ZodError): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const issue of error.issues) {
+    const path = issue.path.join(".") || "form";
+    if (!result[path]) result[path] = issue.message;
+  }
+  return result;
+}
+
 export type FeedbackInput = z.infer<typeof feedbackInputSchema>;

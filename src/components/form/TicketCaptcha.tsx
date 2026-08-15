@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { parseResponseJson } from "@/lib/api-json";
 
 type Challenge = {
   token: string;
@@ -20,9 +21,10 @@ export function TicketCaptcha({
   error?: string;
   onSolved: (solution: CaptchaSolution | null) => void;
 }) {
-  const stubRef = useRef<HTMLButtonElement>(null);
   const startX = useRef(0);
   const offsetRef = useRef(0);
+  const pointerIdRef = useRef<number | null>(null);
+  const [retry, setRetry] = useState(0);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [loadError, setLoadError] = useState("");
   const [offset, setOffset] = useState(0);
@@ -32,9 +34,9 @@ export function TicketCaptcha({
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/captcha")
+    fetch("/api/captcha", { cache: "no-store" })
       .then(async (response) => {
-        const data = (await response.json()) as Challenge & { error?: string };
+        const data = await parseResponseJson<Challenge & { error?: string }>(response);
         if (cancelled) return;
         if (!response.ok || !data.token) {
           throw new Error(data.error ?? "captcha");
@@ -43,13 +45,13 @@ export function TicketCaptcha({
       })
       .catch(() => {
         if (!cancelled) {
-          setLoadError("Не удалось загрузить капчу. Обновите страницу.");
+          setLoadError("Не удалось загрузить капчу.");
         }
       });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [retry]);
 
   async function complete(token: string) {
     if (completingRef.current) return;
@@ -60,10 +62,11 @@ export function TicketCaptcha({
     try {
       const response = await fetch("/api/captcha", {
         method: "POST",
+        cache: "no-store",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
-      const data = (await response.json()) as { proof?: string; error?: string };
+      const data = await parseResponseJson<{ proof?: string; error?: string }>(response);
       if (!response.ok || !data.proof) {
         throw new Error(data.error ?? "captcha");
       }
@@ -74,7 +77,7 @@ export function TicketCaptcha({
       setPhase("idle");
       offsetRef.current = 0;
       setOffset(0);
-      setLoadError("Не удалось подтвердить капчу. Попробуйте ещё раз.");
+      setLoadError("Не удалось подтвердить капчу.");
       onSolved(null);
     }
   }
@@ -88,7 +91,9 @@ export function TicketCaptcha({
 
   function onPointerDown(event: React.PointerEvent<HTMLButtonElement>) {
     if (phase !== "idle" || !challenge) return;
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
+    pointerIdRef.current = event.pointerId;
     startX.current = event.clientX - offset;
     setDragging(true);
   }
@@ -101,13 +106,29 @@ export function TicketCaptcha({
     tearIfNeeded(next);
   }
 
-  function onPointerUp() {
+  function onPointerUp(event: React.PointerEvent<HTMLButtonElement>) {
+    if (pointerIdRef.current !== null && event.currentTarget.hasPointerCapture(pointerIdRef.current)) {
+      event.currentTarget.releasePointerCapture(pointerIdRef.current);
+    }
+    pointerIdRef.current = null;
     setDragging(false);
     if (phase !== "idle") return;
     if (offsetRef.current < TEAR_PX) {
       offsetRef.current = 0;
       setOffset(0);
     }
+  }
+
+  function reload() {
+    completingRef.current = false;
+    offsetRef.current = 0;
+    setChallenge(null);
+    setOffset(0);
+    setDragging(false);
+    setPhase("idle");
+    setLoadError("");
+    onSolved(null);
+    setRetry((value) => value + 1);
   }
 
   const progress = Math.min(1, offset / TEAR_PX);
@@ -148,7 +169,6 @@ export function TicketCaptcha({
         </div>
         <div className="ticket-captcha-perf" aria-hidden="true" />
         <button
-          ref={stubRef}
           type="button"
           disabled={phase !== "idle" || !challenge}
           aria-label="Оторвать корешок билета"
@@ -196,9 +216,18 @@ export function TicketCaptcha({
         Защита от ботов: оторвите корешок у билета. Можно стрелкой вправо.
       </p>
       {shownError ? (
-        <p className="text-sm text-primary" role="alert">
-          {shownError}
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-sm text-primary" role="alert">
+            {shownError}
+          </p>
+          <button
+            type="button"
+            className="text-sm font-semibold text-gold underline underline-offset-4"
+            onClick={reload}
+          >
+            Обновить капчу
+          </button>
+        </div>
       ) : null}
     </div>
   );

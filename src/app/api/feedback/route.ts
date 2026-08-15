@@ -1,22 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { captchaFromBody, verifyCaptcha } from "@/lib/captcha";
 import { checkMailbox } from "@/lib/email/mailbox";
-import { feedbackInputSchema } from "@/lib/feedback/schema";
+import { feedbackInputSchema, flattenFeedbackErrors } from "@/lib/feedback/schema";
 import { createFeedback } from "@/lib/feedback/service";
 import { logger } from "@/lib/logger";
 import { isRateLimited } from "@/lib/rate-limit";
-import { z } from "zod";
 
 export const runtime = "nodejs";
-
-function flattenZod(error: z.ZodError): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const issue of error.issues) {
-    const path = issue.path.join(".") || "form";
-    if (!result[path]) result[path] = issue.message;
-  }
-  return result;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +32,7 @@ export async function POST(request: NextRequest) {
     const parsed = feedbackInputSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Проверьте поля формы", fields: flattenZod(parsed.error) },
+        { error: "Проверьте поля формы", fields: flattenFeedbackErrors(parsed.error) },
         { status: 422 },
       );
     }
