@@ -259,7 +259,7 @@ export function FeedbackPage() {
                   </p>
                 ) : null}
                 <TicketCaptcha
-                  resetKey={captchaKey}
+                  key={captchaKey}
                   error={errors.captcha}
                   onSolved={setCaptcha}
                 />

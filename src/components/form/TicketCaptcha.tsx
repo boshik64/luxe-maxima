@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Challenge = {
   token: string;
@@ -39,11 +39,9 @@ async function solveProof(token: string, difficulty: number) {
 }
 
 export function TicketCaptcha({
-  resetKey = 0,
   error,
   onSolved,
 }: {
-  resetKey?: number;
   error?: string;
   onSolved: (solution: CaptchaSolution | null) => void;
 }) {
@@ -56,29 +54,26 @@ export function TicketCaptcha({
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<"idle" | "solving" | "ready">("idle");
 
-  const load = useCallback(() => {
-    setChallenge(null);
-    setOffset(0);
-    offsetRef.current = 0;
-    setPhase("idle");
-    setLoadError("");
-    onSolved(null);
-    return fetch("/api/captcha")
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/captcha")
       .then(async (response) => {
         const data = (await response.json()) as Challenge & { error?: string };
+        if (cancelled) return;
         if (!response.ok || !data.token) {
           throw new Error(data.error ?? "captcha");
         }
         setChallenge({ token: data.token, difficulty: data.difficulty });
       })
       .catch(() => {
-        setLoadError("Не удалось загрузить капчу. Обновите страницу.");
+        if (!cancelled) {
+          setLoadError("Не удалось загрузить капчу. Обновите страницу.");
+        }
       });
-  }, [onSolved]);
-
-  useEffect(() => {
-    void load();
-  }, [load, resetKey]);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function complete(token: string, difficulty: number) {
     offsetRef.current = TEAR_PX + 24;
