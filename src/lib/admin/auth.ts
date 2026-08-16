@@ -7,6 +7,14 @@ import type { Role } from "@prisma/client";
 export const ADMIN_COOKIE = "luxe_admin";
 const COOKIE_MAX_AGE = 60 * 60 * 12;
 
+/** Secure cookies only when the app is served over HTTPS (see APP_URL). */
+export function cookieSecure() {
+  const appUrl = process.env.APP_URL ?? "";
+  if (appUrl.startsWith("https://")) return true;
+  if (appUrl.startsWith("http://")) return false;
+  return process.env.NODE_ENV === "production";
+}
+
 type SessionPayload = {
   sub: string;
   email: string;

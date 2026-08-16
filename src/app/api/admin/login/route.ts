@@ -3,6 +3,7 @@ import {
   ADMIN_COOKIE,
   COOKIE_MAX_AGE,
   authenticate,
+  cookieSecure,
   createSessionToken,
 } from "@/lib/admin/auth";
 import { isRateLimited } from "@/lib/rate-limit";
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set(ADMIN_COOKIE, token, {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: cookieSecure(),
       path: "/",
       maxAge: COOKIE_MAX_AGE,
     });
