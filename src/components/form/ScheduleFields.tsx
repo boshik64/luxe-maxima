@@ -6,10 +6,14 @@ import {
   type CascadeValue,
 } from "@/components/form/CascadeSelect";
 import { FilmSearch } from "@/components/form/FilmSearch";
+import { Field, inputClassName } from "@/components/form/Field";
+import { SessionCards } from "@/components/form/SessionCards";
 import {
   CUSTOM_OPTION,
   CUSTOM_OPTION_ID,
+  CUSTOM_SESSION_OPTION,
   type ScheduleOption,
+  type SessionOption,
 } from "@/lib/karo/types";
 import { PRODUCTS, type ProductId } from "@/lib/products";
 
@@ -21,6 +25,21 @@ async function loadOptions(url: string): Promise<ScheduleOption[]> {
   const data = (await response.json()) as { items: ScheduleOption[] };
   return data.items;
 }
+
+async function loadSessions(url: string): Promise<SessionOption[]> {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("schedule");
+  const data = (await response.json()) as { items: SessionOption[] };
+  return data.items;
+}
+
+const customSession: SessionOption = {
+  id: CUSTOM_SESSION_OPTION.id,
+  name: CUSTOM_SESSION_OPTION.name,
+  showtime: "",
+  filmName: "",
+  hallName: "",
+};
 
 function isCatalogId(id: string) {
   return Boolean(id) && id !== CUSTOM_OPTION_ID;
@@ -50,7 +69,7 @@ export function ScheduleFields({
   const [cities, setCities] = useState<ScheduleOption[]>([]);
   const [cinemas, setCinemas] = useState<ScheduleOption[]>([]);
   const [halls, setHalls] = useState<ScheduleOption[]>([]);
-  const [sessions, setSessions] = useState<ScheduleOption[]>([]);
+  const [sessions, setSessions] = useState<SessionOption[]>([]);
   const [loading, setLoading] = useState({
     cities: true,
     cinemas: false,
@@ -137,18 +156,13 @@ export function ScheduleFields({
     if (isCatalogId(film.id)) params.set("filmId", film.id);
     if (isCatalogId(hall.id)) params.set("hallId", hall.id);
     let cancelled = false;
-    loadOptions(`/api/schedule/sessions?${params.toString()}`)
+    loadSessions(`/api/schedule/sessions?${params.toString()}`)
       .then((items) => {
         if (!cancelled) setSessions(items);
       })
       .catch(() => {
         if (!cancelled) {
-          setSessions([
-            {
-              id: CUSTOM_OPTION_ID,
-              name: "Не нашел подходящий сеанс / свое время",
-            },
-          ]);
+          setSessions([customSession]);
         }
       })
       .finally(() => {
@@ -194,12 +208,7 @@ export function ScheduleFields({
             setSession(empty);
             setCinemas(isCatalogId(value.id) ? [] : [CUSTOM_OPTION]);
             setHalls([CUSTOM_OPTION]);
-            setSessions([
-              {
-                id: CUSTOM_OPTION_ID,
-                name: "Не нашел подходящий сеанс / свое время",
-              },
-            ]);
+            setSessions([customSession]);
             setLoading((state) => ({
               ...state,
               cinemas: isCatalogId(value.id),
@@ -232,20 +241,11 @@ export function ScheduleFields({
             setSession(empty);
             const manual = !isCatalogId(value.id);
             setHalls(manual ? [CUSTOM_OPTION] : []);
-            setSessions(
-              manual
-                ? [
-                    {
-                      id: CUSTOM_OPTION_ID,
-                      name: "Не нашел подходящий сеанс / свое время",
-                    },
-                  ]
-                : [],
-            );
+            setSessions(manual ? [customSession] : []);
             setLoading((state) => ({
               ...state,
               halls: config.fields.hall && isCatalogId(value.id),
-              sessions: false,
+              sessions: config.fields.session && isCatalogId(value.id),
             }));
             emit({
               city,
@@ -306,24 +306,67 @@ export function ScheduleFields({
             }}
           />
         ) : null}
-        {config.fields.session ? (
-          <CascadeSelect
-            id="session"
-            label="Сеанс"
-            required
-            value={session}
-            options={sessions}
+      </div>
+      {config.fields.session && cinema.id ? (
+        <div className="space-y-3">
+          <SessionCards
+            sessions={sessions}
+            selectedId={session.id}
             loading={loading.sessions}
-            disabled={!cinema.id}
-            errorId={errors["session.id"]}
-            errorCustom={errors["session.custom"]}
-            onChange={(value) => {
-              setSession(value);
-              emit({ city, cinema, hall, film, session: value });
+            error={errors["session.id"]}
+            onSelect={(item) => {
+              const next = item
+                ? { id: item.id, name: item.name, custom: "" }
+                : empty;
+              setSession(next);
+              emit({ city, cinema, hall, film, session: next });
             }}
           />
-        ) : null}
-      </div>
+          <button
+            type="button"
+            disabled={loading.sessions}
+            className={`rounded-full border px-4 py-2 text-sm transition ${
+              session.id === CUSTOM_OPTION_ID
+                ? "border-primary text-primary"
+                : "border-line text-muted hover:border-gold hover:text-foreground"
+            } disabled:opacity-60`}
+            onClick={() => {
+              const next =
+                session.id === CUSTOM_OPTION_ID
+                  ? empty
+                  : { id: CUSTOM_OPTION_ID, name: "", custom: session.custom };
+              setSession(next);
+              emit({ city, cinema, hall, film, session: next });
+            }}
+          >
+            {CUSTOM_SESSION_OPTION.name}
+          </button>
+          {session.id === CUSTOM_OPTION_ID ? (
+            <Field
+              id="session-custom"
+              label="Своё время или сеанс"
+              error={errors["session.custom"]}
+              required
+            >
+              <input
+                id="session-custom"
+                className={inputClassName}
+                value={session.custom}
+                placeholder="Например, суббота вечером"
+                onChange={(event) => {
+                  const next = {
+                    id: CUSTOM_OPTION_ID,
+                    name: "",
+                    custom: event.target.value,
+                  };
+                  setSession(next);
+                  emit({ city, cinema, hall, film, session: next });
+                }}
+              />
+            </Field>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,12 +1,10 @@
-import {
-  fetchCinemaSchedule,
-  fetchDirectory,
-  fetchHallAttributes,
-} from "@/lib/karo/client";
+import { fetchCinemaSchedule, fetchDirectory } from "@/lib/karo/client";
 import {
   ART_FILM_CATEGORY_ID,
   CUSTOM_OPTION,
   CUSTOM_SESSION_OPTION,
+  KARO_STATIC_URL,
+  type KaroFilmMedia,
   type ScheduleOption,
   type SessionOption,
 } from "@/lib/karo/types";
@@ -15,11 +13,30 @@ function withCustom(options: ScheduleOption[], custom = CUSTOM_OPTION) {
   return [...options, custom];
 }
 
+function mediaPath(media?: KaroFilmMedia) {
+  const path =
+    media?.grid_image?.mobile ||
+    media?.grid_image?.desktop ||
+    media?.poster_image?.mobile ||
+    media?.poster_image?.desktop;
+  if (!path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${KARO_STATIC_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+function priceRubles(kopecks?: number) {
+  if (typeof kopecks !== "number" || !Number.isFinite(kopecks) || kopecks <= 0) {
+    return undefined;
+  }
+  return Math.round(kopecks / 100);
+}
+
 export async function listHalls(cinemaId: number): Promise<ScheduleOption[]> {
-  const [schedule, hallAttributes] = await Promise.all([
+  const [schedule, directory] = await Promise.all([
     fetchCinemaSchedule(cinemaId),
-    fetchHallAttributes(),
+    fetchDirectory(),
   ]);
+  const hallAttributes = directory.attributes.filter((item) => item.type === "format");
 
   const presentIds = new Set<number>();
   for (const film of schedule.items ?? []) {
@@ -80,10 +97,13 @@ export async function listSessions(
   cinemaId: number,
   filters: { hallId?: string; filmId?: string },
 ): Promise<SessionOption[]> {
-  const [schedule, hallAttributes] = await Promise.all([
+  const [schedule, directory] = await Promise.all([
     fetchCinemaSchedule(cinemaId),
-    fetchHallAttributes(),
+    fetchDirectory(),
   ]);
+  const attributes = directory.attributes ?? [];
+  const hallAttributes = attributes.filter((item) => item.type === "format");
+  const attributeName = new Map(attributes.map((item) => [item.id, item]));
 
   const hallNumericId = filters.hallId ? Number(filters.hallId) : NaN;
   const filmId = filters.filmId;
@@ -104,12 +124,24 @@ export async function listSessions(
             (session.attributes ?? []).includes(item.id),
           )?.name ?? format.format_name;
         const dateLabel = session.date.split("-").reverse().join(".");
+        const tags = (session.attributes ?? [])
+          .map((id) => attributeName.get(id))
+          .filter((item) => item && item.type !== "format")
+          .map((item) => item!.name)
+          .slice(0, 3);
         sessions.push({
           id: String(session.id),
           name: `${dateLabel} ${session.time} — ${film.name}`,
           showtime: session.showtime,
           filmName: film.name,
           hallName,
+          formatName: format.format_name,
+          price: priceRubles(session.standard_price),
+          ageRestriction:
+            typeof film.age_restriction === "number" ? film.age_restriction : null,
+          duration: typeof film.duration === "number" ? film.duration : null,
+          posterUrl: mediaPath(film.media),
+          tags,
         });
       }
     }

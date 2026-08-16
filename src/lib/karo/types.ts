@@ -58,9 +58,25 @@ export type KaroNestedSession = {
   attribute_types: string[];
 };
 
+export type KaroMediaSet = {
+  mobile?: string;
+  tablet?: string;
+  desktop?: string;
+};
+
+export type KaroFilmMedia = {
+  poster_image?: KaroMediaSet;
+  grid_image?: KaroMediaSet;
+  header_image?: KaroMediaSet;
+};
+
 export type KaroNestedFilm = {
   id: number;
   name: string;
+  age_restriction?: number;
+  duration?: number;
+  genres?: Record<string, string>;
+  media?: KaroFilmMedia;
   formats: Array<{
     id: number;
     format_name: string;
@@ -77,7 +93,15 @@ export type SessionOption = ScheduleOption & {
   showtime: string;
   filmName: string;
   hallName: string;
+  formatName?: string;
+  price?: number;
+  ageRestriction?: number | null;
+  duration?: number | null;
+  posterUrl?: string | null;
+  tags?: string[];
 };
+
+export const KARO_STATIC_URL = "https://static.karofilm.ru";
 
 export const CUSTOM_OPTION_ID = "__custom__";
 export const CUSTOM_OPTION: ScheduleOption = {
