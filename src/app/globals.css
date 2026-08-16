@@ -98,44 +98,49 @@ select {
 }
 
 .ticket-captcha {
-  --ticket-paper: #f3ead8;
+  --ticket-paper: #f4ead6;
   --ticket-ink: #1c1710;
   --ticket-hole: var(--card);
-  position: relative;
-  display: flex;
-  min-height: 8.5rem;
-  overflow: visible;
-  padding-right: 6.6rem;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  overflow-y: hidden;
   user-select: none;
-  touch-action: none;
+}
+
+.ticket-captcha-frame {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 2.25rem 4.6rem;
+  width: 100%;
+  max-width: 100%;
+  min-height: 8.25rem;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--ticket-paper);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .ticket-captcha-body,
 .ticket-captcha-stub {
   background:
-    radial-gradient(circle at 10px 12px, color-mix(in srgb, #c9b48a 35%, transparent) 1px, transparent 1.6px),
-    linear-gradient(180deg, #f7f1e4 0%, var(--ticket-paper) 48%, #e9dcc4 100%);
+    radial-gradient(circle at 10px 12px, color-mix(in srgb, #c9b48a 28%, transparent) 1px, transparent 1.6px),
+    linear-gradient(180deg, #f8f2e6 0%, var(--ticket-paper) 48%, #e8dcc4 100%);
   background-size: 18px 18px, 100% 100%;
   color: var(--ticket-ink);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .ticket-captcha-body {
   position: relative;
-  display: flex;
   min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  justify-content: center;
-  border-radius: 10px 0 0 10px;
-  padding: 1.1rem 1.15rem 1.1rem 1.25rem;
+  padding: 1rem 0.9rem 1rem 1.1rem;
 }
 
 .ticket-captcha-body::before,
 .ticket-captcha-stub::before {
   position: absolute;
   inset: 8px;
-  border: 1px dashed color-mix(in srgb, #9a2a2a 45%, transparent);
+  border: 1px dashed color-mix(in srgb, #9a2a2a 40%, transparent);
   content: "";
   pointer-events: none;
 }
@@ -145,14 +150,55 @@ select {
   border-radius: 6px 0 0 6px;
 }
 
-.ticket-captcha-perf {
+.ticket-captcha-kicker {
+  font-family: var(--font-display), sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #9a2a2a;
+}
+
+.ticket-captcha-title {
+  margin-top: 0.2rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #1c1710;
+}
+
+.ticket-captcha-sub {
+  margin-top: 0.15rem;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b5c45;
+}
+
+.ticket-captcha-meta {
+  display: flex;
+  gap: 0.85rem;
+  margin-top: 0.7rem;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7a6a52;
+}
+
+.ticket-captcha-cut {
   position: relative;
   z-index: 2;
-  width: 18px;
-  flex-shrink: 0;
+  isolation: isolate;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.ticket-captcha-perf {
+  position: absolute;
+  inset: 0;
   background:
-    radial-gradient(circle at center, var(--ticket-hole) 3.4px, transparent 3.6px) 0 6px / 18px 11px repeat-y,
-    linear-gradient(180deg, #f7f1e4 0%, var(--ticket-paper) 48%, #e9dcc4 100%);
+    radial-gradient(circle at center, var(--ticket-hole) 3.2px, transparent 3.4px) 50% 7px / 100% 11px repeat-y,
+    linear-gradient(180deg, #f8f2e6 0%, var(--ticket-paper) 48%, #e8dcc4 100%);
 }
 
 .ticket-captcha-perf::before,
@@ -175,32 +221,52 @@ select {
   bottom: -8px;
 }
 
-.ticket-captcha-stub {
+.ticket-captcha-cut-line {
   position: absolute;
   top: 0;
-  right: 0;
+  left: 50%;
+  z-index: 1;
+  width: 2px;
+  background: #9a2a2a;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.ticket-captcha-scissors {
+  position: absolute;
+  left: 50%;
   z-index: 3;
   display: flex;
-  width: 6.6rem;
-  height: 100%;
+  width: 2.25rem;
+  height: 2.7rem;
   cursor: grab;
   touch-action: none;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 0 10px 10px 0;
-  padding: 0.9rem 0.55rem;
-  text-align: center;
-  transform-origin: 12% 80%;
+  background: transparent;
+  color: #9a2a2a;
+  transform: translate(-50%, -18%);
 }
 
-.ticket-captcha-stub:active {
+.ticket-captcha-scissors:active {
   cursor: grabbing;
 }
 
-.ticket-captcha-stub:disabled {
+.ticket-captcha-scissors:disabled {
   cursor: default;
+}
+
+.ticket-captcha-stub {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem 0.3rem;
+  text-align: center;
 }
 
 .ticket-captcha-stub::before {
@@ -209,8 +275,25 @@ select {
 }
 
 .ticket-captcha-stub-label {
-  font-size: 10px;
-  letter-spacing: 0.18em;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #7a6a52;
+}
+
+.ticket-captcha-stub-brand {
+  margin-top: 0.2rem;
+  font-family: var(--font-display), sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #9a2a2a;
+}
+
+.ticket-captcha-stub-state {
+  margin-top: 0.35rem;
+  font-size: 9px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #7a6a52;
 }
@@ -237,50 +320,52 @@ select {
 
 .ticket-captcha-torn .ticket-captcha-stub {
   clip-path: polygon(
-    4% 0,
+    6% 0,
     100% 0,
     100% 100%,
-    4% 100%,
+    6% 100%,
     0 92%,
-    5% 84%,
+    7% 84%,
     0 76%,
-    4% 68%,
+    6% 68%,
     0 60%,
-    5% 52%,
+    7% 52%,
     0 44%,
-    4% 36%,
+    6% 36%,
     0 28%,
-    5% 20%,
+    7% 20%,
     0 12%,
-    4% 4%
+    6% 4%
   );
+  transform: translateY(6px) rotate(3deg);
+  transform-origin: 80% 100%;
+  opacity: 0.88;
 }
 
-.ticket-captcha-invalid .ticket-captcha-body,
-.ticket-captcha-invalid .ticket-captcha-stub {
+.ticket-captcha-torn .ticket-captcha-scissors {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.ticket-captcha-invalid .ticket-captcha-frame {
   outline: 1px solid color-mix(in srgb, var(--primary) 70%, transparent);
 }
 
 @media (max-width: 640px) {
-  .ticket-captcha {
-    min-height: 6.75rem;
-    padding-right: 4.4rem;
+  .ticket-captcha-frame {
+    grid-template-columns: minmax(0, 1fr) 2.4rem 3.7rem;
+    min-height: 7.25rem;
   }
 
   .ticket-captcha-body {
-    padding: 0.75rem 0.55rem 0.75rem 0.8rem;
+    padding: 0.8rem 0.55rem 0.8rem 0.8rem;
   }
 
-  .ticket-captcha-hint {
-    display: none;
+  .ticket-captcha-title {
+    font-size: 0.95rem;
   }
 
-  .ticket-captcha-stub {
-    width: 4.4rem;
-    padding: 0.55rem 0.25rem;
-  }
-
-  .ticket-captcha-stub-label {
-    letter-spacing: 0.08em;
+  .ticket-captcha-scissors {
+    width: 2.4rem;
   }
 }

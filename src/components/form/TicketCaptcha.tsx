@@ -12,7 +12,21 @@ export type CaptchaSolution = {
   proof: string;
 };
 
-const TEAR_PX = 92;
+const CUT_RATIO = 0.88;
+
+function ScissorsIcon() {
+  return (
+    <svg viewBox="0 0 32 48" width="28" height="42" aria-hidden="true">
+      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+        <circle cx="10" cy="10" r="6" />
+        <circle cx="22" cy="10" r="6" />
+        <path d="M14.2 14.8 8 44" />
+        <path d="M17.8 14.8 24 44" />
+        <path d="M16 16v6" />
+      </g>
+    </svg>
+  );
+}
 
 export function TicketCaptcha({
   error,
@@ -21,13 +35,13 @@ export function TicketCaptcha({
   error?: string;
   onSolved: (solution: CaptchaSolution | null) => void;
 }) {
-  const startX = useRef(0);
-  const offsetRef = useRef(0);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const cutRef = useRef(0);
   const pointerIdRef = useRef<number | null>(null);
   const [retry, setRetry] = useState(0);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [loadError, setLoadError] = useState("");
-  const [offset, setOffset] = useState(0);
+  const [cut, setCut] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<"idle" | "solving" | "ready">("idle");
   const completingRef = useRef(false);
@@ -56,8 +70,8 @@ export function TicketCaptcha({
   async function complete(token: string) {
     if (completingRef.current) return;
     completingRef.current = true;
-    offsetRef.current = TEAR_PX + 24;
-    setOffset(TEAR_PX + 24);
+    cutRef.current = 1;
+    setCut(1);
     setPhase("solving");
     try {
       const response = await fetch("/api/captcha", {
@@ -75,16 +89,26 @@ export function TicketCaptcha({
     } catch {
       completingRef.current = false;
       setPhase("idle");
-      offsetRef.current = 0;
-      setOffset(0);
+      cutRef.current = 0;
+      setCut(0);
       setLoadError("Не удалось подтвердить капчу.");
       onSolved(null);
     }
   }
 
-  function tearIfNeeded(nextOffset: number) {
+  function cutFromClientY(clientY: number) {
+    const track = trackRef.current;
+    if (!track) return 0;
+    const rect = track.getBoundingClientRect();
+    const next = (clientY - rect.top) / rect.height;
+    return Math.min(1, Math.max(0, next));
+  }
+
+  function applyCut(next: number) {
     if (!challenge || phase !== "idle" || completingRef.current) return;
-    if (nextOffset >= TEAR_PX) {
+    cutRef.current = next;
+    setCut(next);
+    if (next >= CUT_RATIO) {
       void complete(challenge.token);
     }
   }
@@ -94,36 +118,36 @@ export function TicketCaptcha({
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     pointerIdRef.current = event.pointerId;
-    startX.current = event.clientX - offset;
     setDragging(true);
+    applyCut(cutFromClientY(event.clientY));
   }
 
   function onPointerMove(event: React.PointerEvent<HTMLButtonElement>) {
     if (!dragging || phase !== "idle") return;
-    const next = Math.min(TEAR_PX + 40, Math.max(0, event.clientX - startX.current));
-    offsetRef.current = next;
-    setOffset(next);
-    tearIfNeeded(next);
+    applyCut(cutFromClientY(event.clientY));
   }
 
   function onPointerUp(event: React.PointerEvent<HTMLButtonElement>) {
-    if (pointerIdRef.current !== null && event.currentTarget.hasPointerCapture(pointerIdRef.current)) {
+    if (
+      pointerIdRef.current !== null &&
+      event.currentTarget.hasPointerCapture(pointerIdRef.current)
+    ) {
       event.currentTarget.releasePointerCapture(pointerIdRef.current);
     }
     pointerIdRef.current = null;
     setDragging(false);
     if (phase !== "idle") return;
-    if (offsetRef.current < TEAR_PX) {
-      offsetRef.current = 0;
-      setOffset(0);
+    if (cutRef.current < CUT_RATIO) {
+      cutRef.current = 0;
+      setCut(0);
     }
   }
 
   function reload() {
     completingRef.current = false;
-    offsetRef.current = 0;
+    cutRef.current = 0;
     setChallenge(null);
-    setOffset(0);
+    setCut(0);
     setDragging(false);
     setPhase("idle");
     setLoadError("");
@@ -131,15 +155,14 @@ export function TicketCaptcha({
     setRetry((value) => value + 1);
   }
 
-  const progress = Math.min(1, offset / TEAR_PX);
   const torn = phase !== "idle";
   const shownError = error || loadError;
   const hint =
     phase === "solving"
-      ? "Гасим билет…"
+      ? "Отрезаем корешок…"
       : phase === "ready"
-        ? "Корешок оторван — можно отправлять"
-        : "Потяните корешок вправо, как в кинотеатре";
+        ? "Корешок отрезан — можно отправлять"
+        : "Проведите ножницы вниз по линии отрыва";
 
   return (
     <div className="space-y-3">
@@ -155,66 +178,65 @@ export function TicketCaptcha({
           shownError ? "ticket-captcha-invalid" : ""
         }`}
       >
-        <div className="ticket-captcha-body">
-          <p className="font-[family-name:var(--font-display)] text-[10px] tracking-[0.28em] text-[#9a2a2a] uppercase">
-            Кинотеатр КАРО
-          </p>
-          <p className="mt-1 font-[family-name:var(--font-display)] text-lg leading-tight font-semibold text-[#1c1710]">
-            Пригласительный
-          </p>
-          <p className="mt-1 text-[11px] tracking-[0.12em] text-[#6b5c45] uppercase">
-            Роскошный максимум
-          </p>
-          <p className="ticket-captcha-hint mt-3 text-xs text-[#7a6a52]">{hint}</p>
+        <div className="ticket-captcha-frame">
+          <div className="ticket-captcha-body">
+            <p className="ticket-captcha-kicker">Кинотеатр КАРО</p>
+            <p className="ticket-captcha-title">Пригласительный</p>
+            <p className="ticket-captcha-sub">Роскошный максимум</p>
+            <div className="ticket-captcha-meta">
+              <span>Ряд 7</span>
+              <span>Место 12</span>
+            </div>
+          </div>
+          <div ref={trackRef} className="ticket-captcha-cut">
+            <div className="ticket-captcha-perf" aria-hidden="true" />
+            <div
+              className="ticket-captcha-cut-line"
+              style={{ height: `${Math.max(8, cut * 100)}%` }}
+            />
+            <button
+              type="button"
+              disabled={phase !== "idle" || !challenge}
+              aria-label="Провести ножницы по линии отрыва"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(cut * 100)}
+              aria-orientation="vertical"
+              role="slider"
+              className="ticket-captcha-scissors"
+              style={{
+                top: `${cut * 100}%`,
+                transition: dragging ? "none" : "top 220ms ease",
+              }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
+              onKeyDown={(event) => {
+                if (phase !== "idle" || !challenge) return;
+                if (event.key === "ArrowDown" || event.key === "End") {
+                  event.preventDefault();
+                  applyCut(event.key === "End" ? 1 : Math.min(1, cut + 0.18));
+                }
+                if (event.key === "ArrowUp" || event.key === "Home") {
+                  event.preventDefault();
+                  applyCut(event.key === "Home" ? 0 : Math.max(0, cut - 0.18));
+                }
+              }}
+            >
+              <ScissorsIcon />
+            </button>
+          </div>
+          <div className="ticket-captcha-stub">
+            <span className="ticket-captcha-stub-label">Корешок</span>
+            <span className="ticket-captcha-stub-brand">КАРО</span>
+            <span className="ticket-captcha-stub-state">
+              {torn ? "отрезан" : "отрезать"}
+            </span>
+          </div>
         </div>
-        <div className="ticket-captcha-perf" aria-hidden="true" />
-        <button
-          type="button"
-          disabled={phase !== "idle" || !challenge}
-          aria-label="Оторвать корешок билета"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress * 100)}
-          role="slider"
-          className="ticket-captcha-stub"
-          style={{
-            transform: `translate(${offset}px, ${progress * 10}px) rotate(${progress * 11}deg)`,
-            transition: dragging ? "none" : "transform 280ms ease",
-          }}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          onKeyDown={(event) => {
-            if (phase !== "idle" || !challenge) return;
-            if (event.key === "ArrowRight" || event.key === "End") {
-              event.preventDefault();
-              const next = event.key === "End" ? TEAR_PX : Math.min(TEAR_PX, offset + 18);
-              offsetRef.current = next;
-              setOffset(next);
-              tearIfNeeded(next);
-            }
-            if (event.key === "ArrowLeft" || event.key === "Home") {
-              event.preventDefault();
-              const next = event.key === "Home" ? 0 : Math.max(0, offset - 18);
-              offsetRef.current = next;
-              setOffset(next);
-            }
-          }}
-        >
-          <span className="ticket-captcha-stub-label">Корешок</span>
-          <span className="mt-1 font-[family-name:var(--font-display)] text-sm tracking-[0.18em] text-[#9a2a2a] uppercase">
-            КАРО
-          </span>
-          <span className="mt-2 hidden text-[10px] tracking-[0.16em] text-[#7a6a52] uppercase sm:block">
-            {torn ? "оторван" : "оторвать →"}
-          </span>
-        </button>
       </div>
-      <p className="text-xs text-muted sm:hidden">{hint}</p>
-      <p className="hidden text-xs text-muted sm:block">
-        Защита от ботов: оторвите корешок у билета. Можно стрелкой вправо.
-      </p>
+      <p className="text-xs text-muted">{hint}</p>
       {shownError ? (
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm text-primary" role="alert">
