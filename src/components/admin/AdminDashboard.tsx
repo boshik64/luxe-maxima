@@ -6,6 +6,7 @@ import type { Application, ApplicationStatus, ProductId } from "@prisma/client";
 import { ApplicationModal } from "@/components/admin/ApplicationModal";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { PRODUCT_EMOJI } from "@/lib/admin/products";
 import { STATUS_ACCENT, STATUS_LABEL, STATUSES } from "@/lib/admin/status";
 import { PRODUCTS } from "@/lib/products";
 
@@ -127,7 +128,7 @@ export function AdminDashboard() {
             { value: "all", label: "Все продукты" },
             ...Object.values(PRODUCTS).map((item) => ({
               value: item.id,
-              label: item.title,
+              label: `${PRODUCT_EMOJI[item.id]} ${item.title}`,
             })),
           ]}
           onChange={setProduct}
@@ -202,6 +203,9 @@ export function AdminDashboard() {
                   className="shrink-0 cursor-pointer rounded-2xl border border-line bg-background p-4 text-left transition hover:border-gold"
                 >
                   <p className="text-xs text-gold">
+                    <span aria-hidden="true">
+                      {PRODUCT_EMOJI[item.productId as ProductId]}
+                    </span>{" "}
                     {PRODUCTS[item.productId as ProductId].title}
                   </p>
                   <p className="mt-1 font-medium">{item.contactName}</p>

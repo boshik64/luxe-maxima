@@ -4,7 +4,7 @@ import { requireSession } from "@/lib/admin/auth";
 import {
   clearBanner,
   getBanner,
-  HOME_BANNER_SLOT,
+  parseBannerSlot,
   upsertBanner,
 } from "@/lib/banner/service";
 import { CatalogError } from "@/lib/catalog/service";
@@ -58,10 +58,11 @@ function bannerErrorResponse(error: unknown) {
   );
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requireSession();
-    const item = await getBanner(HOME_BANNER_SLOT);
+    const slot = parseBannerSlot(request.nextUrl.searchParams.get("slot"));
+    const item = await getBanner(slot);
     return NextResponse.json({
       item: item
         ? {
@@ -84,7 +85,8 @@ export async function POST(request: NextRequest) {
     const hrefRaw = String(form.get("href") ?? "").trim();
     const alt = String(form.get("alt") ?? "").trim();
     const enabled = String(form.get("enabled") ?? "true") !== "false";
-    const current = await getBanner(HOME_BANNER_SLOT);
+    const slot = parseBannerSlot(String(form.get("slot") ?? ""));
+    const current = await getBanner(slot);
 
     let imageUrl = current?.imageUrl ?? "";
     if (file) {
@@ -96,6 +98,7 @@ export async function POST(request: NextRequest) {
 
     const href = parseHref(hrefRaw);
     const item = await upsertBanner({
+      slot,
       imageUrl,
       href,
       alt: alt || "Баннер КАРО",
@@ -116,10 +119,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
     await requireSession();
-    await clearBanner(HOME_BANNER_SLOT);
+    const slot = parseBannerSlot(request.nextUrl.searchParams.get("slot"));
+    await clearBanner(slot);
     revalidatePath("/", "layout");
     revalidatePath("/");
     revalidatePath("/api/banners");

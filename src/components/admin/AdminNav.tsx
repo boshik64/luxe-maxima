@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-const SHOW_BANNER_NAV = false; // true — снова показать пункт «Баннер»
+const SHOW_BANNER_NAV = false; // true — снова показать пункт «Баннеры»
 
 const links = [
   { href: "/admin", label: "Заявки" },
   { href: "/admin/catalogs", label: "Справочники" },
-  { href: "/admin/banner", label: "Баннер", hidden: !SHOW_BANNER_NAV },
+  { href: "/admin/banner", label: "Баннеры", hidden: !SHOW_BANNER_NAV },
   { href: "/admin/feedback", label: "Обратная связь" },
   { href: "/admin/users", label: "Пользователи", adminOnly: true },
 ];

@@ -3,7 +3,7 @@ import {
   ART_FILM_CATEGORY_ID,
   CUSTOM_OPTION,
   CUSTOM_SESSION_OPTION,
-  KARO_STATIC_URL,
+  karoAssetUrl,
   type KaroFilmMedia,
   type ScheduleOption,
   type SessionOption,
@@ -14,14 +14,12 @@ function withCustom(options: ScheduleOption[], custom = CUSTOM_OPTION) {
 }
 
 function mediaPath(media?: KaroFilmMedia) {
-  const path =
+  return karoAssetUrl(
     media?.grid_image?.mobile ||
-    media?.grid_image?.desktop ||
-    media?.poster_image?.mobile ||
-    media?.poster_image?.desktop;
-  if (!path) return null;
-  if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return `${KARO_STATIC_URL}${path.startsWith("/") ? path : `/${path}`}`;
+      media?.grid_image?.desktop ||
+      media?.poster_image?.mobile ||
+      media?.poster_image?.desktop,
+  );
 }
 
 function priceRubles(kopecks?: number) {
@@ -141,6 +139,7 @@ export async function listSessions(
             typeof film.age_restriction === "number" ? film.age_restriction : null,
           duration: typeof film.duration === "number" ? film.duration : null,
           posterUrl: mediaPath(film.media),
+          genres: Object.values(film.genres ?? {}),
           tags,
         });
       }

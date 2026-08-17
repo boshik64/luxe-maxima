@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo, useState } from "react";
+import { DateTimePicker } from "@/components/form/DatePicker";
 import { Field, inputClassName } from "@/components/form/Field";
 import { type CascadeValue } from "@/components/form/CascadeSelect";
 import { ContentFields } from "@/components/form/ContentFields";
@@ -77,6 +78,7 @@ export function ApplicationForm({
     hallFormat: emptyCascade,
     film: emptyCascade,
     session: emptyCascade,
+    sessionDate: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
@@ -103,6 +105,13 @@ export function ApplicationForm({
       ticketType,
       rentalStart,
       rentalEnd,
+      rentalDate:
+        productId === "group"
+          ? schedule.sessionDate
+          : productId === "keys"
+            ? rentalStart.slice(0, 10)
+            : "",
+      rentalTime: productId === "keys" ? rentalStart.slice(11, 16) : "",
       comment,
       watchCustom,
       city: schedule.city,
@@ -247,6 +256,8 @@ export function ApplicationForm({
                     setStatus("idle");
                     setFormError("");
                     setWatchCustom("");
+                    setRentalStart("");
+                    setRentalEnd("");
                     setSchedule({
                       city: emptyCascade,
                       cinema: emptyCascade,
@@ -254,6 +265,7 @@ export function ApplicationForm({
                       hallFormat: emptyCascade,
                       film: emptyCascade,
                       session: emptyCascade,
+                      sessionDate: "",
                     });
                     onProductChange(item.id);
                   }}
@@ -294,20 +306,35 @@ export function ApplicationForm({
       )}
 
       {productId === "keys" ? (
-        <ContentFields
-          film={schedule.film}
-          watchCustom={watchCustom}
-          errors={errors}
-          onFilmChange={(value) =>
-            setSchedule((current) => ({ ...current, film: value }))
-          }
-          onWatchCustomChange={(value) => {
-            setWatchCustom(value);
-            if (value.trim()) {
-              setSchedule((current) => ({ ...current, film: emptyCascade }));
+        <>
+          <ContentFields
+            film={schedule.film}
+            watchCustom={watchCustom}
+            errors={errors}
+            onFilmChange={(value) =>
+              setSchedule((current) => ({ ...current, film: value }))
             }
-          }}
-        />
+            onWatchCustomChange={(value) => {
+              setWatchCustom(value);
+              if (value.trim()) {
+                setSchedule((current) => ({ ...current, film: emptyCascade }));
+              }
+            }}
+          />
+          <Field
+            id="keysRentalStart"
+            label="Дата и время сеанса"
+            required
+            error={errors.rentalStart}
+          >
+            <DateTimePicker
+              id="keysRentalStart"
+              value={rentalStart}
+              invalid={Boolean(errors.rentalStart)}
+              onChange={setRentalStart}
+            />
+          </Field>
+        </>
       ) : null}
 
       {productId === "event" ? (
@@ -318,12 +345,11 @@ export function ApplicationForm({
             required
             error={errors.rentalStart}
           >
-            <input
+            <DateTimePicker
               id="rentalStart"
-              className={inputClassName}
-              type="datetime-local"
               value={rentalStart}
-              onChange={(event) => setRentalStart(event.target.value)}
+              invalid={Boolean(errors.rentalStart)}
+              onChange={setRentalStart}
             />
           </Field>
           <Field
@@ -332,12 +358,11 @@ export function ApplicationForm({
             required
             error={errors.rentalEnd}
           >
-            <input
+            <DateTimePicker
               id="rentalEnd"
-              className={inputClassName}
-              type="datetime-local"
               value={rentalEnd}
-              onChange={(event) => setRentalEnd(event.target.value)}
+              invalid={Boolean(errors.rentalEnd)}
+              onChange={setRentalEnd}
             />
           </Field>
         </div>

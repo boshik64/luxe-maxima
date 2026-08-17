@@ -53,6 +53,21 @@ function isFilledCatalog(
   return Boolean(field.id);
 }
 
+function isIsoDate(value?: string) {
+  if (!value) return false;
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 &&
+    date.getDate() === day
+  );
+}
+
 export const applicationInputSchema = z
   .object({
     productId: z.enum(PRODUCT_IDS),
@@ -114,6 +129,20 @@ export const applicationInputSchema = z
           path: ["cinema", "id"],
         });
       }
+      if (!isFilledCatalog(value.film)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Выберите фильм",
+          path: ["film", "id"],
+        });
+      }
+      if (!isIsoDate(value.rentalDate)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Выберите дату сеанса",
+          path: ["rentalDate"],
+        });
+      }
       const sessionOk =
         value.session?.id === CUSTOM_OPTION_ID
           ? Boolean(value.session.custom?.trim())
@@ -161,6 +190,19 @@ export const applicationInputSchema = z
             ? "Заполните только одно поле: фильм из репертуара или свой контент"
             : "Выберите фильм из репертуара или укажите, что будете смотреть",
           path: hasFilm ? ["watchCustom"] : ["film", "id"],
+        });
+      }
+      if (!value.rentalStart) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Укажите дату и время сеанса",
+          path: ["rentalStart"],
+        });
+      } else if (!Number.isFinite(Date.parse(value.rentalStart))) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Некорректная дата и время сеанса",
+          path: ["rentalStart"],
         });
       }
     }
