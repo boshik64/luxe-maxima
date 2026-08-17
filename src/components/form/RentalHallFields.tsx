@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   CascadeSelect,
   type CascadeValue,
 } from "@/components/form/CascadeSelect";
+import { FormStep } from "@/components/form/Field";
 import { HallCards, type HallCardItem } from "@/components/form/HallCards";
-import { CUSTOM_OPTION, type ScheduleOption } from "@/lib/karo/types";
+import { CUSTOM_OPTION, CUSTOM_OPTION_ID, type ScheduleOption } from "@/lib/karo/types";
 
 const empty: CascadeValue = { id: "", name: "", custom: "" };
 
@@ -25,11 +26,20 @@ function isCatalogId(id: string) {
   return Boolean(id) && id !== CUSTOM_OPTION.id;
 }
 
+function cascadeReady(value: CascadeValue) {
+  if (value.id === CUSTOM_OPTION_ID) return Boolean(value.custom.trim());
+  return Boolean(value.id);
+}
+
 export function RentalHallFields({
   errors,
+  guests,
+  guestsFilled,
   onChange,
 }: {
   errors: Record<string, string>;
+  guests: ReactNode;
+  guestsFilled: boolean;
   onChange: (value: {
     city: CascadeValue;
     cinema: CascadeValue;
@@ -54,6 +64,9 @@ export function RentalHallFields({
   const [catalogError, setCatalogError] = useState("");
 
   const selectedFormat = formats.find((item) => item.id === hallFormat.id);
+  const cityReady = cascadeReady(city);
+  const cinemaReady = cascadeReady(cinema);
+  const formatReady = cascadeReady(hallFormat);
 
   useEffect(() => {
     let cancelled = false;
@@ -159,7 +172,7 @@ export function RentalHallFields({
           {catalogError}
         </p>
       ) : null}
-      <div className="grid gap-5 sm:grid-cols-2">
+      <FormStep show>
         <CascadeSelect
           id="city"
           label="Город"
@@ -191,6 +204,8 @@ export function RentalHallFields({
             });
           }}
         />
+      </FormStep>
+      <FormStep show={cityReady}>
         <CascadeSelect
           id="cinema"
           label="Кинотеатр"
@@ -220,7 +235,9 @@ export function RentalHallFields({
             });
           }}
         />
-        <div className="sm:col-span-2">
+      </FormStep>
+      <FormStep show={cinemaReady}>
+        <div className="space-y-5">
           <CascadeSelect
             id="hallFormat"
             label="Формат зала"
@@ -242,9 +259,9 @@ export function RentalHallFields({
               emit({ city, cinema, hallFormat: value, hall: empty });
             }}
           />
-          <div className="mt-3 min-h-[7.5rem] rounded-2xl border border-line bg-background/60 px-4 py-3">
-            {selectedFormat ? (
-              selectedFormat.benefits.length ? (
+          {formatReady ? (
+            <div className="rounded-2xl border border-line bg-background/60 px-4 py-3">
+              {selectedFormat?.benefits.length ? (
                 <ul className="space-y-1 text-sm text-muted">
                   {selectedFormat.benefits.map((item) => (
                     <li key={item} className="flex gap-2">
@@ -257,16 +274,13 @@ export function RentalHallFields({
                 <p className="text-sm text-muted">
                   Для этого формата пока нет описания преимуществ.
                 </p>
-              )
-            ) : (
-              <p className="text-sm text-muted">
-                После выбора формата здесь появятся его преимущества.
-              </p>
-            )}
-          </div>
+              )}
+            </div>
+          ) : null}
         </div>
-      </div>
-      {hallFormat.id ? (
+      </FormStep>
+      <FormStep show={formatReady}>{guests}</FormStep>
+      <FormStep show={formatReady && guestsFilled}>
         <HallCards
           halls={halls}
           selectedId={hall.id}
@@ -280,7 +294,7 @@ export function RentalHallFields({
             emit({ city, cinema, hallFormat, hall: next });
           }}
         />
-      ) : null}
+      </FormStep>
     </div>
   );
 }

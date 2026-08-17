@@ -453,21 +453,80 @@ select {
   letter-spacing: 0.005em;
 }
 
-/* Две колонки герой-блока появляются только вместе с коллажем. */
+/* Баннер во всю ширину страницы, без контейнера. */
+.theme-autumn .hero-stage {
+  overflow: hidden;
+  width: 100%;
+}
+
+.theme-autumn .autumn-hero-banner {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.theme-autumn .autumn-hero-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgb(11 7 8 / 0.88) 0%,
+    rgb(11 7 8 / 0.62) 28%,
+    rgb(11 7 8 / 0.18) 52%,
+    transparent 70%
+  );
+}
+
+.theme-autumn .hero-copy {
+  max-width: 38rem;
+}
+
+.theme-autumn .hero-note {
+  color: var(--karo-caramel);
+}
+
+.theme-autumn .autumn-hero-banner .autumn-stamp {
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 2;
+}
+
 @media (min-width: 1024px) {
-  .theme-autumn .hero-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-    align-items: center;
-    gap: 3.5rem;
+  .theme-autumn .hero-stage {
+    min-height: min(72vh, 46rem);
+  }
+
+  .theme-autumn .hero-copy {
+    display: flex;
+    min-height: min(72vh, 46rem);
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1023px) {
+  .theme-autumn .hero-stage {
+    min-height: 34rem;
+  }
+
+  .theme-autumn .autumn-hero-banner::after {
+    background: linear-gradient(
+      180deg,
+      rgb(11 7 8 / 0.82) 0%,
+      rgb(11 7 8 / 0.55) 48%,
+      rgb(11 7 8 / 0.2) 72%,
+      transparent 100%
+    );
+  }
+
+  .theme-autumn .autumn-hero-banner img {
+    object-position: 88% center;
   }
 }
 
 /* Коллаж: «вырезанный» кадр с неровным белым контуром. */
-.theme-autumn .autumn-collage-wrap {
-  position: relative;
-  display: block;
-}
 
 .theme-autumn .autumn-collage {
   position: relative;
@@ -535,38 +594,51 @@ select {
   transform: rotate(-1.2deg);
 }
 
-/* Штамп: максимум один на экран. */
+/* Штамп: максимум один на экран. Цена — главный акцент. */
 .theme-autumn .autumn-stamp {
   position: absolute;
   top: -1.75rem;
   right: -1.5rem;
   display: flex;
-  width: 7.25rem;
-  height: 7.25rem;
+  width: 9.5rem;
+  height: 9.5rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.05rem;
+  padding: 0.35rem 0.45rem 0.45rem;
   border: 2px solid color-mix(in srgb, var(--karo-wine-bright) 75%, transparent);
   border-radius: 999px;
   background: color-mix(in srgb, var(--karo-paper) 95%, transparent);
   box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--karo-wine-bright) 22%, transparent);
   color: var(--karo-wine-bright);
   font-family: var(--font-display), sans-serif;
-  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  line-height: 1.15;
+  line-height: 1;
   text-align: center;
   text-transform: uppercase;
-  transform: rotate(-13deg);
+  transform: rotate(-11deg);
 }
 
-.theme-autumn .autumn-stamp-sub {
-  margin-top: 0.3rem;
-  padding-top: 0.28rem;
-  border-top: 1px solid color-mix(in srgb, var(--karo-wine-bright) 45%, transparent);
-  font-size: 7.5px;
-  letter-spacing: 0.14em;
+.theme-autumn .autumn-stamp-kicker {
+  max-width: 7.4rem;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.theme-autumn .autumn-stamp-from {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+}
+
+.theme-autumn .autumn-stamp-price {
+  color: var(--karo-red);
+  font-size: 2.15rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 /* Сезонный блок: один визуальный герой — билет кампании. */
@@ -580,34 +652,123 @@ select {
   );
 }
 
-.theme-autumn .autumn-season-grid {
+.theme-autumn .season-carousel-viewport {
+  overflow: hidden;
+}
+
+.theme-autumn .season-carousel-track {
   display: flex;
-  flex-direction: column-reverse;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-autumn .season-carousel-item {
+  flex: 0 0 100%;
+  min-width: 100%;
+}
+
+.theme-autumn .season-carousel-slide {
+  display: flex;
+  flex-direction: column;
   gap: 2.75rem;
 }
 
-.theme-autumn .autumn-season-art {
+.theme-autumn .season-carousel-slide.is-image-right {
+  flex-direction: column-reverse;
+}
+
+.theme-autumn .season-carousel-art {
   margin: 0 auto;
   width: 100%;
-  max-width: 18rem;
+  max-width: 22rem;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--karo-graphite);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.4);
+}
+
+.theme-autumn .season-carousel-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.theme-autumn .season-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: flex;
+  width: 2.75rem;
+  height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--karo-ivory) 28%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--karo-ink) 72%, transparent);
+  color: var(--karo-ivory);
+  font-size: 1.75rem;
+  line-height: 1;
+  transform: translateY(-50%);
+}
+
+.theme-autumn .season-carousel-arrow:hover {
+  border-color: var(--karo-caramel);
+  color: var(--karo-caramel);
+}
+
+.theme-autumn .season-carousel-arrow.is-prev {
+  left: 0.25rem;
+}
+
+.theme-autumn .season-carousel-arrow.is-next {
+  right: 0.25rem;
 }
 
 @media (min-width: 1024px) {
-  .theme-autumn .autumn-season-grid {
+  .theme-autumn .season-carousel-slide,
+  .theme-autumn .season-carousel-slide.is-image-right {
     display: grid;
-    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
     align-items: center;
     gap: 4.5rem;
   }
 
-  .theme-autumn .autumn-season-art {
-    max-width: 20rem;
-    justify-self: center;
-    grid-area: 1 / 1;
+  .theme-autumn .season-carousel-slide.is-image-left .season-carousel-art {
+    grid-column: 1;
+    grid-row: 1;
+    max-width: none;
   }
 
-  .theme-autumn .autumn-season-copy {
-    grid-area: 1 / 2;
+  .theme-autumn .season-carousel-slide.is-image-left .season-carousel-copy {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .theme-autumn .season-carousel-slide.is-image-right .season-carousel-copy {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .theme-autumn .season-carousel-slide.is-image-right .season-carousel-art {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: none;
+  }
+
+  .theme-autumn .season-carousel-arrow.is-prev {
+    left: -0.5rem;
+  }
+
+  .theme-autumn .season-carousel-arrow.is-next {
+    right: -0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-autumn .season-carousel-track {
+    transition: none;
   }
 }
 
@@ -667,24 +828,140 @@ select {
 }
 
 @media (max-width: 1023px) {
-  .theme-autumn .autumn-collage-wrap {
-    margin-top: 3.25rem;
-  }
-
   .theme-autumn .autumn-collage {
     transform: rotate(-1.4deg);
   }
 
-  .theme-autumn .autumn-stamp {
-    top: -1.25rem;
-    right: -0.5rem;
-    width: 5.75rem;
-    height: 5.75rem;
-    font-size: 10px;
+  .theme-autumn .autumn-hero-banner .autumn-stamp {
+    top: auto;
+    bottom: 1.25rem;
+    right: 0.75rem;
+    width: 7.75rem;
+    height: 7.75rem;
   }
 
-  .theme-autumn .autumn-stamp-sub {
-    font-size: 6.5px;
+  .theme-autumn .autumn-stamp-kicker {
+    max-width: 6.2rem;
+    font-size: 11px;
+  }
+
+  .theme-autumn .autumn-stamp-from {
+    font-size: 11px;
+  }
+
+  .theme-autumn .autumn-stamp-price {
+    font-size: 1.7rem;
+  }
+}
+
+.form-product-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .form-product-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+}
+
+.form-product-btn {
+  display: flex;
+  min-height: 11rem;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.form-product-btn:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.form-product-btn.is-active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.form-product-glyph {
+  display: flex;
+  width: 4.75rem;
+  height: 3.4rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #fbf6ec 0%, #efe4d2 100%);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
+}
+
+.form-product-glyph svg {
+  width: 3.4rem;
+  height: 2.4rem;
+}
+
+.form-product-kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.form-product-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.form-step {
+  animation: form-step-in 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.form-step-contacts {
+  animation-duration: 0.62s;
+}
+
+.form-step-contacts > * {
+  animation: form-step-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.form-step-contacts > *:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.form-step-contacts > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.form-step-contacts > *:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.form-step-contacts > *:nth-child(4) {
+  animation-delay: 0.22s;
+}
+.form-step-contacts > *:nth-child(5) {
+  animation-delay: 0.28s;
+}
+.form-step-contacts > *:nth-child(6) {
+  animation-delay: 0.34s;
+}
+
+@keyframes form-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
@@ -692,6 +969,13 @@ select {
   .theme-autumn .autumn-collage,
   .theme-autumn .autumn-stamp,
   .theme-autumn .autumn-card-accent {
+    transform: none;
+  }
+
+  .form-product-btn,
+  .form-step,
+  .form-step-contacts > * {
+    animation: none;
     transform: none;
   }
 }

@@ -6,28 +6,21 @@ import Image from "next/image";
  * Фотографии лежат в public/autumn, заменяются файлом того же имени.
  */
 
-export function AutumnHeroCollage({ note }: { note: string }) {
+export function AutumnHeroBanner() {
   return (
-    <div className="autumn-only autumn-collage-wrap">
-      <figure className="autumn-collage">
-        <div className="autumn-collage-frame">
-          <Image
-            src="/autumn/hero.jpg"
-            alt="Кресло КАРО с ведёрком попкорна на осенней веранде"
-            fill
-            priority
-            sizes="(max-width: 1023px) 92vw, 620px"
-            className="object-cover"
-          />
-        </div>
-        <figcaption className="autumn-collage-caption">
-          <span className="autumn-note">{note}</span>
-        </figcaption>
-      </figure>
-      <span className="autumn-stamp" aria-hidden="true">
-        <span>твой</span>
-        <span>сезон кино</span>
-        <span className="autumn-stamp-sub">август — октябрь</span>
+    <div className="autumn-only autumn-hero-banner">
+      <Image
+        src="/autumn/hero-banner.png"
+        alt="Кресло КАРО с пледом и попкорном в полутёмном зале"
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-[82%_center]"
+      />
+      <span className="autumn-stamp">
+        <span className="autumn-stamp-kicker">Аренда зала</span>
+        <span className="autumn-stamp-from">от</span>
+        <span className="autumn-stamp-price">8 000 ₽</span>
       </span>
     </div>
   );
@@ -73,34 +66,27 @@ const CARD_ACCENTS = {
       <circle cx="53" cy="20" r="4.5" fill="#f6efe2" stroke="#8c1c2a" strokeWidth="2" />
     </svg>
   ),
-  seat: (
+  key: (
     <svg viewBox="0 0 56 40" role="presentation" focusable="false">
-      <g fill="none" stroke="#8c1c2a" strokeWidth="2.5" strokeLinejoin="round">
-        <path d="M16 8h24a6 6 0 0 1 6 6v12H10V14a6 6 0 0 1 6-6z" />
-        <path d="M8 20h6v14H8zM42 20h6v14h-6z" />
-        <path d="M14 26h28v8H14z" />
+      <g fill="none" stroke="#8c1c2a" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round">
+        <circle cx="16" cy="20" r="8.5" />
+        <circle cx="16" cy="20" r="3.2" />
+        <path d="M24.5 20h24" />
+        <path d="M41 20v7M47.5 20v10" />
       </g>
     </svg>
   ),
-  reel: (
+  flute: (
     <svg viewBox="0 0 56 40" role="presentation" focusable="false">
-      <rect
-        x="5"
-        y="7"
-        width="46"
-        height="26"
-        rx="3"
-        fill="none"
-        stroke="#8c1c2a"
-        strokeWidth="2.5"
-      />
-      <g fill="#8c1c2a">
-        <rect x="9" y="11" width="5" height="5" rx="1" />
-        <rect x="9" y="24" width="5" height="5" rx="1" />
-        <rect x="42" y="11" width="5" height="5" rx="1" />
-        <rect x="42" y="24" width="5" height="5" rx="1" />
+      <g fill="none" stroke="#8c1c2a" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round">
+        <path d="M22 6h12l-2.2 16H24.2Z" />
+        <path d="M28 22v10" />
+        <path d="M22 34h12" />
+        <path d="M24.5 14h7" />
+        <circle cx="36" cy="9" r="1.6" fill="#8c1c2a" stroke="none" />
+        <circle cx="40" cy="13" r="1.2" fill="#8c1c2a" stroke="none" />
+        <circle cx="38.5" cy="6.5" r="1" fill="#8c1c2a" stroke="none" />
       </g>
-      <circle cx="28" cy="20" r="7" fill="none" stroke="#8c1c2a" strokeWidth="2.5" />
     </svg>
   ),
 } as const;
@@ -110,6 +96,14 @@ export type AutumnAccentKind = keyof typeof CARD_ACCENTS;
 export function AutumnCardAccent({ kind }: { kind: AutumnAccentKind }) {
   return (
     <span className="autumn-only autumn-card-accent" aria-hidden="true">
+      {CARD_ACCENTS[kind]}
+    </span>
+  );
+}
+
+export function ProductGlyph({ kind }: { kind: "key" | "flute" }) {
+  return (
+    <span className="form-product-glyph" aria-hidden="true">
       {CARD_ACCENTS[kind]}
     </span>
   );

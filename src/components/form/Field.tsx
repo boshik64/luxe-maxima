@@ -31,5 +31,24 @@ export function Field({ id, label, error, required, children }: FieldProps) {
   );
 }
 
+export function FormStep({
+  show,
+  children,
+  variant = "row",
+}: {
+  show: boolean;
+  children: ReactNode;
+  variant?: "row" | "contacts";
+}) {
+  if (!show) return null;
+  return (
+    <div
+      className={variant === "contacts" ? "form-step form-step-contacts" : "form-step"}
+    >
+      {children}
+    </div>
+  );
+}
+
 export const inputClassName =
   "w-full rounded-2xl border border-line bg-background px-4 py-3 text-foreground outline-none transition placeholder:text-muted focus:border-gold disabled:opacity-60";

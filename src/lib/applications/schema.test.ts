@@ -73,7 +73,7 @@ test("rejects keys application with custom cinema", () => {
   assert.equal(parsed.success, false);
 });
 
-test("accepts group application with ticket type", () => {
+test("rejects archived group product", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "group",
@@ -82,39 +82,26 @@ test("accepts group application with ticket type", () => {
     rentalDate: "2026-09-01",
     session: { id: "__custom__", name: "", custom: "Суббота вечером" },
   });
-  assert.equal(parsed.success, true);
-});
-
-test("rejects group application without film or date", () => {
-  const parsed = applicationInputSchema.safeParse({
-    ...base,
-    productId: "group",
-    ticketType: "student",
-    session: { id: "__custom__", name: "", custom: "Суббота вечером" },
-  });
   assert.equal(parsed.success, false);
 });
 
-test("event requires hall cascade and end not before start", () => {
+test("event requires hall cascade and rental datetime", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "event",
     hallFormat: { id: "fmt-1", name: "Премиум", custom: "" },
     hall: { id: "hall-1", name: "Зал Премиум", custom: "" },
     rentalStart: "2026-09-01T18:00",
-    rentalEnd: "2026-09-01T22:00",
   });
   assert.equal(parsed.success, true);
 });
 
-test("event rejects end before start", () => {
+test("event rejects missing rental datetime", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "event",
     hallFormat: { id: "fmt-1", name: "Премиум", custom: "" },
     hall: { id: "hall-1", name: "Зал Премиум", custom: "" },
-    rentalStart: "2026-09-01T22:00",
-    rentalEnd: "2026-09-01T18:00",
   });
   assert.equal(parsed.success, false);
 });
@@ -122,12 +109,12 @@ test("event rejects end before start", () => {
 test("rejects invalid phone", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
-    productId: "group",
+    productId: "keys",
+    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
+    hall: { id: "hall-1", name: "Зал 1", custom: "" },
+    watchCustom: "Фильм",
+    rentalStart: "2026-09-01T18:00",
     phone: "89001234567",
-    ticketType: "standard",
-    film: { id: "1", name: "Фильм", custom: "" },
-    rentalDate: "2026-09-01",
-    session: { id: "1", name: "сеанс", custom: "" },
   });
   assert.equal(parsed.success, false);
 });
@@ -135,11 +122,11 @@ test("rejects invalid phone", () => {
 test("honeypot website must be empty", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
-    productId: "group",
-    ticketType: "standard",
-    film: { id: "1", name: "Фильм", custom: "" },
-    rentalDate: "2026-09-01",
-    session: { id: "1", name: "сеанс", custom: "" },
+    productId: "keys",
+    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
+    hall: { id: "hall-1", name: "Зал 1", custom: "" },
+    watchCustom: "Фильм",
+    rentalStart: "2026-09-01T18:00",
     website: "https://spam.test",
   });
   assert.equal(parsed.success, false);

@@ -1,5 +1,5 @@
-import { LandingPage } from "@/components/landing/LandingPage";
+import { redirect } from "next/navigation";
 
 export default function GroupPage() {
-  return <LandingPage initialProduct="group" lockProduct source="/group" />;
+  redirect("/");
 }

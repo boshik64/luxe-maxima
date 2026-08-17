@@ -1,6 +1,16 @@
-export const PRODUCT_IDS = ["keys", "group", "event"] as const;
+export const PRODUCT_IDS = ["keys", "event"] as const;
 
 export type ProductId = (typeof PRODUCT_IDS)[number];
+
+/** Снято с лендинга, но строки в БД и админке ещё могут быть. */
+export const ARCHIVED_PRODUCT_IDS = ["group"] as const;
+export type ArchivedProductId = (typeof ARCHIVED_PRODUCT_IDS)[number];
+export type StoredProductId = ProductId | ArchivedProductId;
+
+export const STORED_PRODUCT_IDS = [
+  ...PRODUCT_IDS,
+  ...ARCHIVED_PRODUCT_IDS,
+] as const;
 
 export const TICKET_TYPES = [
   { value: "standard", label: "Стандартный" },
@@ -8,8 +18,8 @@ export const TICKET_TYPES = [
   { value: "child", label: "Детский до 12 лет" },
 ] as const;
 
-export type ProductConfig = {
-  id: ProductId;
+export type ProductConfig<I extends StoredProductId = StoredProductId> = {
+  id: I;
   slug: string;
   title: string;
   kicker: string;
@@ -26,7 +36,7 @@ export type ProductConfig = {
   };
 };
 
-export const PRODUCTS: Record<ProductId, ProductConfig> = {
+export const PRODUCTS: { [K in StoredProductId]: ProductConfig<K> } = {
   keys: {
     id: "keys",
     slug: "keys",
@@ -98,5 +108,9 @@ export const PRODUCTS: Record<ProductId, ProductConfig> = {
 export const PRODUCT_LIST = PRODUCT_IDS.map((id) => PRODUCTS[id]);
 
 export function isProductId(value: string): value is ProductId {
-  return PRODUCT_IDS.includes(value as ProductId);
+  return (PRODUCT_IDS as readonly string[]).includes(value);
+}
+
+export function isStoredProductId(value: string): value is StoredProductId {
+  return (STORED_PRODUCT_IDS as readonly string[]).includes(value);
 }

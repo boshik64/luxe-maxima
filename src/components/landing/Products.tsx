@@ -6,9 +6,8 @@ import {
 import { PRODUCT_LIST, type ProductId } from "@/lib/products";
 
 const ACCENT_BY_PRODUCT: Record<ProductId, AutumnAccentKind> = {
-  keys: "seat",
-  group: "ticket",
-  event: "reel",
+  keys: "key",
+  event: "flute",
 };
 
 export function Products({
@@ -22,13 +21,17 @@ export function Products({
         Услуги
       </p>
       <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold sm:text-4xl">
-        Три способа занять зал
+        Как занять зал
       </h2>
-      <div className="mt-12 grid gap-6 lg:grid-cols-3">
+      <p className="mt-3 max-w-2xl text-muted">
+        Частный сеанс под свою компанию или аренда зала под мероприятие — выберите
+        формат, остальное уточнит менеджер.
+      </p>
+      <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
         {PRODUCT_LIST.map((product) => (
           <article
             key={product.id}
-            className="autumn-card relative flex flex-col rounded-3xl border border-line bg-card p-6 transition"
+            className="autumn-card relative flex flex-col rounded-3xl border border-line bg-card p-7 sm:p-8 transition"
           >
             <AutumnCardAccent kind={ACCENT_BY_PRODUCT[product.id]} />
             <p className="text-xs tracking-[0.2em] text-gold uppercase">

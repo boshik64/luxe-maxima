@@ -1,29 +1,37 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DateTimePicker } from "@/components/form/DatePicker";
-import { Field, inputClassName } from "@/components/form/Field";
+import { Field, FormStep, inputClassName } from "@/components/form/Field";
 import { type CascadeValue } from "@/components/form/CascadeSelect";
 import { ContentFields } from "@/components/form/ContentFields";
 import { RentalHallFields } from "@/components/form/RentalHallFields";
-import { ScheduleFields } from "@/components/form/ScheduleFields";
 import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCaptcha";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
-import { CustomSelect } from "@/components/ui/CustomSelect";
+import { ProductGlyph } from "@/components/landing/AutumnDecor";
 import { parseResponseJson } from "@/lib/api-json";
 import { createClientId } from "@/lib/id";
 import {
   applicationInputSchema,
   flattenErrors,
 } from "@/lib/applications/schema";
+import { CUSTOM_OPTION_ID } from "@/lib/karo/types";
 import {
   PRODUCT_LIST,
   PRODUCTS,
-  TICKET_TYPES,
   type ProductId,
 } from "@/lib/products";
 
 const emptyCascade: CascadeValue = { id: "", name: "", custom: "" };
+const PRODUCT_GLYPH: Record<ProductId, "key" | "flute"> = {
+  keys: "key",
+  event: "flute",
+};
+
+function cascadeReady(value: CascadeValue) {
+  if (value.id === CUSTOM_OPTION_ID) return Boolean(value.custom.trim());
+  return Boolean(value.id);
+}
 
 function readUtm() {
   if (typeof window === "undefined") return {};
@@ -52,21 +60,17 @@ export function ApplicationForm({
   lockProduct = false,
   source = "/",
 }: {
-  productId: ProductId;
+  productId?: ProductId;
   onProductChange?: (id: ProductId) => void;
   lockProduct?: boolean;
   source?: string;
 }) {
-  const formId = useId();
-  const product = PRODUCTS[productId];
-  const isRental = productId === "keys" || productId === "event";
+  const product = productId ? PRODUCTS[productId] : null;
   const [contactName, setContactName] = useState("");
   const [phone, setPhone] = useState("+7");
   const [email, setEmail] = useState("");
   const [guests, setGuests] = useState("");
-  const [ticketType, setTicketType] = useState("");
   const [rentalStart, setRentalStart] = useState("");
-  const [rentalEnd, setRentalEnd] = useState("");
   const [comment, setComment] = useState("");
   const [watchCustom, setWatchCustom] = useState("");
   const [consent, setConsent] = useState(false);
@@ -94,24 +98,35 @@ export function ApplicationForm({
     setCaptchaKey((key) => key + 1);
   }
 
+  function resetDetails() {
+    setErrors({});
+    setStatus("idle");
+    setFormError("");
+    setWatchCustom("");
+    setRentalStart("");
+    setGuests("");
+    setSchedule({
+      city: emptyCascade,
+      cinema: emptyCascade,
+      hall: emptyCascade,
+      hallFormat: emptyCascade,
+      film: emptyCascade,
+      session: emptyCascade,
+      sessionDate: "",
+    });
+  }
+
   const payload = useMemo(
     () => ({
-      productId,
+      productId: productId ?? "keys",
       source,
       contactName,
       phone: digitsToPhone(phone),
       email,
       guests,
-      ticketType,
       rentalStart,
-      rentalEnd,
-      rentalDate:
-        productId === "group"
-          ? schedule.sessionDate
-          : productId === "keys"
-            ? rentalStart.slice(0, 10)
-            : "",
-      rentalTime: productId === "keys" ? rentalStart.slice(11, 16) : "",
+      rentalDate: productId === "keys" || productId === "event" ? rentalStart.slice(0, 10) : "",
+      rentalTime: productId === "keys" || productId === "event" ? rentalStart.slice(11, 16) : "",
       comment,
       watchCustom,
       city: schedule.city,
@@ -130,9 +145,7 @@ export function ApplicationForm({
       phone,
       email,
       guests,
-      ticketType,
       rentalStart,
-      rentalEnd,
       comment,
       watchCustom,
       schedule,
@@ -143,9 +156,11 @@ export function ApplicationForm({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
+    if (!productId) return;
     setFormError("");
     const parsed = applicationInputSchema.safeParse({
       ...payload,
+      productId,
       consent: consent || undefined,
       idempotencyKey: getIdempotencyKey(),
       utm: readUtm(),
@@ -198,6 +213,17 @@ export function ApplicationForm({
     }
   }
 
+  const guestsFilled = Number(guests) >= 1;
+  const hallFilled = cascadeReady(schedule.hall);
+  const contentFilled =
+    cascadeReady(schedule.film) || Boolean(watchCustom.trim());
+  const dateFilled = Boolean(rentalStart);
+  const detailsReady =
+    Boolean(productId) &&
+    hallFilled &&
+    (productId === "event" || contentFilled) &&
+    dateFilled;
+
   if (status === "success") {
     return (
       <div className="rounded-3xl border border-line bg-card p-8 text-center" role="status">
@@ -205,7 +231,7 @@ export function ApplicationForm({
           Заявка отправлена
         </p>
         <p className="mt-3 text-muted">
-          Обращение по услуге «{product.title}» получено. Менеджер свяжется с вами.
+          Обращение по услуге «{product?.title}» получено. Менеджер свяжется с вами.
         </p>
         {applicationId ? (
           <p className="mt-4 text-sm text-gold">Номер заявки: {applicationId}</p>
@@ -232,55 +258,46 @@ export function ApplicationForm({
       noValidate
       className="space-y-8 rounded-3xl border border-line bg-card p-6 sm:p-8"
     >
-      {lockProduct || !onProductChange ? null : (
+      {lockProduct ? null : (
         <fieldset>
           <legend className="mb-4 text-sm font-medium">Услуга</legend>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="form-product-grid">
             {PRODUCT_LIST.map((item) => (
-              <label
+              <button
                 key={item.id}
-                className={`cursor-pointer rounded-2xl border px-4 py-3 text-sm transition ${
-                  item.id === productId
-                    ? "border-primary bg-primary/10"
-                    : "border-line hover:border-gold"
-                }`}
+                type="button"
+                className={`form-product-btn ${item.id === productId ? "is-active" : ""}`}
+                aria-pressed={item.id === productId}
+                onClick={() => {
+                  if (item.id !== productId) resetDetails();
+                  onProductChange?.(item.id);
+                }}
               >
-                <input
-                  className="sr-only"
-                  type="radio"
-                  name={`${formId}-product`}
-                  value={item.id}
-                  checked={item.id === productId}
-                  onChange={() => {
-                    setErrors({});
-                    setStatus("idle");
-                    setFormError("");
-                    setWatchCustom("");
-                    setRentalStart("");
-                    setRentalEnd("");
-                    setSchedule({
-                      city: emptyCascade,
-                      cinema: emptyCascade,
-                      hall: emptyCascade,
-                      hallFormat: emptyCascade,
-                      film: emptyCascade,
-                      session: emptyCascade,
-                      sessionDate: "",
-                    });
-                    onProductChange(item.id);
-                  }}
-                />
-                {item.title}
-              </label>
+                <ProductGlyph kind={PRODUCT_GLYPH[item.id]} />
+                <span className="form-product-kicker">{item.kicker}</span>
+                <span className="form-product-title">{item.title}</span>
+              </button>
             ))}
           </div>
         </fieldset>
       )}
 
-      {isRental ? (
+      <FormStep show={Boolean(productId)}>
         <RentalHallFields
           key={productId}
           errors={errors}
+          guestsFilled={guestsFilled}
+          guests={
+            <Field id="guests" label="Количество гостей" required error={errors.guests}>
+              <input
+                id="guests"
+                className={inputClassName}
+                inputMode="numeric"
+                value={guests}
+                onChange={(event) => setGuests(event.target.value.replace(/\D/g, ""))}
+              />
+            </Field>
+          }
           onChange={(value) =>
             setSchedule((current) => ({
               ...current,
@@ -291,205 +308,140 @@ export function ApplicationForm({
             }))
           }
         />
-      ) : (
-        <ScheduleFields
-          key={productId}
-          productId={productId}
+      </FormStep>
+
+      <FormStep show={Boolean(productId === "keys" && hallFilled)}>
+        <ContentFields
+          film={schedule.film}
+          watchCustom={watchCustom}
           errors={errors}
-          onChange={(value) =>
-            setSchedule((current) => ({
-              ...current,
-              ...value,
-            }))
+          onFilmChange={(value) =>
+            setSchedule((current) => ({ ...current, film: value }))
           }
-        />
-      )}
-
-      {productId === "keys" ? (
-        <>
-          <ContentFields
-            film={schedule.film}
-            watchCustom={watchCustom}
-            errors={errors}
-            onFilmChange={(value) =>
-              setSchedule((current) => ({ ...current, film: value }))
+          onWatchCustomChange={(value) => {
+            setWatchCustom(value);
+            if (value.trim()) {
+              setSchedule((current) => ({ ...current, film: emptyCascade }));
             }
-            onWatchCustomChange={(value) => {
-              setWatchCustom(value);
-              if (value.trim()) {
-                setSchedule((current) => ({ ...current, film: emptyCascade }));
-              }
-            }}
-          />
-          <Field
-            id="keysRentalStart"
-            label="Дата и время сеанса"
-            required
-            error={errors.rentalStart}
-          >
-            <DateTimePicker
-              id="keysRentalStart"
-              value={rentalStart}
-              invalid={Boolean(errors.rentalStart)}
-              onChange={setRentalStart}
-            />
-          </Field>
-        </>
-      ) : null}
+          }}
+        />
+      </FormStep>
 
-      {productId === "event" ? (
+      <FormStep
+        show={
+          Boolean(productId) &&
+          hallFilled &&
+          (productId === "event" || contentFilled)
+        }
+      >
+        <Field
+          id={productId === "keys" ? "keysRentalStart" : "rentalStart"}
+          label={productId === "keys" ? "Дата и время сеанса" : "Дата и время"}
+          required
+          error={errors.rentalStart}
+        >
+          <DateTimePicker
+            id={productId === "keys" ? "keysRentalStart" : "rentalStart"}
+            value={rentalStart}
+            invalid={Boolean(errors.rentalStart)}
+            onChange={setRentalStart}
+          />
+        </Field>
+      </FormStep>
+
+      <FormStep show={detailsReady} variant="contacts">
+        <p className="text-sm text-muted">
+          Остались только контактные данные — менеджер свяжется с вами по ним.
+        </p>
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field
-            id="rentalStart"
-            label="Дата и время начала"
-            required
-            error={errors.rentalStart}
-          >
-            <DateTimePicker
-              id="rentalStart"
-              value={rentalStart}
-              invalid={Boolean(errors.rentalStart)}
-              onChange={setRentalStart}
+          <Field id="contactName" label="Контактное лицо" required error={errors.contactName}>
+            <input
+              id="contactName"
+              className={inputClassName}
+              autoComplete="name"
+              value={contactName}
+              onChange={(event) => setContactName(event.target.value)}
+              aria-invalid={Boolean(errors.contactName)}
             />
           </Field>
-          <Field
-            id="rentalEnd"
-            label="Дата и время окончания"
-            required
-            error={errors.rentalEnd}
-          >
-            <DateTimePicker
-              id="rentalEnd"
-              value={rentalEnd}
-              invalid={Boolean(errors.rentalEnd)}
-              onChange={setRentalEnd}
+          <Field id="phone" label="Телефон" required error={errors.phone}>
+            <input
+              id="phone"
+              className={inputClassName}
+              type="tel"
+              autoComplete="tel"
+              value={formatPhoneDisplay(phone)}
+              onChange={(event) => setPhone(digitsToPhone(event.target.value))}
+              aria-invalid={Boolean(errors.phone)}
+            />
+          </Field>
+          <Field id="email" label="Email" required error={errors.email}>
+            <input
+              id="email"
+              className={inputClassName}
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              aria-invalid={Boolean(errors.email)}
             />
           </Field>
         </div>
-      ) : null}
-
-      <div className="grid gap-5 sm:grid-cols-2">
-        <Field id="contactName" label="Контактное лицо" required error={errors.contactName}>
-          <input
-            id="contactName"
-            className={inputClassName}
-            autoComplete="name"
-            value={contactName}
-            onChange={(event) => setContactName(event.target.value)}
-            aria-invalid={Boolean(errors.contactName)}
+        <Field id="comment" label="Комментарий" error={errors.comment}>
+          <textarea
+            id="comment"
+            className={`${inputClassName} min-h-28 resize-y`}
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
           />
         </Field>
-        <Field id="phone" label="Телефон" required error={errors.phone}>
+        <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
+          <label htmlFor="website">Сайт</label>
           <input
-            id="phone"
-            className={inputClassName}
-            type="tel"
-            autoComplete="tel"
-            value={formatPhoneDisplay(phone)}
-            onChange={(event) => setPhone(digitsToPhone(event.target.value))}
-            aria-invalid={Boolean(errors.phone)}
+            id="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(event) => setWebsite(event.target.value)}
           />
-        </Field>
-        <Field id="email" label="Email" required error={errors.email}>
+        </div>
+        <label className="flex items-start gap-3 text-sm text-muted">
           <input
-            id="email"
-            className={inputClassName}
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            aria-invalid={Boolean(errors.email)}
+            type="checkbox"
+            className="mt-1"
+            checked={consent}
+            onChange={(event) => setConsent(event.target.checked)}
           />
-        </Field>
-        <Field id="guests" label="Количество гостей" required error={errors.guests}>
-          <input
-            id="guests"
-            className={inputClassName}
-            inputMode="numeric"
-            value={guests}
-            onChange={(event) => setGuests(event.target.value.replace(/\D/g, ""))}
-          />
-        </Field>
-        {product.fields.ticketType ? (
-          <Field id="ticketType" label="Тип билета" required error={errors.ticketType}>
-            <CustomSelect
-              id="ticketType"
-              value={ticketType}
-              placeholder="Выберите"
-              invalid={Boolean(errors.ticketType)}
-              options={TICKET_TYPES.map((item) => ({
-                value: item.value,
-                label: item.label,
-              }))}
-              onChange={setTicketType}
-            />
-          </Field>
+          <span>
+            Согласен на обработку персональных данных согласно{" "}
+            <a
+              className="text-gold underline underline-offset-4"
+              href="https://static.karofilm.ru/uploads/filemanager/offer/politika_pers_dannih.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              политике КАРО
+            </a>
+            .
+            {errors.consent ? (
+              <span className="mt-1 block text-primary">{errors.consent}</span>
+            ) : null}
+          </span>
+        </label>
+        {formError ? (
+          <p role="alert" className="text-sm text-primary">
+            {formError}
+          </p>
         ) : null}
-      </div>
-
-      <Field id="comment" label="Комментарий" error={errors.comment}>
-        <textarea
-          id="comment"
-          className={`${inputClassName} min-h-28 resize-y`}
-          value={comment}
-          onChange={(event) => setComment(event.target.value)}
-        />
-      </Field>
-
-      <div className="absolute -left-[9999px] h-0 w-0 overflow-hidden" aria-hidden="true">
-        <label htmlFor="website">Сайт</label>
-        <input
-          id="website"
-          tabIndex={-1}
-          autoComplete="off"
-          value={website}
-          onChange={(event) => setWebsite(event.target.value)}
-        />
-      </div>
-
-      <label className="flex items-start gap-3 text-sm text-muted">
-        <input
-          type="checkbox"
-          className="mt-1"
-          checked={consent}
-          onChange={(event) => setConsent(event.target.checked)}
-        />
-        <span>
-          Согласен на обработку персональных данных согласно{" "}
-          <a
-            className="text-gold underline underline-offset-4"
-            href="https://static.karofilm.ru/uploads/filemanager/offer/politika_pers_dannih.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            политике КАРО
-          </a>
-          .
-          {errors.consent ? (
-            <span className="mt-1 block text-primary">{errors.consent}</span>
-          ) : null}
-        </span>
-      </label>
-
-      {formError ? (
-        <p role="alert" className="text-sm text-primary">
-          {formError}
-        </p>
-      ) : null}
-
-      <TicketCaptcha
-        key={captchaKey}
-        error={errors.captcha}
-        onSolved={setCaptcha}
-      />
-
-      <button
-        type="submit"
-        disabled={status === "loading"}
-        className="w-full rounded-full bg-primary px-6 py-4 font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
-      >
-        {status === "loading" ? "Отправляем…" : "Отправить заявку"}
-      </button>
+        <TicketCaptcha key={captchaKey} error={errors.captcha} onSolved={setCaptcha} />
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          className="w-full rounded-full bg-primary px-6 py-4 font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
+        >
+          {status === "loading" ? "Отправляем…" : "Отправить заявку"}
+        </button>
+      </FormStep>
     </form>
   );
 }

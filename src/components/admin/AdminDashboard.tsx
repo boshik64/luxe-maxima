@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Application, ApplicationStatus, ProductId } from "@prisma/client";
+import type { Application, ApplicationStatus } from "@prisma/client";
 import { ApplicationModal } from "@/components/admin/ApplicationModal";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { PRODUCT_EMOJI } from "@/lib/admin/products";
 import { STATUS_ACCENT, STATUS_LABEL, STATUSES } from "@/lib/admin/status";
-import { PRODUCTS } from "@/lib/products";
+import { PRODUCTS, type StoredProductId } from "@/lib/products";
 
 export function AdminDashboard() {
   const router = useRouter();
@@ -128,7 +128,10 @@ export function AdminDashboard() {
             { value: "all", label: "Все продукты" },
             ...Object.values(PRODUCTS).map((item) => ({
               value: item.id,
-              label: `${PRODUCT_EMOJI[item.id]} ${item.title}`,
+              label:
+                item.id === "group"
+                  ? `${PRODUCT_EMOJI[item.id]} ${item.title} (архив)`
+                  : `${PRODUCT_EMOJI[item.id]} ${item.title}`,
             })),
           ]}
           onChange={setProduct}
@@ -204,9 +207,9 @@ export function AdminDashboard() {
                 >
                   <p className="text-xs text-gold">
                     <span aria-hidden="true">
-                      {PRODUCT_EMOJI[item.productId as ProductId]}
+                      {PRODUCT_EMOJI[item.productId as StoredProductId]}
                     </span>{" "}
-                    {PRODUCTS[item.productId as ProductId].title}
+                    {PRODUCTS[item.productId as StoredProductId].title}
                   </p>
                   <p className="mt-1 font-medium">{item.contactName}</p>
                   <p className="mt-1 text-sm text-muted">

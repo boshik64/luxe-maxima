@@ -45,29 +45,6 @@ const optionalCatalog = z
   })
   .optional();
 
-function isFilledCatalog(
-  field?: { id?: string; custom?: string } | null,
-) {
-  if (!field) return false;
-  if (field.id === CUSTOM_OPTION_ID) return Boolean(field.custom?.trim());
-  return Boolean(field.id);
-}
-
-function isIsoDate(value?: string) {
-  if (!value) return false;
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return false;
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-  const day = Number(match[3]);
-  const date = new Date(year, month - 1, day);
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
-}
-
 export const applicationInputSchema = z
   .object({
     productId: z.enum(PRODUCT_IDS),
@@ -111,49 +88,6 @@ export const applicationInputSchema = z
         message: "Укажите количество гостей — целое число больше 0",
         path: ["guests"],
       });
-    }
-
-    if (value.productId === "group" && !value.ticketType) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Выберите тип билета",
-        path: ["ticketType"],
-      });
-    }
-
-    if (value.productId === "group") {
-      if (!isFilledCatalog(value.cinema)) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Выберите кинотеатр",
-          path: ["cinema", "id"],
-        });
-      }
-      if (!isFilledCatalog(value.film)) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Выберите фильм",
-          path: ["film", "id"],
-        });
-      }
-      if (!isIsoDate(value.rentalDate)) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Выберите дату сеанса",
-          path: ["rentalDate"],
-        });
-      }
-      const sessionOk =
-        value.session?.id === CUSTOM_OPTION_ID
-          ? Boolean(value.session.custom?.trim())
-          : Boolean(value.session?.id);
-      if (!sessionOk) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Выберите сеанс или укажите своё время",
-          path: ["session", "id"],
-        });
-      }
     }
 
     if (value.productId === "keys" || value.productId === "event") {
@@ -211,41 +145,15 @@ export const applicationInputSchema = z
       if (!value.rentalStart) {
         ctx.addIssue({
           code: "custom",
-          message: "Укажите дату и время начала",
+          message: "Укажите дату и время",
           path: ["rentalStart"],
         });
-      }
-      if (!value.rentalEnd) {
+      } else if (!Number.isFinite(Date.parse(value.rentalStart))) {
         ctx.addIssue({
           code: "custom",
-          message: "Укажите дату и время окончания",
-          path: ["rentalEnd"],
+          message: "Некорректная дата и время",
+          path: ["rentalStart"],
         });
-      }
-      if (value.rentalStart && value.rentalEnd) {
-        const start = Date.parse(value.rentalStart);
-        const end = Date.parse(value.rentalEnd);
-        if (!Number.isFinite(start)) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Некорректная дата начала",
-            path: ["rentalStart"],
-          });
-        }
-        if (!Number.isFinite(end)) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Некорректная дата окончания",
-            path: ["rentalEnd"],
-          });
-        }
-        if (Number.isFinite(start) && Number.isFinite(end) && end < start) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Окончание не может быть раньше начала",
-            path: ["rentalEnd"],
-          });
-        }
       }
     }
   });

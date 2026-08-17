@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AdminPage } from "@/components/admin/AdminPage";
 import { Field, inputClassName } from "@/components/form/Field";
 import {
   HOME_BANNER_SLOT,
@@ -230,22 +229,17 @@ function BannerSlotForm({
 
 export function BannerEditor() {
   return (
-    <AdminPage
-      title="Баннеры на главной"
-      description="Две позиции: между героем и услугами, и между услугами и формой заявки. Лучше горизонтальный макет, JPG или PNG до 8 МБ."
-    >
-      <div className="space-y-8">
-        <BannerSlotForm
-          slot={HOME_BANNER_SLOT}
-          title="Между героем и услугами"
-          description="Широкая картинка сразу после верхнего блока и перед карточками услуг."
-        />
-        <BannerSlotForm
-          slot={HOME_FORM_BANNER_SLOT}
-          title="Между услугами и формой"
-          description="Вторая позиция — после выбора услуги и перед заполнением заявки."
-        />
-      </div>
-    </AdminPage>
+    <div className="space-y-8">
+      <BannerSlotForm
+        slot={HOME_BANNER_SLOT}
+        title="Между героем и услугами"
+        description="Широкая картинка сразу после верхнего блока и перед карточками услуг. Лучше горизонтальный макет, JPG или PNG до 8 МБ."
+      />
+      <BannerSlotForm
+        slot={HOME_FORM_BANNER_SLOT}
+        title="Между услугами и формой"
+        description="Вторая перетяжка — после выбора услуги и перед заполнением заявки. JPG или PNG до 8 МБ."
+      />
+    </div>
   );
 }

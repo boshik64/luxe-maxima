@@ -55,9 +55,7 @@ function body(application: Application) {
     application.sessionLabel || application.sessionCustom
       ? `Сеанс: ${application.sessionLabel || application.sessionCustom}`
       : null,
-    application.productId === "group" && application.rentalDate
-      ? `Дата: ${application.rentalDate}`
-      : application.rentalStart
+    application.rentalStart
       ? `Начало: ${application.rentalStart}`
       : application.rentalDate
         ? `Аренда: ${application.rentalDate} ${application.rentalTime ?? ""} ${application.rentalDuration ?? ""}`.trim()

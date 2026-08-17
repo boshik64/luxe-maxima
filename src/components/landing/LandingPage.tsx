@@ -14,6 +14,7 @@ import {
   HOME_FORM_BANNER_SLOT,
   type PublicBanner,
 } from "@/lib/banner/types";
+import type { PublicCarousel } from "@/lib/carousel/types";
 import { PRODUCTS, type ProductId } from "@/lib/products";
 
 export function LandingPage({
@@ -22,17 +23,19 @@ export function LandingPage({
   source = "/",
   banner = null,
   formBanner = null,
+  carousel = null,
 }: {
   initialProduct?: ProductId;
   lockProduct?: boolean;
   source?: string;
   banner?: PublicBanner | null;
   formBanner?: PublicBanner | null;
+  carousel?: PublicCarousel | null;
 }) {
-  const [productId, setProductId] = useState<ProductId>(initialProduct ?? "keys");
+  const [productId, setProductId] = useState<ProductId | undefined>(initialProduct);
   const [liveBanner, setLiveBanner] = useState<PublicBanner | null>(banner);
   const [liveFormBanner, setLiveFormBanner] = useState<PublicBanner | null>(formBanner);
-  const product = PRODUCTS[productId];
+  const product = productId ? PRODUCTS[productId] : null;
 
   useEffect(() => {
     if (lockProduct) return;
@@ -69,18 +72,17 @@ export function LandingPage({
       <Header />
       <main>
         <Hero
-          kicker={lockProduct ? product.kicker : "Осень в КАРО"}
-          title={lockProduct ? product.title : "Тёплый сезон — в тёмном зале"}
+          kicker={lockProduct ? product?.kicker ?? "" : "Осень в КАРО"}
+          title={lockProduct ? product?.title ?? "" : "Тёплый сезон — в тёмном зале"}
           text={
             lockProduct
-              ? product.summary
-              : "Заберите себе целый зал: свой фильм, своя компания, свой сеанс. Подберём кинотеатр, время и формат — от школьного похода до корпоратива."
+              ? product?.summary ?? ""
+              : "Заберите себе целый зал: свой фильм, своя компания, свой вечер. Подберём кинотеатр, время и формат — от камерного сеанса до корпоратива."
           }
           ctaHref={lockProduct ? "#form" : "#products"}
         />
         {lockProduct || !liveBanner ? null : <HomeBanner banner={liveBanner} />}
         {lockProduct ? null : <Products onSelect={selectProduct} />}
-        {lockProduct ? null : <SeasonBlock />}
         {lockProduct || !liveFormBanner ? null : (
           <HomeBanner banner={liveFormBanner} />
         )}
@@ -89,12 +91,12 @@ export function LandingPage({
             Заявка
           </p>
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold sm:text-4xl">
-            {product.title}
+            {product?.title ?? "Оставьте заявку"}
           </h2>
           <p className="mt-3 mb-8 max-w-2xl text-muted">
             {lockProduct
-              ? product.summary
-              : "Выберите услугу выше и заполните короткую форму — менеджер свяжется с вами, уточнит детали и подтвердит бронь."}
+              ? product?.summary
+              : "Сначала выберите услугу — дальше форма откроется шаг за шагом."}
           </p>
           <ApplicationForm
             productId={productId}
@@ -103,6 +105,7 @@ export function LandingPage({
             source={source}
           />
         </section>
+        {lockProduct ? null : <SeasonBlock initial={carousel} />}
       </main>
       <Footer />
     </>
