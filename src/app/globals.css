@@ -22,6 +22,44 @@
   --font-display: var(--font-unbounded);
 }
 
+/*
+ * Тема кампании «Осень в КАРО»: cinematic + лёгкий ретро-винтаж.
+ * Класс вешается на <html> публичной части; админка возвращает нейтральные токены.
+ */
+.theme-autumn {
+  --karo-ink: #0b0708;
+  --karo-graphite: #171013;
+  --karo-wine-deep: #3b0c14;
+  --karo-wine: #6d1220;
+  --karo-wine-bright: #9c1a2c;
+  --karo-red: #d4152f;
+  --karo-ivory: #f5ece0;
+  --karo-paper: #f2e7d4;
+  --karo-caramel: #d7a05c;
+
+  --background: var(--karo-ink);
+  --foreground: var(--karo-ivory);
+  --muted: #a3908a;
+  --line: rgba(245, 236, 224, 0.14);
+  --card: var(--karo-graphite);
+  --primary: var(--karo-red);
+  --gold: var(--karo-caramel);
+  --font-display: var(--font-oswald);
+  color-scheme: dark;
+}
+
+.theme-neutral {
+  --background: #0c0d12;
+  --foreground: #f4f1ea;
+  --muted: #9a958c;
+  --line: rgba(244, 241, 234, 0.12);
+  --card: #15161d;
+  --primary: #e91a3b;
+  --gold: #d4b37a;
+  --font-display: var(--font-unbounded);
+  color-scheme: dark;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -350,5 +388,310 @@ select {
 
   .ticket-captcha-title {
     font-size: 0.95rem;
+  }
+}
+
+/* ——— Визуальный слой «Осень в КАРО» ——— */
+
+.hero-glow {
+  background:
+    radial-gradient(1200px 500px at 80% -10%, rgba(233, 26, 59, 0.35), transparent),
+    radial-gradient(800px 400px at 10% 110%, rgba(212, 179, 122, 0.18), transparent);
+}
+
+/* Декор живёт только в сезонной теме: без класса лендинг возвращается к прежнему виду. */
+.autumn-only {
+  display: none;
+}
+
+.theme-autumn body {
+  background-color: var(--karo-ink);
+  background-image:
+    radial-gradient(
+      1000px 620px at 88% -14%,
+      color-mix(in srgb, var(--karo-wine) 62%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      820px 520px at 4% 6%,
+      color-mix(in srgb, var(--karo-wine-deep) 70%, transparent),
+      transparent
+    ),
+    linear-gradient(180deg, #150c0e 0%, var(--karo-ink) 46%, #120b0d 100%);
+  background-attachment: fixed;
+}
+
+/* Плёночное зерно поверх фона, но под контентом. */
+.theme-autumn body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' /><feColorMatrix type='saturate' values='0' /></filter><rect width='160' height='160' filter='url(%23f)' opacity='0.32' /></svg>");
+  mix-blend-mode: soft-light;
+}
+
+.theme-autumn .hero-glow {
+  background:
+    radial-gradient(
+      900px 460px at 72% -18%,
+      color-mix(in srgb, var(--karo-wine-bright) 42%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      680px 420px at 6% 116%,
+      color-mix(in srgb, var(--karo-caramel) 20%, transparent),
+      transparent
+    );
+}
+
+.theme-autumn h1,
+.theme-autumn h2,
+.theme-autumn h3 {
+  letter-spacing: 0.005em;
+}
+
+/* Две колонки герой-блока появляются только вместе с коллажем. */
+@media (min-width: 1024px) {
+  .theme-autumn .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
+    align-items: center;
+    gap: 3.5rem;
+  }
+}
+
+/* Коллаж: «вырезанный» кадр с неровным белым контуром. */
+.theme-autumn .autumn-collage-wrap {
+  position: relative;
+  display: block;
+}
+
+.theme-autumn .autumn-collage {
+  position: relative;
+  display: block;
+  padding: 0.85rem 0.85rem 3.25rem;
+  background: linear-gradient(180deg, #fbf6ec 0%, #f0e6d5 100%);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.55),
+    0 2px 0 rgba(255, 255, 255, 0.35) inset;
+  transform: rotate(-2.2deg);
+  clip-path: polygon(
+    1.5% 2%,
+    22% 0.6%,
+    47% 2.4%,
+    71% 0.5%,
+    99% 2.2%,
+    98.4% 24%,
+    100% 49%,
+    98.6% 73%,
+    99.4% 98%,
+    76% 99.6%,
+    51% 97.8%,
+    26% 99.8%,
+    1% 98.2%,
+    2.2% 74%,
+    0.4% 50%,
+    1.8% 26%
+  );
+}
+
+.theme-autumn .autumn-collage-frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 2px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #4a1119 0%, transparent 60%),
+    linear-gradient(180deg, #2a0f13 0%, #150a0c 100%);
+}
+
+/* Вертикальный кадр-«билет» в сезонном блоке. */
+.theme-autumn .autumn-collage-portrait {
+  padding: 0.7rem;
+  transform: rotate(2.4deg);
+}
+
+.theme-autumn .autumn-collage-frame-portrait {
+  aspect-ratio: 788 / 1400;
+}
+
+.theme-autumn .autumn-collage-caption {
+  position: absolute;
+  right: 1.4rem;
+  bottom: 0.9rem;
+  left: 1.4rem;
+}
+
+/* Рукописная ремарка: короткая, не больше одной на экран. */
+.theme-autumn .autumn-note {
+  display: block;
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.4rem;
+  line-height: 1.15;
+  color: #7a2230;
+  transform: rotate(-1.2deg);
+}
+
+/* Штамп: максимум один на экран. */
+.theme-autumn .autumn-stamp {
+  position: absolute;
+  top: -1.75rem;
+  right: -1.5rem;
+  display: flex;
+  width: 7.25rem;
+  height: 7.25rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid color-mix(in srgb, var(--karo-wine-bright) 75%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--karo-paper) 95%, transparent);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--karo-wine-bright) 22%, transparent);
+  color: var(--karo-wine-bright);
+  font-family: var(--font-display), sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-13deg);
+}
+
+.theme-autumn .autumn-stamp-sub {
+  margin-top: 0.3rem;
+  padding-top: 0.28rem;
+  border-top: 1px solid color-mix(in srgb, var(--karo-wine-bright) 45%, transparent);
+  font-size: 7.5px;
+  letter-spacing: 0.14em;
+}
+
+/* Сезонный блок: один визуальный герой — билет кампании. */
+.theme-autumn .autumn-season {
+  display: block;
+  border-top: 1px solid var(--line);
+  background-image: radial-gradient(
+    900px 420px at 12% 0%,
+    color-mix(in srgb, var(--karo-wine-deep) 45%, transparent),
+    transparent
+  );
+}
+
+.theme-autumn .autumn-season-grid {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2.75rem;
+}
+
+.theme-autumn .autumn-season-art {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 18rem;
+}
+
+@media (min-width: 1024px) {
+  .theme-autumn .autumn-season-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    align-items: center;
+    gap: 4.5rem;
+  }
+
+  .theme-autumn .autumn-season-art {
+    max-width: 20rem;
+    justify-self: center;
+    grid-area: 1 / 1;
+  }
+
+  .theme-autumn .autumn-season-copy {
+    grid-area: 1 / 2;
+  }
+}
+
+/* Карточки услуг: тёмные, с одним маленьким коллажным акцентом. */
+.theme-autumn .autumn-card {
+  position: relative;
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--karo-wine-deep) 34%, transparent),
+    transparent 58%
+  );
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+}
+
+.theme-autumn .autumn-card:hover {
+  border-color: color-mix(in srgb, var(--karo-wine-bright) 60%, transparent);
+}
+
+.theme-autumn .autumn-card-accent {
+  position: absolute;
+  top: -1.1rem;
+  right: 1.5rem;
+  display: block;
+  width: 3.5rem;
+  padding: 0.28rem;
+  background: linear-gradient(180deg, #fbf6ec 0%, #efe4d2 100%);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.45);
+  transform: rotate(5deg);
+  clip-path: polygon(
+    3% 3%,
+    38% 0,
+    72% 3%,
+    100% 1%,
+    97% 34%,
+    100% 68%,
+    98% 99%,
+    64% 97%,
+    31% 100%,
+    2% 98%,
+    4% 66%,
+    0 33%
+  );
+}
+
+.theme-autumn .autumn-card:nth-child(2) .autumn-card-accent {
+  transform: rotate(-6deg);
+}
+
+.theme-autumn .autumn-card:nth-child(3) .autumn-card-accent {
+  transform: rotate(3.5deg);
+}
+
+.theme-autumn .autumn-card-accent svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 1023px) {
+  .theme-autumn .autumn-collage-wrap {
+    margin-top: 3.25rem;
+  }
+
+  .theme-autumn .autumn-collage {
+    transform: rotate(-1.4deg);
+  }
+
+  .theme-autumn .autumn-stamp {
+    top: -1.25rem;
+    right: -0.5rem;
+    width: 5.75rem;
+    height: 5.75rem;
+    font-size: 10px;
+  }
+
+  .theme-autumn .autumn-stamp-sub {
+    font-size: 6.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-autumn .autumn-collage,
+  .theme-autumn .autumn-stamp,
+  .theme-autumn .autumn-card-accent {
+    transform: none;
   }
 }

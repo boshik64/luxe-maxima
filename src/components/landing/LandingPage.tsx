@@ -7,6 +7,7 @@ import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { HomeBanner } from "@/components/landing/HomeBanner";
 import { Products } from "@/components/landing/Products";
+import { SeasonBlock } from "@/components/landing/SeasonBlock";
 import { parseResponseJson } from "@/lib/api-json";
 import {
   HOME_BANNER_SLOT,
@@ -68,21 +69,18 @@ export function LandingPage({
       <Header />
       <main>
         <Hero
-          kicker={lockProduct ? product.kicker : "Роскошный максимум"}
-          title={
-            lockProduct
-              ? product.title
-              : "Ключи от зала, групповой поход и мероприятие"
-          }
+          kicker={lockProduct ? product.kicker : "Осень в КАРО"}
+          title={lockProduct ? product.title : "Тёплый сезон — в тёмном зале"}
           text={
             lockProduct
               ? product.summary
-              : "Три лендинга услуг и сводная страница. Все заявки падают в одну административную панель."
+              : "Заберите себе целый зал: свой фильм, своя компания, свой сеанс. Подберём кинотеатр, время и формат — от школьного похода до корпоратива."
           }
           ctaHref={lockProduct ? "#form" : "#products"}
         />
         {lockProduct || !liveBanner ? null : <HomeBanner banner={liveBanner} />}
         {lockProduct ? null : <Products onSelect={selectProduct} />}
+        {lockProduct ? null : <SeasonBlock />}
         {lockProduct || !liveFormBanner ? null : (
           <HomeBanner banner={liveFormBanner} />
         )}
@@ -96,7 +94,7 @@ export function LandingPage({
           <p className="mt-3 mb-8 max-w-2xl text-muted">
             {lockProduct
               ? product.summary
-              : "Сначала выберите услугу выше. Поля формы зависят от продукта: аренда зала — из каталога, групповой поход — из расписания КАРО."}
+              : "Выберите услугу выше и заполните короткую форму — менеджер свяжется с вами, уточнит детали и подтвердит бронь."}
           </p>
           <ApplicationForm
             productId={productId}

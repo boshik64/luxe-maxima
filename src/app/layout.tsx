@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Manrope, Unbounded } from "next/font/google";
+import { Caveat, Manrope, Oswald, Unbounded } from "next/font/google";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -13,14 +13,32 @@ const unbounded = Unbounded({
   weight: ["400", "500", "600", "700"],
 });
 
+// Акцидентный заголовочный шрифт сезонной темы.
+const oswald = Oswald({
+  variable: "--font-oswald",
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "600", "700"],
+});
+
+// Рукописный — только для коротких заметок на полях.
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin", "cyrillic"],
+  weight: ["500", "600"],
+});
+
+// NEXT_PUBLIC_SITE_THEME=classic возвращает прежнее оформление без правок кода.
+const themeClass =
+  process.env.NEXT_PUBLIC_SITE_THEME === "classic" ? "" : "theme-autumn";
+
 export const metadata: Metadata = {
-  title: "КАРО — Роскошный максимум",
+  title: "Осень в КАРО — заберите зал себе",
   description:
-    "Аренда зала, выкуп сеанса и реклама в сети кинотеатров КАРО. Оставьте заявку — менеджер свяжется с вами.",
+    "Частный сеанс, групповой поход или мероприятие в кинотеатрах КАРО. Оставьте заявку — менеджер подберёт зал, время и формат.",
   openGraph: {
-    title: "КАРО — Роскошный максимум",
+    title: "Осень в КАРО — заберите зал себе",
     description:
-      "Три продукта на одном лендинге: аренда зала, закрытый показ и реклама.",
+      "Свой фильм, своя компания, свой сеанс: аренда зала, групповые походы и мероприятия в КАРО.",
     locale: "ru_RU",
     type: "website",
   },
@@ -35,7 +53,7 @@ export default function RootLayout({
     <html
       lang="ru"
       data-scroll-behavior="smooth"
-      className={`${manrope.variable} ${unbounded.variable} h-full antialiased`}
+      className={`${manrope.variable} ${unbounded.variable} ${oswald.variable} ${caveat.variable} ${themeClass} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}

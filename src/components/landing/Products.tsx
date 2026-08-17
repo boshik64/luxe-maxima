@@ -1,5 +1,15 @@
 import Link from "next/link";
+import {
+  AutumnCardAccent,
+  type AutumnAccentKind,
+} from "@/components/landing/AutumnDecor";
 import { PRODUCT_LIST, type ProductId } from "@/lib/products";
+
+const ACCENT_BY_PRODUCT: Record<ProductId, AutumnAccentKind> = {
+  keys: "seat",
+  group: "ticket",
+  event: "reel",
+};
 
 export function Products({
   onSelect,
@@ -12,14 +22,15 @@ export function Products({
         Услуги
       </p>
       <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold sm:text-4xl">
-        Выберите продукт
+        Три способа занять зал
       </h2>
-      <div className="mt-10 grid gap-6 lg:grid-cols-3">
+      <div className="mt-12 grid gap-6 lg:grid-cols-3">
         {PRODUCT_LIST.map((product) => (
           <article
             key={product.id}
-            className="flex flex-col rounded-3xl border border-line bg-card p-6"
+            className="autumn-card relative flex flex-col rounded-3xl border border-line bg-card p-6 transition"
           >
+            <AutumnCardAccent kind={ACCENT_BY_PRODUCT[product.id]} />
             <p className="text-xs tracking-[0.2em] text-gold uppercase">
               {product.kicker}
             </p>
