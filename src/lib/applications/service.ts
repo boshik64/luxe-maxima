@@ -104,9 +104,17 @@ export async function createApplication(input: ApplicationInput) {
           ? input.session.custom?.trim() || null
           : null,
       rentalDate:
-        input.productId === "event" ? input.rentalStart?.slice(0, 10) || null : null,
+        input.productId === "event"
+          ? input.rentalStart?.slice(0, 10) || null
+          : input.productId === "keys"
+            ? input.rentalStart?.slice(0, 10) || null
+          : input.productId === "group"
+            ? input.rentalDate || null
+            : null,
       rentalTime:
-        input.productId === "event" ? input.rentalStart?.slice(11, 16) || null : null,
+        input.productId === "event" || input.productId === "keys"
+          ? input.rentalStart?.slice(11, 16) || null
+          : null,
       rentalDuration: null,
       rentalStart: input.productId === "event" ? input.rentalStart || null : null,
       rentalEnd: input.productId === "event" ? input.rentalEnd || null : null,

@@ -3,9 +3,17 @@ import type { SiteBanner } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { logger } from "@/lib/logger";
 import { removeBannerUpload, bannerPublicUrl } from "@/lib/uploads";
-import type { PublicBanner } from "@/lib/banner/types";
+import {
+  HOME_BANNER_SLOT,
+  type PublicBanner,
+} from "@/lib/banner/types";
 
-export const HOME_BANNER_SLOT = "home-hero-products";
+export {
+  BANNER_SLOTS,
+  HOME_BANNER_SLOT,
+  HOME_FORM_BANNER_SLOT,
+  parseBannerSlot,
+} from "@/lib/banner/types";
 
 export function isBannerPublished(value: unknown) {
   if (value === false || value === 0) return false;

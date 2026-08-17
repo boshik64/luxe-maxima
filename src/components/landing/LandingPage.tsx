@@ -8,7 +8,11 @@ import { Hero } from "@/components/landing/Hero";
 import { HomeBanner } from "@/components/landing/HomeBanner";
 import { Products } from "@/components/landing/Products";
 import { parseResponseJson } from "@/lib/api-json";
-import type { PublicBanner } from "@/lib/banner/types";
+import {
+  HOME_BANNER_SLOT,
+  HOME_FORM_BANNER_SLOT,
+  type PublicBanner,
+} from "@/lib/banner/types";
 import { PRODUCTS, type ProductId } from "@/lib/products";
 
 export function LandingPage({
@@ -16,23 +20,35 @@ export function LandingPage({
   lockProduct = false,
   source = "/",
   banner = null,
+  formBanner = null,
 }: {
   initialProduct?: ProductId;
   lockProduct?: boolean;
   source?: string;
   banner?: PublicBanner | null;
+  formBanner?: PublicBanner | null;
 }) {
   const [productId, setProductId] = useState<ProductId>(initialProduct ?? "keys");
   const [liveBanner, setLiveBanner] = useState<PublicBanner | null>(banner);
+  const [liveFormBanner, setLiveFormBanner] = useState<PublicBanner | null>(formBanner);
   const product = PRODUCTS[productId];
 
   useEffect(() => {
     if (lockProduct) return;
     let cancelled = false;
-    fetch("/api/banners", { cache: "no-store" })
-      .then(async (response) => {
-        const data = await parseResponseJson<{ item?: PublicBanner | null }>(response);
-        if (!cancelled && response.ok) setLiveBanner(data.item ?? null);
+    Promise.all([
+      fetch(`/api/banners?slot=${HOME_BANNER_SLOT}`, { cache: "no-store" }),
+      fetch(`/api/banners?slot=${HOME_FORM_BANNER_SLOT}`, { cache: "no-store" }),
+    ])
+      .then(async ([heroResponse, formResponse]) => {
+        const heroData = await parseResponseJson<{ item?: PublicBanner | null }>(
+          heroResponse,
+        );
+        const formData = await parseResponseJson<{ item?: PublicBanner | null }>(
+          formResponse,
+        );
+        if (!cancelled && heroResponse.ok) setLiveBanner(heroData.item ?? null);
+        if (!cancelled && formResponse.ok) setLiveFormBanner(formData.item ?? null);
       })
       .catch(() => {
         // оставляем серверное значение, если живой API недоступен
@@ -67,6 +83,9 @@ export function LandingPage({
         />
         {lockProduct || !liveBanner ? null : <HomeBanner banner={liveBanner} />}
         {lockProduct ? null : <Products onSelect={selectProduct} />}
+        {lockProduct || !liveFormBanner ? null : (
+          <HomeBanner banner={liveFormBanner} />
+        )}
         <section id="form" className="mx-auto max-w-6xl px-4 pb-24">
           <p className="mb-3 font-[family-name:var(--font-display)] text-xs tracking-[0.28em] text-gold uppercase">
             Заявка

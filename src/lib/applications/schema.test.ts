@@ -21,6 +21,7 @@ test("accepts keys application with hall catalog and repertoire film", () => {
     hallFormat: { id: "fmt-1", name: "IMAX", custom: "" },
     hall: { id: "hall-1", name: "IMAX", custom: "" },
     film: { id: "16395", name: "Электрический поцелуй", custom: "" },
+    rentalStart: "2026-09-01T18:00",
   });
   assert.equal(parsed.success, true);
 });
@@ -32,6 +33,7 @@ test("accepts keys application with custom watch content", () => {
     hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
     hall: { id: "hall-1", name: "Зал 1", custom: "" },
     watchCustom: "Корпоративный ролик",
+    rentalStart: "2026-09-01T18:00",
   });
   assert.equal(parsed.success, true);
 });
@@ -44,6 +46,17 @@ test("rejects keys application with both film and watchCustom", () => {
     hall: { id: "hall-1", name: "Зал 1", custom: "" },
     film: { id: "1", name: "Фильм", custom: "" },
     watchCustom: "Свой контент",
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("rejects keys application without session date and time", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    productId: "keys",
+    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
+    hall: { id: "hall-1", name: "Зал 1", custom: "" },
+    watchCustom: "Корпоративный ролик",
   });
   assert.equal(parsed.success, false);
 });
@@ -65,9 +78,21 @@ test("accepts group application with ticket type", () => {
     ...base,
     productId: "group",
     ticketType: "student",
+    film: { id: "1", name: "Фильм", custom: "" },
+    rentalDate: "2026-09-01",
     session: { id: "__custom__", name: "", custom: "Суббота вечером" },
   });
   assert.equal(parsed.success, true);
+});
+
+test("rejects group application without film or date", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    productId: "group",
+    ticketType: "student",
+    session: { id: "__custom__", name: "", custom: "Суббота вечером" },
+  });
+  assert.equal(parsed.success, false);
 });
 
 test("event requires hall cascade and end not before start", () => {
@@ -100,6 +125,8 @@ test("rejects invalid phone", () => {
     productId: "group",
     phone: "89001234567",
     ticketType: "standard",
+    film: { id: "1", name: "Фильм", custom: "" },
+    rentalDate: "2026-09-01",
     session: { id: "1", name: "сеанс", custom: "" },
   });
   assert.equal(parsed.success, false);
@@ -110,6 +137,8 @@ test("honeypot website must be empty", () => {
     ...base,
     productId: "group",
     ticketType: "standard",
+    film: { id: "1", name: "Фильм", custom: "" },
+    rentalDate: "2026-09-01",
     session: { id: "1", name: "сеанс", custom: "" },
     website: "https://spam.test",
   });

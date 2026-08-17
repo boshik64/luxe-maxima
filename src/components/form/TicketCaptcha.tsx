@@ -12,21 +12,7 @@ export type CaptchaSolution = {
   proof: string;
 };
 
-const CUT_RATIO = 0.88;
-
-function ScissorsIcon() {
-  return (
-    <svg viewBox="0 0 32 48" width="28" height="42" aria-hidden="true">
-      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-        <circle cx="10" cy="10" r="6" />
-        <circle cx="22" cy="10" r="6" />
-        <path d="M14.2 14.8 8 44" />
-        <path d="M17.8 14.8 24 44" />
-        <path d="M16 16v6" />
-      </g>
-    </svg>
-  );
-}
+const MIN_TEAR_DISTANCE = 64;
 
 export function TicketCaptcha({
   error,
@@ -35,16 +21,17 @@ export function TicketCaptcha({
   error?: string;
   onSolved: (solution: CaptchaSolution | null) => void;
 }) {
-  const trackRef = useRef<HTMLDivElement>(null);
-  const cutRef = useRef(0);
+  const startXRef = useRef(0);
+  const offsetRef = useRef(0);
+  const tearDistanceRef = useRef(MIN_TEAR_DISTANCE);
   const pointerIdRef = useRef<number | null>(null);
+  const completingRef = useRef(false);
   const [retry, setRetry] = useState(0);
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [loadError, setLoadError] = useState("");
-  const [cut, setCut] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [phase, setPhase] = useState<"idle" | "solving" | "ready">("idle");
-  const completingRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,11 +54,14 @@ export function TicketCaptcha({
     };
   }, [retry]);
 
+  function resetStub() {
+    offsetRef.current = 0;
+    setOffset(0);
+  }
+
   async function complete(token: string) {
     if (completingRef.current) return;
     completingRef.current = true;
-    cutRef.current = 1;
-    setCut(1);
     setPhase("solving");
     try {
       const response = await fetch("/api/captcha", {
@@ -89,27 +79,25 @@ export function TicketCaptcha({
     } catch {
       completingRef.current = false;
       setPhase("idle");
-      cutRef.current = 0;
-      setCut(0);
+      resetStub();
       setLoadError("Не удалось подтвердить капчу.");
       onSolved(null);
     }
   }
 
-  function cutFromClientY(clientY: number) {
-    const track = trackRef.current;
-    if (!track) return 0;
-    const rect = track.getBoundingClientRect();
-    const next = (clientY - rect.top) / rect.height;
-    return Math.min(1, Math.max(0, next));
+  function tearOff() {
+    if (!challenge || phase !== "idle" || completingRef.current) return;
+    void complete(challenge.token);
   }
 
-  function applyCut(next: number) {
-    if (!challenge || phase !== "idle" || completingRef.current) return;
-    cutRef.current = next;
-    setCut(next);
-    if (next >= CUT_RATIO) {
-      void complete(challenge.token);
+  function dragTo(clientX: number) {
+    if (phase !== "idle" || completingRef.current) return;
+    const next = Math.max(0, clientX - startXRef.current);
+    offsetRef.current = next;
+    setOffset(next);
+    if (next >= tearDistanceRef.current) {
+      setDragging(false);
+      tearOff();
     }
   }
 
@@ -118,13 +106,17 @@ export function TicketCaptcha({
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     pointerIdRef.current = event.pointerId;
+    startXRef.current = event.clientX;
+    tearDistanceRef.current = Math.max(
+      MIN_TEAR_DISTANCE,
+      event.currentTarget.getBoundingClientRect().width * 0.85,
+    );
     setDragging(true);
-    applyCut(cutFromClientY(event.clientY));
   }
 
   function onPointerMove(event: React.PointerEvent<HTMLButtonElement>) {
-    if (!dragging || phase !== "idle") return;
-    applyCut(cutFromClientY(event.clientY));
+    if (!dragging) return;
+    dragTo(event.clientX);
   }
 
   function onPointerUp(event: React.PointerEvent<HTMLButtonElement>) {
@@ -136,18 +128,15 @@ export function TicketCaptcha({
     }
     pointerIdRef.current = null;
     setDragging(false);
-    if (phase !== "idle") return;
-    if (cutRef.current < CUT_RATIO) {
-      cutRef.current = 0;
-      setCut(0);
+    if (phase === "idle" && offsetRef.current < tearDistanceRef.current) {
+      resetStub();
     }
   }
 
   function reload() {
     completingRef.current = false;
-    cutRef.current = 0;
     setChallenge(null);
-    setCut(0);
+    resetStub();
     setDragging(false);
     setPhase("idle");
     setLoadError("");
@@ -159,10 +148,10 @@ export function TicketCaptcha({
   const shownError = error || loadError;
   const hint =
     phase === "solving"
-      ? "Отрезаем корешок…"
+      ? "Отрываем корешок…"
       : phase === "ready"
-        ? "Корешок отрезан — можно отправлять"
-        : "Проведите ножницы вниз по линии отрыва";
+        ? "Корешок оторван — можно отправлять"
+        : "Потяните корешок вправо, чтобы оторвать";
 
   return (
     <div className="space-y-3">
@@ -188,52 +177,39 @@ export function TicketCaptcha({
               <span>Место 12</span>
             </div>
           </div>
-          <div ref={trackRef} className="ticket-captcha-cut">
-            <div className="ticket-captcha-perf" aria-hidden="true" />
-            <div
-              className="ticket-captcha-cut-line"
-              style={{ height: `${Math.max(8, cut * 100)}%` }}
-            />
-            <button
-              type="button"
-              disabled={phase !== "idle" || !challenge}
-              aria-label="Провести ножницы по линии отрыва"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(cut * 100)}
-              aria-orientation="vertical"
-              role="slider"
-              className="ticket-captcha-scissors"
-              style={{
-                top: `${cut * 100}%`,
-                transition: dragging ? "none" : "top 220ms ease",
-              }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              onKeyDown={(event) => {
-                if (phase !== "idle" || !challenge) return;
-                if (event.key === "ArrowDown" || event.key === "End") {
-                  event.preventDefault();
-                  applyCut(event.key === "End" ? 1 : Math.min(1, cut + 0.18));
-                }
-                if (event.key === "ArrowUp" || event.key === "Home") {
-                  event.preventDefault();
-                  applyCut(event.key === "Home" ? 0 : Math.max(0, cut - 0.18));
-                }
-              }}
-            >
-              <ScissorsIcon />
-            </button>
-          </div>
-          <div className="ticket-captcha-stub">
+          <div className="ticket-captcha-perf" aria-hidden="true" />
+          <button
+            type="button"
+            disabled={torn || !challenge}
+            aria-label="Оторвите корешок билета — потяните вправо"
+            className="ticket-captcha-stub"
+            style={{
+              transform: torn ? undefined : `translateX(${offset}px)`,
+              transition: dragging ? "none" : "transform 260ms ease",
+            }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
+            onKeyDown={(event) => {
+              if (torn || !challenge) return;
+              if (
+                event.key === "ArrowRight" ||
+                event.key === "End" ||
+                event.key === "Enter" ||
+                event.key === " "
+              ) {
+                event.preventDefault();
+                tearOff();
+              }
+            }}
+          >
             <span className="ticket-captcha-stub-label">Корешок</span>
             <span className="ticket-captcha-stub-brand">КАРО</span>
             <span className="ticket-captcha-stub-state">
-              {torn ? "отрезан" : "отрезать"}
+              {torn ? "оторван" : "тяните"}
             </span>
-          </div>
+          </button>
         </div>
       </div>
       <p className="text-xs text-muted">{hint}</p>

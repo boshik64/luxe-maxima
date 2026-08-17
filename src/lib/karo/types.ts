@@ -89,6 +89,12 @@ export type ScheduleOption = {
   name: string;
 };
 
+export type CinemaOption = ScheduleOption & {
+  address?: string;
+  coverUrl?: string | null;
+  formats?: string[];
+};
+
 export type SessionOption = ScheduleOption & {
   showtime: string;
   filmName: string;
@@ -98,10 +104,17 @@ export type SessionOption = ScheduleOption & {
   ageRestriction?: number | null;
   duration?: number | null;
   posterUrl?: string | null;
+  genres?: string[];
   tags?: string[];
 };
 
 export const KARO_STATIC_URL = "https://static.karofilm.ru";
+
+export function karoAssetUrl(path?: string | null) {
+  if (!path) return null;
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${KARO_STATIC_URL}${path.startsWith("/") ? path : `/${path}`}`;
+}
 
 export const CUSTOM_OPTION_ID = "__custom__";
 export const CUSTOM_OPTION: ScheduleOption = {

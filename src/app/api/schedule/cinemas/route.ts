@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchCinemas } from "@/lib/karo/client";
-import { CUSTOM_OPTION } from "@/lib/karo/types";
+import { CUSTOM_OPTION, karoAssetUrl } from "@/lib/karo/types";
 import { logger } from "@/lib/logger";
 
 export async function GET(request: NextRequest) {
@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
           id: String(cinema.id),
           name: cinema.name,
           address: cinema.address,
+          coverUrl: karoAssetUrl(cinema.media?.cover || cinema.media?.bg?.mobile),
+          formats: cinema.formats ?? [],
         })),
         CUSTOM_OPTION,
       ],

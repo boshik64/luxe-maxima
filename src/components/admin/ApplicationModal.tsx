@@ -5,6 +5,7 @@ import type { Application, ApplicationStatus } from "@prisma/client";
 import { GuestField } from "@/components/admin/GuestField";
 import { Field, inputClassName } from "@/components/form/Field";
 import { CustomSelect } from "@/components/ui/CustomSelect";
+import { PRODUCT_EMOJI } from "@/lib/admin/products";
 import { STATUS_LABEL } from "@/lib/admin/status";
 import { PRODUCTS, TICKET_TYPES } from "@/lib/products";
 import {
@@ -73,6 +74,7 @@ export function ApplicationModal({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs tracking-[0.2em] text-gold uppercase">
+              <span aria-hidden="true">{PRODUCT_EMOJI[item.productId]}</span>{" "}
               {PRODUCTS[item.productId].title}
             </p>
             <h2
@@ -191,7 +193,14 @@ export function ApplicationModal({
             }
             onSave={(value) => onSave({ ticketType: value })}
           />
-          {item.rentalStart || item.rentalEnd ? (
+          {item.productId === "group" && item.rentalDate ? (
+            <GuestField
+              id="rentalDate"
+              label="Дата сеанса"
+              value={item.rentalDate}
+              onSave={(value) => onSave({ rentalDate: value })}
+            />
+          ) : item.rentalStart || item.rentalEnd ? (
             <>
               <GuestField
                 id="rentalStart"
