@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PRODUCT_IDS, type ProductId } from "@/lib/products";
+import { PRODUCT_IDS, TICKET_TYPES, type ProductId } from "@/lib/products";
 import { CUSTOM_OPTION_ID } from "@/lib/karo/types";
 import { emailFormatSchema, ruPhoneSchema } from "@/lib/validation/contact";
 
@@ -137,6 +137,63 @@ export const applicationInputSchema = z
           code: "custom",
           message: "Некорректная дата и время сеанса",
           path: ["rentalStart"],
+        });
+      }
+    }
+
+    if (value.productId === "group") {
+      if (!value.cinema?.id) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Выберите кинотеатр",
+          path: ["cinema", "id"],
+        });
+      } else if (value.cinema.id === CUSTOM_OPTION_ID && !value.cinema.custom?.trim()) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Укажите кинотеатр вручную",
+          path: ["cinema", "custom"],
+        });
+      }
+
+      const hasFilm = Boolean(value.film?.id && value.film.id !== CUSTOM_OPTION_ID);
+      const hasFilmCustom = Boolean(
+        value.film?.id === CUSTOM_OPTION_ID && value.film.custom?.trim(),
+      );
+      if (!hasFilm && !hasFilmCustom) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Выберите фильм",
+          path: ["film", "id"],
+        });
+      }
+
+      if (!value.rentalDate) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Укажите дату сеанса",
+          path: ["rentalDate"],
+        });
+      }
+
+      const hasSession = Boolean(value.session?.id && value.session.id !== CUSTOM_OPTION_ID);
+      const hasSessionCustom = Boolean(
+        value.session?.id === CUSTOM_OPTION_ID && value.session.custom?.trim(),
+      );
+      if (!hasSession && !hasSessionCustom) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Выберите сеанс",
+          path: ["session", "id"],
+        });
+      }
+
+      const ticketOk = TICKET_TYPES.some((item) => item.value === value.ticketType);
+      if (!ticketOk) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Выберите тип билета",
+          path: ["ticketType"],
         });
       }
     }

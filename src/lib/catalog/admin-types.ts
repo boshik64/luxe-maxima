@@ -3,6 +3,8 @@ export type FormatItem = {
   name: string;
   benefits: string[];
   imageUrl: string | null;
+  showcasePublished: boolean;
+  showcaseOrder: number;
   enabled: boolean;
   _count: { halls: number };
 };
@@ -29,4 +31,12 @@ export type HallItem = {
   formatId: string;
   cinema: { id: string; name: string; cityName: string; enabled: boolean };
   format: { id: string; name: string; enabled: boolean };
+};
+
+export const FORMAT_SHOWCASE_MAX = 3;
+
+export type PublicHallShowcaseItem = {
+  id: string;
+  formatName: string;
+  imageUrl: string;
 };

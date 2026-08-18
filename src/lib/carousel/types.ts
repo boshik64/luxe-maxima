@@ -22,6 +22,8 @@ export const CAROUSEL_INTERNAL_LINKS = [
   { href: "#products", label: "Блок услуг на главной" },
   { href: "/keys", label: "Страница «Кино на своих условиях»" },
   { href: "/keys#form", label: "Форма на странице ключей" },
+  { href: "/group", label: "Страница групповых походов" },
+  { href: "/group#form", label: "Форма на странице групповых походов" },
   { href: "/event", label: "Страница мероприятий" },
   { href: "/event#form", label: "Форма на странице мероприятий" },
   { href: "/feedback", label: "Обратная связь" },

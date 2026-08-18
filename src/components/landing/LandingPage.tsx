@@ -6,6 +6,8 @@ import { Footer } from "@/components/landing/Footer";
 import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { HomeBanner } from "@/components/landing/HomeBanner";
+import { EventsPromo } from "@/components/landing/EventsPromo";
+import { HallShowcase } from "@/components/landing/HallShowcase";
 import { Products } from "@/components/landing/Products";
 import { SeasonBlock } from "@/components/landing/SeasonBlock";
 import { parseResponseJson } from "@/lib/api-json";
@@ -14,7 +16,9 @@ import {
   HOME_FORM_BANNER_SLOT,
   type PublicBanner,
 } from "@/lib/banner/types";
+import type { PublicHallShowcaseItem } from "@/lib/catalog/admin-types";
 import type { PublicCarousel } from "@/lib/carousel/types";
+import type { PublicEventPromo } from "@/lib/events/types";
 import { PRODUCTS, type ProductId } from "@/lib/products";
 
 export function LandingPage({
@@ -24,6 +28,8 @@ export function LandingPage({
   banner = null,
   formBanner = null,
   carousel = null,
+  hallShowcase = [],
+  eventsPromo = null,
 }: {
   initialProduct?: ProductId;
   lockProduct?: boolean;
@@ -31,6 +37,8 @@ export function LandingPage({
   banner?: PublicBanner | null;
   formBanner?: PublicBanner | null;
   carousel?: PublicCarousel | null;
+  hallShowcase?: PublicHallShowcaseItem[];
+  eventsPromo?: PublicEventPromo | null;
 }) {
   const [productId, setProductId] = useState<ProductId | undefined>(initialProduct);
   const [liveBanner, setLiveBanner] = useState<PublicBanner | null>(banner);
@@ -106,6 +114,8 @@ export function LandingPage({
           />
         </section>
         {lockProduct ? null : <SeasonBlock initial={carousel} />}
+        {lockProduct ? null : <HallShowcase initial={hallShowcase} />}
+        {lockProduct ? null : <EventsPromo initial={eventsPromo} />}
       </main>
       <Footer />
     </>

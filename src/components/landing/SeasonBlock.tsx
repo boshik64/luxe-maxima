@@ -9,17 +9,6 @@ import {
   type PublicCarouselSlide,
 } from "@/lib/carousel/types";
 
-function shuffle<T>(items: T[]) {
-  const next = [...items];
-  for (let i = next.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const current = next[i];
-    next[i] = next[j]!;
-    next[j] = current!;
-  }
-  return next;
-}
-
 function Cta({ href, label }: { href: string; label: string }) {
   const className =
     "inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:brightness-110";
@@ -97,7 +86,7 @@ export function SeasonBlock({
       .then((next) => {
         if (cancelled || !next.items) return;
         setData(next);
-        setSlides(shuffle(next.items));
+        setSlides(next.items);
         setIndex(0);
       })
       .catch(() => undefined);

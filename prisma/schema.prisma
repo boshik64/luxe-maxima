@@ -36,14 +36,18 @@ model User {
 }
 
 model HallFormat {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  benefits  String[]
-  imageUrl  String?
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  halls     Hall[]
+  id                 String   @id @default(uuid())
+  name               String   @unique
+  benefits           String[]
+  imageUrl           String?
+  showcasePublished  Boolean  @default(false)
+  showcaseOrder      Int      @default(0)
+  enabled            Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  halls              Hall[]
+
+  @@index([showcasePublished, showcaseOrder])
 }
 
 model RentalCinema {
@@ -183,4 +187,19 @@ model CarouselSlide {
   updatedAt DateTime @updatedAt
 
   @@index([enabled, sortOrder])
+}
+
+model EventPromo {
+  id                 String   @id @default("default")
+  kicker             String   @default("")
+  title              String
+  intro              String   @default("")
+  eventTypes         String[]
+  capabilities       String[]
+  highlights         String[]
+  occasions          Json
+  presentationLabel  String
+  presentationHref   String
+  enabled            Boolean  @default(true)
+  updatedAt          DateTime @updatedAt
 }

@@ -9,6 +9,7 @@ const SHOW_BANNER_NAV = false; // true — снова показать пунк�
 const links = [
   { href: "/admin", label: "Заявки" },
   { href: "/admin/catalogs", label: "Справочники" },
+  { href: "/admin/events", label: "Мероприятия" },
   { href: "/admin/banner", label: "Баннеры", hidden: !SHOW_BANNER_NAV },
   { href: "/admin/feedback", label: "Обратная связь" },
   { href: "/admin/users", label: "Пользователи", adminOnly: true },

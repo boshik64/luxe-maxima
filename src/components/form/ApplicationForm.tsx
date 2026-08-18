@@ -6,6 +6,7 @@ import { Field, FormStep, inputClassName } from "@/components/form/Field";
 import { type CascadeValue } from "@/components/form/CascadeSelect";
 import { ContentFields } from "@/components/form/ContentFields";
 import { RentalHallFields } from "@/components/form/RentalHallFields";
+import { ScheduleFields } from "@/components/form/ScheduleFields";
 import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCaptcha";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
 import { ProductGlyph } from "@/components/landing/AutumnDecor";
@@ -19,12 +20,14 @@ import { CUSTOM_OPTION_ID } from "@/lib/karo/types";
 import {
   PRODUCT_LIST,
   PRODUCTS,
+  TICKET_TYPES,
   type ProductId,
 } from "@/lib/products";
 
 const emptyCascade: CascadeValue = { id: "", name: "", custom: "" };
-const PRODUCT_GLYPH: Record<ProductId, "key" | "flute"> = {
+const PRODUCT_GLYPH: Record<ProductId, "key" | "flute" | "people"> = {
   keys: "key",
+  group: "people",
   event: "flute",
 };
 
@@ -73,6 +76,7 @@ export function ApplicationForm({
   const [rentalStart, setRentalStart] = useState("");
   const [comment, setComment] = useState("");
   const [watchCustom, setWatchCustom] = useState("");
+  const [ticketType, setTicketType] = useState("");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [schedule, setSchedule] = useState({
@@ -103,6 +107,7 @@ export function ApplicationForm({
     setStatus("idle");
     setFormError("");
     setWatchCustom("");
+    setTicketType("");
     setRentalStart("");
     setGuests("");
     setSchedule({
@@ -125,10 +130,16 @@ export function ApplicationForm({
       email,
       guests,
       rentalStart,
-      rentalDate: productId === "keys" || productId === "event" ? rentalStart.slice(0, 10) : "",
+      rentalDate:
+        productId === "keys" || productId === "event"
+          ? rentalStart.slice(0, 10)
+          : productId === "group"
+            ? schedule.sessionDate
+            : "",
       rentalTime: productId === "keys" || productId === "event" ? rentalStart.slice(11, 16) : "",
       comment,
       watchCustom,
+      ticketType,
       city: schedule.city,
       cinema: schedule.cinema,
       hall: schedule.hall,
@@ -148,6 +159,7 @@ export function ApplicationForm({
       rentalStart,
       comment,
       watchCustom,
+      ticketType,
       schedule,
       consent,
       website,
@@ -218,11 +230,17 @@ export function ApplicationForm({
   const contentFilled =
     cascadeReady(schedule.film) || Boolean(watchCustom.trim());
   const dateFilled = Boolean(rentalStart);
+  const groupFilmFilled = cascadeReady(schedule.film);
+  const groupSessionFilled = cascadeReady(schedule.session);
+  const ticketTypeFilled = TICKET_TYPES.some((item) => item.value === ticketType);
+  const rentalReady = Boolean(productId === "keys" || productId === "event");
   const detailsReady =
-    Boolean(productId) &&
-    hallFilled &&
-    (productId === "event" || contentFilled) &&
-    dateFilled;
+    productId === "group"
+      ? groupFilmFilled && groupSessionFilled && guestsFilled && ticketTypeFilled
+      : Boolean(productId) &&
+        hallFilled &&
+        (productId === "event" || contentFilled) &&
+        dateFilled;
 
   if (status === "success") {
     return (
@@ -282,7 +300,7 @@ export function ApplicationForm({
         </fieldset>
       )}
 
-      <FormStep show={Boolean(productId)}>
+      <FormStep show={rentalReady}>
         <RentalHallFields
           key={productId}
           errors={errors}
@@ -310,6 +328,25 @@ export function ApplicationForm({
         />
       </FormStep>
 
+      <FormStep show={productId === "group"}>
+        <ScheduleFields
+          key={productId}
+          productId="group"
+          errors={errors}
+          onChange={(value) =>
+            setSchedule((current) => ({
+              ...current,
+              city: value.city,
+              cinema: value.cinema,
+              hall: value.hall,
+              film: value.film,
+              session: value.session,
+              sessionDate: value.sessionDate,
+            }))
+          }
+        />
+      </FormStep>
+
       <FormStep show={Boolean(productId === "keys" && hallFilled)}>
         <ContentFields
           film={schedule.film}
@@ -329,7 +366,7 @@ export function ApplicationForm({
 
       <FormStep
         show={
-          Boolean(productId) &&
+          Boolean(productId === "keys" || productId === "event") &&
           hallFilled &&
           (productId === "event" || contentFilled)
         }
@@ -347,6 +384,57 @@ export function ApplicationForm({
             onChange={setRentalStart}
           />
         </Field>
+      </FormStep>
+
+      <FormStep show={productId === "group" && groupSessionFilled}>
+        <Field id="guests" label="Количество гостей" required error={errors.guests}>
+          <input
+            id="guests"
+            className={inputClassName}
+            inputMode="numeric"
+            value={guests}
+            onChange={(event) => setGuests(event.target.value.replace(/\D/g, ""))}
+          />
+        </Field>
+      </FormStep>
+
+      <FormStep show={productId === "group" && groupSessionFilled && guestsFilled}>
+        <fieldset>
+          <legend className="mb-4 text-sm font-medium">
+            Тип билета
+            <span className="text-primary" aria-hidden="true">
+              {" "}
+              *
+            </span>
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {TICKET_TYPES.map((item) => (
+              <label
+                key={item.value}
+                className={`cursor-pointer rounded-2xl border px-4 py-3 text-sm transition ${
+                  ticketType === item.value
+                    ? "border-primary bg-primary/10"
+                    : "border-line hover:border-gold"
+                }`}
+              >
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name="ticketType"
+                  value={item.value}
+                  checked={ticketType === item.value}
+                  onChange={() => setTicketType(item.value)}
+                />
+                {item.label}
+              </label>
+            ))}
+          </div>
+          {errors.ticketType ? (
+            <p role="alert" className="mt-2 text-sm text-primary">
+              {errors.ticketType}
+            </p>
+          ) : null}
+        </fieldset>
       </FormStep>
 
       <FormStep show={detailsReady} variant="contacts">

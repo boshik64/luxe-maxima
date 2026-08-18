@@ -89,6 +89,18 @@ const CARD_ACCENTS = {
       </g>
     </svg>
   ),
+  people: (
+    <svg viewBox="0 0 56 40" role="presentation" focusable="false">
+      <g fill="none" stroke="#8c1c2a" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round">
+        <circle cx="14" cy="13" r="4.2" />
+        <path d="M6.5 33c.4-6.2 3.6-10.2 7.5-10.2S21.6 26.8 22 33" />
+        <circle cx="28" cy="11" r="5" />
+        <path d="M18 34.5c.5-7.4 4.4-12 10-12s9.5 4.6 10 12" />
+        <circle cx="42" cy="13" r="4.2" />
+        <path d="M34 33c.4-6.2 3.6-10.2 7.5-10.2S49.1 26.8 49.5 33" />
+      </g>
+    </svg>
+  ),
 } as const;
 
 export type AutumnAccentKind = keyof typeof CARD_ACCENTS;
@@ -101,7 +113,7 @@ export function AutumnCardAccent({ kind }: { kind: AutumnAccentKind }) {
   );
 }
 
-export function ProductGlyph({ kind }: { kind: "key" | "flute" }) {
+export function ProductGlyph({ kind }: { kind: "key" | "flute" | "people" }) {
   return (
     <span className="form-product-glyph" aria-hidden="true">
       {CARD_ACCENTS[kind]}

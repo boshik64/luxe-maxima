@@ -128,10 +128,7 @@ export function AdminDashboard() {
             { value: "all", label: "Все продукты" },
             ...Object.values(PRODUCTS).map((item) => ({
               value: item.id,
-              label:
-                item.id === "group"
-                  ? `${PRODUCT_EMOJI[item.id]} ${item.title} (архив)`
-                  : `${PRODUCT_EMOJI[item.id]} ${item.title}`,
+              label: `${PRODUCT_EMOJI[item.id]} ${item.title}`,
             })),
           ]}
           onChange={setProduct}

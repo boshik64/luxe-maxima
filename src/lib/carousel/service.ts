@@ -68,7 +68,7 @@ function clampInterval(value: number) {
 }
 
 function toPublicImage(imageUrl: string) {
-  if (imageUrl.startsWith("/autumn/") || imageUrl.startsWith("http")) return imageUrl;
+  if (imageUrl.startsWith("/autumn/") || imageUrl.startsWith("/carousel/") || imageUrl.startsWith("/halls/") || imageUrl.startsWith("http")) return imageUrl;
   return bannerPublicUrl(imageUrl);
 }
 

@@ -1,16 +1,9 @@
-export const PRODUCT_IDS = ["keys", "event"] as const;
+export const PRODUCT_IDS = ["keys", "group", "event"] as const;
 
 export type ProductId = (typeof PRODUCT_IDS)[number];
+export type StoredProductId = ProductId;
 
-/** Снято с лендинга, но строки в БД и админке ещё могут быть. */
-export const ARCHIVED_PRODUCT_IDS = ["group"] as const;
-export type ArchivedProductId = (typeof ARCHIVED_PRODUCT_IDS)[number];
-export type StoredProductId = ProductId | ArchivedProductId;
-
-export const STORED_PRODUCT_IDS = [
-  ...PRODUCT_IDS,
-  ...ARCHIVED_PRODUCT_IDS,
-] as const;
+export const STORED_PRODUCT_IDS = PRODUCT_IDS;
 
 export const TICKET_TYPES = [
   { value: "standard", label: "Стандартный" },

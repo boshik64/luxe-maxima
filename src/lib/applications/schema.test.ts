@@ -73,7 +73,7 @@ test("rejects keys application with custom cinema", () => {
   assert.equal(parsed.success, false);
 });
 
-test("rejects archived group product", () => {
+test("accepts group application with film, date, session and ticket type", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "group",
@@ -81,6 +81,17 @@ test("rejects archived group product", () => {
     film: { id: "1", name: "Фильм", custom: "" },
     rentalDate: "2026-09-01",
     session: { id: "__custom__", name: "", custom: "Суббота вечером" },
+  });
+  assert.equal(parsed.success, true);
+});
+
+test("rejects group application without ticket type", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    productId: "group",
+    film: { id: "1", name: "Фильм", custom: "" },
+    rentalDate: "2026-09-01",
+    session: { id: "s1", name: "18:00", custom: "" },
   });
   assert.equal(parsed.success, false);
 });

@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { PrismaClient } from "@prisma/client";
 
-const SCHEMA_STAMP = "carousel-v1";
+const SCHEMA_STAMP = "event-promo-v1";
 const nodeRequire = createRequire(`${process.cwd()}/package.json`);
 
 const globalForPrisma = globalThis as unknown as {
@@ -15,7 +15,7 @@ function prismaLog(): ("error" | "warn")[] {
 
 function hasDelegate(
   client: PrismaClient,
-  key: "siteBanner" | "carouselSlide" | "carouselSettings",
+  key: "siteBanner" | "carouselSlide" | "carouselSettings" | "eventPromo",
 ) {
   const delegate = (
     client as unknown as Record<string, { findMany?: unknown; findFirst?: unknown }>
@@ -26,11 +26,25 @@ function hasDelegate(
   );
 }
 
+function modelHasField(client: PrismaClient, model: string, field: string) {
+  const models = (
+    client as unknown as {
+      _runtimeDataModel?: {
+        models?: Record<string, { fields?: Array<{ name?: string }> }>;
+      };
+    }
+  )._runtimeDataModel?.models;
+  const fields = models?.[model]?.fields;
+  return Array.isArray(fields) && fields.some((item) => item.name === field);
+}
+
 function isCurrentPrisma(client: PrismaClient) {
   return (
     hasDelegate(client, "siteBanner") &&
     hasDelegate(client, "carouselSlide") &&
-    hasDelegate(client, "carouselSettings")
+    hasDelegate(client, "carouselSettings") &&
+    hasDelegate(client, "eventPromo") &&
+    modelHasField(client, "HallFormat", "showcasePublished")
   );
 }
 

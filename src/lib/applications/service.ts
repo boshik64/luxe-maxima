@@ -106,7 +106,9 @@ export async function createApplication(input: ApplicationInput) {
       rentalDate:
         input.productId === "event" || input.productId === "keys"
           ? input.rentalStart?.slice(0, 10) || null
-          : null,
+          : input.productId === "group"
+            ? input.rentalDate || null
+            : null,
       rentalTime:
         input.productId === "event" || input.productId === "keys"
           ? input.rentalStart?.slice(11, 16) || null
@@ -115,7 +117,7 @@ export async function createApplication(input: ApplicationInput) {
       rentalStart: input.productId === "event" ? input.rentalStart || null : null,
       rentalEnd: null,
       guests: input.guests ? Number(input.guests) : null,
-      ticketType: null,
+      ticketType: input.ticketType?.trim() || null,
       contactName: input.contactName,
       phone: input.phone,
       email: input.email,

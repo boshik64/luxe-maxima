@@ -8,7 +8,7 @@ import {
 import { CinemaCard } from "@/components/form/CinemaCard";
 import { DatePicker, todayIso } from "@/components/form/DatePicker";
 import { FilmSearch } from "@/components/form/FilmSearch";
-import { Field, inputClassName } from "@/components/form/Field";
+import { Field, FormStep, inputClassName } from "@/components/form/Field";
 import { SessionCards } from "@/components/form/SessionCards";
 import {
   CUSTOM_OPTION,
@@ -115,8 +115,13 @@ export function ScheduleFields({
     () => catalogSessions.filter((item) => sessionDate(item) === sessionDateValue),
     [catalogSessions, sessionDateValue],
   );
-  const filmSelected = Boolean(film.id || film.custom);
-  const showCinemaCard = filmSelected && Boolean(cinema.id);
+  const cityReady = isCatalogId(city.id) || (city.id === CUSTOM_OPTION_ID && Boolean(city.custom.trim()));
+  const cinemaReady =
+    isCatalogId(cinema.id) || (cinema.id === CUSTOM_OPTION_ID && Boolean(cinema.custom.trim()));
+  const filmReady =
+    isCatalogId(film.id) || (film.id === CUSTOM_OPTION_ID && Boolean(film.custom.trim()));
+  const dateReady = Boolean(sessionDateValue);
+  const showCinemaCard = cinemaReady && filmReady;
 
   useEffect(() => {
     let cancelled = false;
@@ -251,7 +256,7 @@ export function ScheduleFields({
           {scheduleError}
         </p>
       ) : null}
-      <div className="grid gap-5 sm:grid-cols-2">
+      <FormStep show>
         <CascadeSelect
           id="city"
           label="Город"
@@ -287,6 +292,8 @@ export function ScheduleFields({
             });
           }}
         />
+      </FormStep>
+      <FormStep show={cityReady}>
         <CascadeSelect
           id="cinema"
           label="Кинотеатр"
@@ -321,7 +328,9 @@ export function ScheduleFields({
             });
           }}
         />
-        {config.fields.hall ? (
+      </FormStep>
+      {config.fields.hall ? (
+        <FormStep show={cinemaReady}>
           <CascadeSelect
             id="hall"
             label="Зал"
@@ -345,8 +354,10 @@ export function ScheduleFields({
               });
             }}
           />
-        ) : null}
-        {config.fields.film ? (
+        </FormStep>
+      ) : null}
+      {config.fields.film ? (
+        <FormStep show={cinemaReady}>
           <FilmSearch
             id="film"
             label="Фильм"
@@ -382,8 +393,20 @@ export function ScheduleFields({
               });
             }}
           />
-        ) : null}
-        {config.fields.session && filmSelected ? (
+        </FormStep>
+      ) : null}
+      {showCinemaCard ? (
+        <FormStep show>
+          <CinemaCard
+            cinema={selectedCinema}
+            filmName={film.id === CUSTOM_OPTION_ID ? film.custom : film.name}
+            session={filmMeta}
+            sessionCount={catalogSessions.length}
+          />
+        </FormStep>
+      ) : null}
+      {config.fields.session ? (
+        <FormStep show={filmReady}>
           <Field id="session-date" label="Дата" required error={errors.rentalDate}>
             <DatePicker
               id="session-date"
@@ -395,104 +418,98 @@ export function ScheduleFields({
               onChange={handleSessionDateChange}
             />
           </Field>
-        ) : null}
-      </div>
-      {showCinemaCard ? (
-        <CinemaCard
-          cinema={selectedCinema}
-          filmName={film.id === CUSTOM_OPTION_ID ? film.custom : film.name}
-          session={filmMeta}
-          sessionCount={catalogSessions.length}
-        />
+        </FormStep>
       ) : null}
-      {config.fields.session && showCinemaCard ? (
-        <div className="space-y-3">
-          {sessionDateValue ? (
-            <>
-              <SessionCards
-                sessions={sessionsOnDate}
-                selectedId={session.id}
-                loading={loading.sessions}
-                error={errors["session.id"]}
-                onSelect={(item) => {
-                  const next = item
-                    ? { id: item.id, name: item.name, custom: "" }
-                    : empty;
-                  setSession(next);
-                  emit({
-                    city,
-                    cinema,
-                    hall,
-                    film,
-                    session: next,
-                    sessionDate: sessionDateValue,
-                  });
-                }}
-              />
-              <button
-                type="button"
-                disabled={loading.sessions}
-                className={`rounded-full border px-4 py-2 text-sm transition ${
-                  session.id === CUSTOM_OPTION_ID
-                    ? "border-primary text-primary"
-                    : "border-line text-muted hover:border-gold hover:text-foreground"
-                } disabled:opacity-60`}
-                onClick={() => {
-                  const next =
+      {config.fields.session ? (
+        <FormStep show={filmReady && dateReady}>
+          <div className="space-y-3">
+            {sessionDateValue ? (
+              <>
+                <SessionCards
+                  sessions={sessionsOnDate}
+                  selectedId={session.id}
+                  loading={loading.sessions}
+                  error={errors["session.id"]}
+                  onSelect={(item) => {
+                    const next = item
+                      ? { id: item.id, name: item.name, custom: "" }
+                      : empty;
+                    setSession(next);
+                    emit({
+                      city,
+                      cinema,
+                      hall,
+                      film,
+                      session: next,
+                      sessionDate: sessionDateValue,
+                    });
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={loading.sessions}
+                  className={`rounded-full border px-4 py-2 text-sm transition ${
                     session.id === CUSTOM_OPTION_ID
-                      ? empty
-                      : { id: CUSTOM_OPTION_ID, name: "", custom: session.custom };
-                  setSession(next);
-                  emit({
-                    city,
-                    cinema,
-                    hall,
-                    film,
-                    session: next,
-                    sessionDate: sessionDateValue,
-                  });
-                }}
-              >
-                {CUSTOM_SESSION_OPTION.name}
-              </button>
-              {session.id === CUSTOM_OPTION_ID ? (
-                <Field
-                  id="session-custom"
-                  label="Своё время или сеанс"
-                  error={errors["session.custom"]}
-                  required
+                      ? "border-primary text-primary"
+                      : "border-line text-muted hover:border-gold hover:text-foreground"
+                  } disabled:opacity-60`}
+                  onClick={() => {
+                    const next =
+                      session.id === CUSTOM_OPTION_ID
+                        ? empty
+                        : { id: CUSTOM_OPTION_ID, name: "", custom: session.custom };
+                    setSession(next);
+                    emit({
+                      city,
+                      cinema,
+                      hall,
+                      film,
+                      session: next,
+                      sessionDate: sessionDateValue,
+                    });
+                  }}
                 >
-                  <input
+                  {CUSTOM_SESSION_OPTION.name}
+                </button>
+                {session.id === CUSTOM_OPTION_ID ? (
+                  <Field
                     id="session-custom"
-                    className={inputClassName}
-                    value={session.custom}
-                    placeholder="Например, суббота вечером"
-                    onChange={(event) => {
-                      const next = {
-                        id: CUSTOM_OPTION_ID,
-                        name: "",
-                        custom: event.target.value,
-                      };
-                      setSession(next);
-                      emit({
-                        city,
-                        cinema,
-                        hall,
-                        film,
-                        session: next,
-                        sessionDate: sessionDateValue,
-                      });
-                    }}
-                  />
-                </Field>
-              ) : null}
-            </>
-          ) : (
-            <p className="text-sm text-muted">
-              Выберите дату — появятся сеансы на этот день.
-            </p>
-          )}
-        </div>
+                    label="Своё время или сеанс"
+                    error={errors["session.custom"]}
+                    required
+                  >
+                    <input
+                      id="session-custom"
+                      className={inputClassName}
+                      value={session.custom}
+                      placeholder="Например, суббота вечером"
+                      onChange={(event) => {
+                        const next = {
+                          id: CUSTOM_OPTION_ID,
+                          name: "",
+                          custom: event.target.value,
+                        };
+                        setSession(next);
+                        emit({
+                          city,
+                          cinema,
+                          hall,
+                          film,
+                          session: next,
+                          sessionDate: sessionDateValue,
+                        });
+                      }}
+                    />
+                  </Field>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-sm text-muted">
+                Выберите дату — появятся сеансы на этот день.
+              </p>
+            )}
+          </div>
+        </FormStep>
       ) : null}
     </div>
   );

@@ -7,6 +7,7 @@ import { PRODUCT_LIST, type ProductId } from "@/lib/products";
 
 const ACCENT_BY_PRODUCT: Record<ProductId, AutumnAccentKind> = {
   keys: "key",
+  group: "people",
   event: "flute",
 };
 
@@ -24,10 +25,10 @@ export function Products({
         Как занять зал
       </h2>
       <p className="mt-3 max-w-2xl text-muted">
-        Частный сеанс под свою компанию или аренда зала под мероприятие — выберите
+        Частный сеанс, групповой поход или аренда зала под мероприятие — выберите
         формат, остальное уточнит менеджер.
       </p>
-      <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-2">
+      <div className="mx-auto mt-12 grid max-w-6xl gap-8 lg:grid-cols-3">
         {PRODUCT_LIST.map((product) => (
           <article
             key={product.id}

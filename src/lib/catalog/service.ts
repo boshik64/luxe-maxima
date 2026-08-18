@@ -1,4 +1,8 @@
 import { prisma } from "@/lib/db";
+import {
+  FORMAT_SHOWCASE_MAX,
+  type PublicHallShowcaseItem,
+} from "@/lib/catalog/admin-types";
 
 export class CatalogError extends Error {
   constructor(
@@ -92,31 +96,109 @@ export async function getEnabledHall(id: string) {
 }
 
 export async function listFormats() {
-  return prisma.hallFormat.findMany({
+  const items = await prisma.hallFormat.findMany({
     orderBy: { name: "asc" },
     include: { _count: { select: { halls: true } } },
   });
+  return items.map(serializeFormat);
 }
 
 export async function getFormat(id: string) {
-  return prisma.hallFormat.findUnique({
+  const item = await prisma.hallFormat.findUnique({
     where: { id },
     include: { _count: { select: { halls: true } } },
   });
+  return item ? serializeFormat(item) : null;
+}
+
+export async function countShowcasePublished(exceptId?: string) {
+  return prisma.hallFormat.count({
+    where: {
+      showcasePublished: true,
+      ...(exceptId ? { id: { not: exceptId } } : {}),
+    },
+  });
+}
+
+export async function getPublicHallShowcase(): Promise<PublicHallShowcaseItem[]> {
+  try {
+    const formats = await prisma.hallFormat.findMany({
+      where: { showcasePublished: true, NOT: { imageUrl: null } },
+      orderBy: [{ showcaseOrder: "asc" }, { name: "asc" }],
+      take: FORMAT_SHOWCASE_MAX,
+    });
+    return formats
+      .filter((format): format is typeof format & { imageUrl: string } =>
+        Boolean(format.imageUrl?.trim() && format.name.trim()),
+      )
+      .map((format) => ({
+        id: format.id,
+        formatName: format.name,
+        imageUrl: format.imageUrl,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function serializeFormat<
+  T extends {
+    imageUrl: string | null;
+    showcasePublished?: boolean | null;
+    showcaseOrder?: number | null;
+  },
+>(format: T) {
+  return {
+    ...format,
+    imageUrl: format.imageUrl,
+    showcasePublished: format.showcasePublished === true,
+    showcaseOrder: Number.isFinite(format.showcaseOrder)
+      ? Number(format.showcaseOrder)
+      : 0,
+  };
+}
+
+async function assertShowcasePublish(
+  formatId: string | null,
+  published: boolean,
+  imageUrl: string | null | undefined,
+) {
+  if (!published) return;
+  if (!imageUrl) {
+    throw new CatalogError("Сначала загрузите картинку формата");
+  }
+  const taken = await countShowcasePublished(formatId ?? undefined);
+  if (taken >= FORMAT_SHOWCASE_MAX) {
+    throw new CatalogError(
+      `На главной можно показать не больше ${FORMAT_SHOWCASE_MAX} картинок форматов. Снимите публикацию с другого формата.`,
+    );
+  }
 }
 
 export async function createFormat(data: {
   name: string;
   benefits: string[];
   imageUrl?: string | null;
+  showcasePublished?: boolean;
+  showcaseOrder?: number;
 }) {
-  return prisma.hallFormat.create({
-    data: {
-      name: data.name.trim(),
-      benefits: data.benefits,
-      imageUrl: data.imageUrl?.trim() || null,
-    },
-  });
+  const imageUrl = data.imageUrl?.trim() || null;
+  const showcasePublished = data.showcasePublished === true;
+  await assertShowcasePublish(null, showcasePublished, imageUrl);
+  return serializeFormat(
+    await prisma.hallFormat.create({
+      data: {
+        name: data.name.trim(),
+        benefits: data.benefits,
+        imageUrl,
+        showcasePublished,
+        showcaseOrder: Number.isFinite(data.showcaseOrder)
+          ? Math.max(0, Math.round(data.showcaseOrder!))
+          : 0,
+      },
+      include: { _count: { select: { halls: true } } },
+    }),
+  );
 }
 
 export async function updateFormat(
@@ -126,20 +208,39 @@ export async function updateFormat(
     benefits?: string[];
     imageUrl?: string | null;
     enabled?: boolean;
+    showcasePublished?: boolean;
+    showcaseOrder?: number;
   },
 ) {
-  return prisma.hallFormat.update({
-    where: { id },
-    data: {
-      ...(data.name !== undefined ? { name: data.name.trim() } : {}),
-      ...(data.benefits !== undefined ? { benefits: data.benefits } : {}),
-      ...(data.imageUrl !== undefined
-        ? { imageUrl: data.imageUrl?.trim() || null }
-        : {}),
-      ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
-    },
-    include: { _count: { select: { halls: true } } },
-  });
+  const current = await prisma.hallFormat.findUnique({ where: { id } });
+  if (!current) throw new CatalogError("Формат не найден", 404);
+
+  const nextImage =
+    data.imageUrl !== undefined ? data.imageUrl?.trim() || null : current.imageUrl;
+  const nextPublished =
+    data.showcasePublished !== undefined
+      ? data.showcasePublished
+      : current.showcasePublished === true;
+  await assertShowcasePublish(id, nextPublished, nextImage);
+
+  return serializeFormat(
+    await prisma.hallFormat.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined ? { name: data.name.trim() } : {}),
+        ...(data.benefits !== undefined ? { benefits: data.benefits } : {}),
+        ...(data.imageUrl !== undefined ? { imageUrl: nextImage } : {}),
+        ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
+        ...(data.showcasePublished !== undefined
+          ? { showcasePublished: data.showcasePublished }
+          : {}),
+        ...(data.showcaseOrder !== undefined
+          ? { showcaseOrder: Math.max(0, Math.round(data.showcaseOrder)) }
+          : {}),
+      },
+      include: { _count: { select: { halls: true } } },
+    }),
+  );
 }
 
 export async function deleteFormat(id: string) {
@@ -243,6 +344,7 @@ export async function createHall(data: {
       rentalPriceWeekday: data.rentalPriceWeekday,
       rentalPriceWeekend: data.rentalPriceWeekend,
     },
+    include: { cinema: true, format: true },
   });
 }
 
@@ -273,6 +375,7 @@ export async function updateHall(
         : {}),
       ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
     },
+    include: { cinema: true, format: true },
   });
 }
 

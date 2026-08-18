@@ -38,7 +38,13 @@ export function catalogErrorResponse(error: unknown) {
       { status: 400 },
     );
   }
-  logger.error("Catalog request failed", error);
+  if (error instanceof Prisma.PrismaClientValidationError) {
+    logger.error("Catalog validation failed", error);
+    return NextResponse.json(
+      { error: "Не удалось сохранить запись. Обновите страницу и попробуйте ещё раз." },
+      { status: 400 },
+    );
+  }
   return NextResponse.json(
     { error: "Не удалось обработать запрос к справочнику" },
     { status: 500 },
@@ -62,10 +68,11 @@ export function parseBenefits(value: unknown): string[] {
 }
 
 export function requiredString(value: unknown, label: string) {
-  if (typeof value !== "string" || !value.trim()) {
+  const text = typeof value === "string" ? value : "";
+  if (!text.trim()) {
     throw new CatalogError(`Укажите ${label}`);
   }
-  return value.trim();
+  return text.trim();
 }
 
 export function requiredInt(value: unknown, label: string, min = 1) {
@@ -74,4 +81,13 @@ export function requiredInt(value: unknown, label: string, min = 1) {
     throw new CatalogError(`${label}: укажите целое число от ${min}`);
   }
   return parsed;
+}
+
+export function optionalInt(value: unknown, label: string, min = 0) {
+  if (value === undefined || value === null || value === "") return undefined;
+  return requiredInt(value, label, min);
+}
+
+export function formFlag(value: FormDataEntryValue | null) {
+  return String(value) === "true";
 }

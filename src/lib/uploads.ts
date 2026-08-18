@@ -26,6 +26,29 @@ export type BannerUpload = {
   arrayBuffer: () => Promise<ArrayBuffer>;
 };
 
+export function asBannerUpload(value: FormDataEntryValue | null): BannerUpload | null {
+  if (!value || typeof value === "string") return null;
+  const file = value as BannerUpload & { bytes?: () => Promise<Uint8Array> };
+  const size = Number(file.size ?? 0);
+  if (!size) return null;
+  if (typeof file.arrayBuffer === "function") return file;
+  if (typeof file.bytes === "function") {
+    return {
+      name: file.name,
+      type: file.type,
+      size,
+      arrayBuffer: async () => {
+        const bytes = await file.bytes!();
+        return bytes.buffer.slice(
+          bytes.byteOffset,
+          bytes.byteOffset + bytes.byteLength,
+        ) as ArrayBuffer;
+      },
+    };
+  }
+  return null;
+}
+
 function extensionOf(file: BannerUpload) {
   const type = file.type?.toLowerCase().trim();
   if (type && ALLOWED.has(type)) return ALLOWED.get(type);
@@ -46,8 +69,18 @@ export function bannerFileName(imageUrl: string) {
 }
 
 export function bannerPublicUrl(imageUrl: string) {
-  const name = bannerFileName(imageUrl);
-  return name ? `${MEDIA_PREFIX}${name}` : imageUrl;
+  const value = imageUrl.trim();
+  if (
+    value.startsWith("/halls/") ||
+    value.startsWith("/carousel/") ||
+    value.startsWith("/autumn/") ||
+    value.startsWith("http://") ||
+    value.startsWith("https://")
+  ) {
+    return value;
+  }
+  const name = bannerFileName(value);
+  return name ? `${MEDIA_PREFIX}${name}` : value;
 }
 
 function mimeFor(name: string) {
