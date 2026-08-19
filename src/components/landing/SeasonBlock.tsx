@@ -112,7 +112,7 @@ export function SeasonBlock({
 
   return (
     <section className="autumn-only autumn-season season-carousel" aria-roledescription="carousel">
-      <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24">
+      <div className="season-carousel-shell">
         {slides.length > 1 ? (
           <>
             <button
@@ -145,6 +145,23 @@ export function SeasonBlock({
             ))}
           </div>
         </div>
+        {slides.length > 1 ? (
+          <div className="season-carousel-dots" role="tablist" aria-label="Слайды карусели">
+            {slides.map((item, slideIndex) => (
+              <button
+                key={item.id}
+                type="button"
+                role="tab"
+                className={`season-carousel-dot ${
+                  slideIndex === index ? "is-active" : ""
+                }`}
+                aria-label={`Пост ${slideIndex + 1}`}
+                aria-selected={slideIndex === index}
+                onClick={() => setIndex(slideIndex)}
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
     </section>
   );

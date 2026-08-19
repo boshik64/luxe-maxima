@@ -278,7 +278,7 @@ export function ApplicationForm({
     >
       {lockProduct ? null : (
         <fieldset>
-          <legend className="mb-4 text-sm font-medium">Услуга</legend>
+          <legend className="mb-4 text-sm font-medium">Формат</legend>
           <div className="form-product-grid">
             {PRODUCT_LIST.map((item) => (
               <button

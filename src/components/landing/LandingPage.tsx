@@ -81,11 +81,11 @@ export function LandingPage({
       <main>
         <Hero
           kicker={lockProduct ? product?.kicker ?? "" : "Осень в КАРО"}
-          title={lockProduct ? product?.title ?? "" : "Тёплый сезон — в тёмном зале"}
+          title={lockProduct ? product?.title ?? "" : "Кино по твоему сценарию"}
           text={
             lockProduct
               ? product?.summary ?? ""
-              : "Заберите себе целый зал: свой фильм, своя компания, свой вечер. Подберём кинотеатр, время и формат — от камерного сеанса до корпоратива."
+              : "Приватный просмотр, групповой билет или мероприятие в кинозале КАРО — подберем формат для твоего повода"
           }
           ctaHref={lockProduct ? "#form" : "#products"}
         />
@@ -99,12 +99,14 @@ export function LandingPage({
             Заявка
           </p>
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold sm:text-4xl">
-            {product?.title ?? "Оставьте заявку"}
+            {lockProduct
+              ? product?.title ?? "Оставьте заявку"
+              : "Оставьте заявку и узнайте стоимость предложения"}
           </h2>
-          <p className="mt-3 mb-8 max-w-2xl text-muted">
+          <p className="mt-4 mb-8 max-w-3xl text-xl leading-relaxed text-foreground/90">
             {lockProduct
               ? product?.summary
-              : "Сначала выберите услугу — дальше форма откроется шаг за шагом."}
+              : "Сначала выберите формат – дальше форма откроется шаг за шагом."}
           </p>
           <ApplicationForm
             productId={productId}

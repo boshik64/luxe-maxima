@@ -6,12 +6,8 @@ import { AdminPage } from "@/components/admin/AdminPage";
 import {
   EVENT_PROMO_MAX_INTRO,
   EVENT_PROMO_MAX_KICKER,
-  EVENT_PROMO_MAX_OCCASION_BODY,
-  EVENT_PROMO_MAX_OCCASION_TITLE,
-  EVENT_PROMO_MAX_OCCASIONS,
   EVENT_PROMO_MAX_PRESENTATION,
   EVENT_PROMO_MAX_TITLE,
-  type EventOccasion,
   type EventPromoContent,
 } from "@/lib/events/types";
 
@@ -35,7 +31,6 @@ export function EventsEditor() {
   const [eventTypes, setEventTypes] = useState("");
   const [capabilities, setCapabilities] = useState("");
   const [highlights, setHighlights] = useState("");
-  const [occasions, setOccasions] = useState<EventOccasion[]>([]);
   const [presentationLabel, setPresentationLabel] = useState("");
   const [presentationHref, setPresentationHref] = useState("");
   const [enabled, setEnabled] = useState(true);
@@ -66,7 +61,6 @@ export function EventsEditor() {
       setEventTypes(linesOf(next.eventTypes));
       setCapabilities(linesOf(next.capabilities));
       setHighlights(linesOf(next.highlights));
-      setOccasions(next.occasions);
       setPresentationLabel(next.presentationLabel);
       setPresentationHref(next.presentationHref);
       setEnabled(next.enabled);
@@ -88,14 +82,6 @@ export function EventsEditor() {
     };
   }, [load]);
 
-  function patchOccasion(index: number, patch: Partial<EventOccasion>) {
-    setOccasions((current) =>
-      current.map((row, rowIndex) =>
-        rowIndex === index ? { ...row, ...patch } : row,
-      ),
-    );
-  }
-
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setSaving(true);
@@ -111,7 +97,7 @@ export function EventsEditor() {
         eventTypes: eventTypes.split("\n"),
         capabilities: capabilities.split("\n"),
         highlights: highlights.split("\n"),
-        occasions,
+        occasions: [],
         presentationLabel,
         presentationHref,
         enabled,
@@ -181,6 +167,17 @@ export function EventsEditor() {
           />
           <CharCount value={intro} max={EVENT_PROMO_MAX_INTRO} />
         </Field>
+        <Field
+          id="events-highlights"
+          label="Три акцента с иконками (по одному в строке)"
+        >
+          <textarea
+            id="events-highlights"
+            className={`${inputClassName} min-h-24 resize-y`}
+            value={highlights}
+            onChange={(event) => setHighlights(event.target.value)}
+          />
+        </Field>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field id="events-types" label="Типы мероприятий (по одному в строке)">
             <textarea
@@ -198,78 +195,6 @@ export function EventsEditor() {
               onChange={(event) => setCapabilities(event.target.value)}
             />
           </Field>
-        </div>
-        <Field id="events-highlights" label="Акценты (по одному в строке)">
-          <textarea
-            id="events-highlights"
-            className={`${inputClassName} min-h-24 resize-y`}
-            value={highlights}
-            onChange={(event) => setHighlights(event.target.value)}
-          />
-        </Field>
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-[family-name:var(--font-display)] text-lg">
-              Форматы вечеров
-            </h2>
-            <button
-              type="button"
-              className="rounded-full border border-line px-4 py-2 text-sm"
-              disabled={occasions.length >= EVENT_PROMO_MAX_OCCASIONS}
-              onClick={() =>
-                setOccasions((current) =>
-                  current.length >= EVENT_PROMO_MAX_OCCASIONS
-                    ? current
-                    : [...current, { title: "", body: "" }],
-                )
-              }
-            >
-              Добавить карточку
-            </button>
-          </div>
-          {occasions.map((occasion, index) => (
-            <div
-              key={`occasion-${index}`}
-              className="grid gap-4 rounded-2xl border border-line p-4"
-            >
-              <div className="flex justify-between gap-3">
-                <p className="text-sm text-muted">Карточка {index + 1}</p>
-                <button
-                  type="button"
-                  className="text-sm text-primary"
-                  onClick={() =>
-                    setOccasions((current) =>
-                      current.filter((_, rowIndex) => rowIndex !== index),
-                    )
-                  }
-                >
-                  Удалить
-                </button>
-              </div>
-              <Field id={`occ-title-${index}`} label="Название">
-                <input
-                  id={`occ-title-${index}`}
-                  className={inputClassName}
-                  maxLength={EVENT_PROMO_MAX_OCCASION_TITLE}
-                  value={occasion.title}
-                  onChange={(event) =>
-                    patchOccasion(index, { title: event.target.value })
-                  }
-                />
-              </Field>
-              <Field id={`occ-body-${index}`} label="Текст">
-                <textarea
-                  id={`occ-body-${index}`}
-                  className={`${inputClassName} min-h-24 resize-y`}
-                  maxLength={EVENT_PROMO_MAX_OCCASION_BODY}
-                  value={occasion.body}
-                  onChange={(event) =>
-                    patchOccasion(index, { body: event.target.value })
-                  }
-                />
-              </Field>
-            </div>
-          ))}
         </div>
         <Field id="events-pdf-label" label="Текст ссылки на презентацию">
           <input

@@ -3,8 +3,8 @@ import { HashLink } from "@/components/ui/HashLink";
 
 export function Hero({
   kicker = "Осень в КАРО",
-  title = "Тёплый сезон — в тёмном зале",
-  text = "Заберите себе целый зал: свой фильм, своя компания, свой сеанс.",
+  title = "Кино по твоему сценарию",
+  text = "Приватный просмотр, групповой билет или мероприятие в кинозале КАРО — подберем формат для твоего повода",
   ctaHref = "#products",
   note = "подберём формат →",
 }: {
@@ -26,17 +26,19 @@ export function Hero({
           <h1 className="max-w-xl font-[family-name:var(--font-display)] text-4xl leading-tight font-semibold sm:text-5xl lg:text-6xl">
             {title}
           </h1>
-          <p className="mt-6 max-w-md text-lg text-muted">{text}</p>
+          <p className="mt-6 max-w-2xl text-xl leading-relaxed text-foreground/90 sm:text-2xl">
+            {text}
+          </p>
           <div className="mt-10 flex flex-wrap items-center gap-5">
+            <span className="autumn-only autumn-note hero-note" aria-hidden="true">
+              {note}
+            </span>
             <HashLink
               href={ctaHref}
               className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:brightness-110"
             >
               Оставить заявку
             </HashLink>
-            <span className="autumn-only autumn-note hero-note" aria-hidden="true">
-              {note}
-            </span>
           </div>
         </div>
       </div>

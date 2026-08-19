@@ -22,11 +22,10 @@ export function Products({
         Услуги
       </p>
       <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold sm:text-4xl">
-        Как занять зал
+        Персональный формат
       </h2>
-      <p className="mt-3 max-w-2xl text-muted">
-        Частный сеанс, групповой поход или аренда зала под мероприятие — выберите
-        формат, остальное уточнит менеджер.
+      <p className="mt-4 max-w-3xl text-xl leading-relaxed text-foreground/90">
+        Оформи заявку и получи всю необходимую информацию на электронную почту
       </p>
       <div className="mx-auto mt-12 grid max-w-6xl gap-8 lg:grid-cols-3">
         {PRODUCT_LIST.map((product) => (
@@ -41,8 +40,7 @@ export function Products({
             <h3 className="mt-3 font-[family-name:var(--font-display)] text-2xl">
               {product.title}
             </h3>
-            <p className="mt-3 flex-1 text-muted">{product.summary}</p>
-            <ul className="mt-6 space-y-2 text-sm text-foreground/90">
+            <ul className="mt-6 flex-1 space-y-2 text-sm text-foreground/90">
               {product.bullets.map((bullet) => (
                 <li key={bullet} className="flex gap-2">
                   <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />

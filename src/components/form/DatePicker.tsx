@@ -177,7 +177,7 @@ export function DatePicker({
   }
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className="relative max-w-sm">
       <div className="flex gap-2">
         <input
           id={id}
@@ -227,13 +227,13 @@ export function DatePicker({
       </div>
       {open ? (
         <div
-          className="absolute z-30 mt-2 w-full min-w-[18rem] rounded-3xl border border-line bg-card p-4 shadow-xl"
+          className="date-picker-popover absolute z-30 mt-2 rounded-2xl border border-line bg-card p-3 shadow-xl"
           onMouseDown={(event) => event.preventDefault()}
         >
-          <div className="mb-3 flex items-center justify-between gap-2">
+          <div className="mb-2 flex items-center justify-between gap-1">
             <button
               type="button"
-              className="rounded-full px-2 py-1 text-gold hover:bg-primary/10"
+              className="rounded-full px-2 py-0.5 text-gold hover:bg-primary/10"
               aria-label="Предыдущий месяц"
               onClick={() => shiftMonth(-1)}
             >
@@ -244,19 +244,19 @@ export function DatePicker({
             </p>
             <button
               type="button"
-              className="rounded-full px-2 py-1 text-gold hover:bg-primary/10"
+              className="rounded-full px-2 py-0.5 text-gold hover:bg-primary/10"
               aria-label="Следующий месяц"
               onClick={() => shiftMonth(1)}
             >
               ›
             </button>
           </div>
-          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] text-muted">
+          <div className="mb-1 grid grid-cols-7 text-center text-[10px] text-muted">
             {WEEKDAYS.map((day) => (
               <span key={day}>{day}</span>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5">
             {cells.map((cell) => {
               const selectedDay = cell.iso === value;
               const today = cell.iso === todayIso();
@@ -267,7 +267,7 @@ export function DatePicker({
                   key={cell.iso}
                   type="button"
                   disabled={tooEarly}
-                  className={`relative rounded-xl py-2 text-sm transition ${
+                  className={`relative h-8 rounded-lg text-xs transition ${
                     selectedDay
                       ? "bg-primary text-white"
                       : tooEarly
@@ -285,7 +285,7 @@ export function DatePicker({
                   {cell.day}
                   {markedDay ? (
                     <span
-                      className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${
+                      className={`absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${
                         selectedDay ? "bg-white" : "bg-gold"
                       }`}
                     />
@@ -295,7 +295,7 @@ export function DatePicker({
             })}
           </div>
           {marked.size ? (
-            <p className="mt-3 text-[11px] text-muted">Золотая точка — дни с сеансами</p>
+            <p className="mt-2 text-[11px] text-muted">Золотая точка — дни с сеансами</p>
           ) : null}
         </div>
       ) : null}
@@ -331,7 +331,7 @@ export function DateTimePicker({
   }
 
   return (
-    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]">
+    <div className="grid max-w-sm gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]">
       <DatePicker
         id={id}
         value={date}

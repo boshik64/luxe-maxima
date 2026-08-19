@@ -656,6 +656,13 @@ select {
   );
 }
 
+.theme-autumn .season-carousel-shell {
+  position: relative;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 4rem 1rem 3.5rem;
+}
+
 .theme-autumn .season-carousel-viewport {
   overflow: hidden;
 }
@@ -700,37 +707,42 @@ select {
 }
 
 .theme-autumn .season-carousel-arrow {
-  position: absolute;
-  top: 50%;
-  z-index: 2;
+  display: none;
+}
+
+.theme-autumn .season-carousel-dots {
   display: flex;
-  width: 2.75rem;
-  height: 2.75rem;
-  align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--karo-ivory) 28%, transparent);
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 1.75rem;
+}
+
+.theme-autumn .season-carousel-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  padding: 0;
+  border: 0;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--karo-ink) 72%, transparent);
-  color: var(--karo-ivory);
-  font-size: 1.75rem;
-  line-height: 1;
-  transform: translateY(-50%);
+  background: color-mix(in srgb, var(--karo-ivory) 35%, transparent);
 }
 
-.theme-autumn .season-carousel-arrow:hover {
-  border-color: var(--karo-caramel);
-  color: var(--karo-caramel);
-}
-
-.theme-autumn .season-carousel-arrow.is-prev {
-  left: 0.25rem;
-}
-
-.theme-autumn .season-carousel-arrow.is-next {
-  right: 0.25rem;
+.theme-autumn .season-carousel-dot.is-active {
+  width: 1.35rem;
+  background: var(--karo-caramel);
 }
 
 @media (min-width: 1024px) {
+  .theme-autumn .season-carousel-shell {
+    max-width: 80rem;
+    padding: 6rem 0.75rem;
+  }
+
+  .theme-autumn .season-carousel-viewport {
+    max-width: 64rem;
+    margin: 0 auto;
+  }
+
   .theme-autumn .season-carousel-slide,
   .theme-autumn .season-carousel-slide.is-image-right {
     display: grid;
@@ -761,12 +773,53 @@ select {
     max-width: none;
   }
 
+  .theme-autumn .season-carousel-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    display: flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--karo-ivory) 28%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--karo-ink) 72%, transparent);
+    color: var(--karo-ivory);
+    font-size: 1.75rem;
+    line-height: 1;
+    transform: translateY(-50%);
+  }
+
+  .theme-autumn .season-carousel-arrow:hover {
+    border-color: var(--karo-caramel);
+    color: var(--karo-caramel);
+  }
+
   .theme-autumn .season-carousel-arrow.is-prev {
-    left: -0.5rem;
+    left: 0.15rem;
   }
 
   .theme-autumn .season-carousel-arrow.is-next {
-    right: -0.5rem;
+    right: 0.15rem;
+  }
+
+  .theme-autumn .season-carousel-dots {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .theme-autumn .season-carousel-viewport {
+    max-width: 72rem;
+  }
+
+  .theme-autumn .season-carousel-arrow.is-prev {
+    left: 0.35rem;
+  }
+
+  .theme-autumn .season-carousel-arrow.is-next {
+    right: 0.35rem;
   }
 }
 
@@ -824,34 +877,6 @@ select {
   );
 }
 
-.theme-autumn .event-promo-occasions {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-  margin-top: 2.75rem;
-}
-
-.theme-autumn .event-promo-card {
-  padding: 1.4rem 1.5rem;
-  border: 1px solid color-mix(in srgb, var(--karo-ivory) 14%, transparent);
-  border-radius: 1.25rem;
-  background: color-mix(in srgb, var(--karo-ink) 55%, transparent);
-}
-
-.theme-autumn .event-promo-card h3 {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--karo-caramel);
-}
-
-.theme-autumn .event-promo-card p {
-  margin: 0.7rem 0 0;
-  color: var(--muted);
-  line-height: 1.55;
-}
-
 .theme-autumn .event-promo-lists {
   display: grid;
   grid-template-columns: 1fr;
@@ -891,26 +916,50 @@ select {
 }
 
 .theme-autumn .event-promo-highlights p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
   margin: 0;
-  padding: 1.15rem 1.25rem;
+  min-height: 9.5rem;
+  padding: 1.35rem 1.15rem;
   border-radius: 1.1rem;
   background: color-mix(in srgb, var(--karo-wine-deep) 42%, transparent);
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.01em;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.theme-autumn .event-promo-highlights img {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: contain;
 }
 
 .theme-autumn .event-promo-pdf {
   margin: 2.75rem 0 0;
-  max-width: 36rem;
-  font-size: 1.05rem;
+  max-width: 42rem;
 }
 
 .theme-autumn .event-promo-pdf a {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.7rem;
   color: var(--karo-caramel);
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.45;
   text-decoration: underline;
   text-underline-offset: 0.28em;
+}
+
+.theme-autumn .event-promo-pdf-icon {
+  flex-shrink: 0;
+  margin-top: 0.12rem;
 }
 
 .theme-autumn .event-promo-pdf a:hover {
@@ -918,11 +967,6 @@ select {
 }
 
 @media (min-width: 768px) {
-  .theme-autumn .event-promo-occasions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.5rem;
-  }
-
   .theme-autumn .event-promo-lists {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 3rem;
@@ -1113,6 +1157,11 @@ select {
 }
 .form-step-contacts > *:nth-child(6) {
   animation-delay: 0.34s;
+}
+
+.date-picker-popover {
+  width: 16.5rem;
+  max-width: calc(100vw - 2rem);
 }
 
 @keyframes form-step-in {

@@ -2,7 +2,28 @@
 
 import { useEffect, useState } from "react";
 import { parseResponseJson } from "@/lib/api-json";
-import type { PublicEventPromo } from "@/lib/events/types";
+import {
+  EVENT_HIGHLIGHT_ICONS,
+  type PublicEventPromo,
+} from "@/lib/events/types";
+
+function FileGlyph() {
+  return (
+    <svg
+      className="event-promo-pdf-icon"
+      viewBox="0 0 24 24"
+      width="22"
+      height="22"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        fill="currentColor"
+        d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm7 1.5V8h5.5L13 3.5zM8 12h8v1.5H8V12zm0 3.5h8V17H8v-1.5z"
+      />
+    </svg>
+  );
+}
 
 export function EventsPromo({
   initial = null,
@@ -46,14 +67,20 @@ export function EventsPromo({
           <p className="mt-5 max-w-3xl text-lg text-muted">{item.intro}</p>
         ) : null}
 
-        {item.occasions.length ? (
-          <div className="event-promo-occasions">
-            {item.occasions.map((occasion, index) => (
-              <article key={`${occasion.title}-${index}`} className="event-promo-card">
-                <h3>{occasion.title}</h3>
-                {occasion.body ? <p>{occasion.body}</p> : null}
-              </article>
-            ))}
+        {item.highlights.length ? (
+          <div className="event-promo-highlights">
+            {item.highlights.map((line, index) => {
+              const icon = EVENT_HIGHLIGHT_ICONS[index];
+              return (
+                <p key={`hi-${index}`}>
+                  {icon ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={icon} alt="" width={56} height={56} />
+                  ) : null}
+                  <span>{line}</span>
+                </p>
+              );
+            })}
           </div>
         ) : null}
 
@@ -76,14 +103,6 @@ export function EventsPromo({
           </div>
         ) : null}
 
-        {item.highlights.length ? (
-          <div className="event-promo-highlights">
-            {item.highlights.map((line, index) => (
-              <p key={`hi-${index}`}>{line}</p>
-            ))}
-          </div>
-        ) : null}
-
         {item.presentationLabel && item.presentationHref ? (
           <p className="event-promo-pdf">
             <a
@@ -91,7 +110,8 @@ export function EventsPromo({
               target="_blank"
               rel="noopener noreferrer"
             >
-              {item.presentationLabel}
+              <FileGlyph />
+              <span>{item.presentationLabel}</span>
             </a>
           </p>
         ) : null}
