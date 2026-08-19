@@ -401,7 +401,6 @@ export function ScheduleFields({
             cinema={selectedCinema}
             filmName={film.id === CUSTOM_OPTION_ID ? film.custom : film.name}
             session={filmMeta}
-            sessionCount={catalogSessions.length}
           />
         </FormStep>
       ) : null}

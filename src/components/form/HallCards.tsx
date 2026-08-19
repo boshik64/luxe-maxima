@@ -65,35 +65,41 @@ export function HallCards({
                 onClick={() => onSelect(selected ? null : hall)}
                 className={`flex w-[min(18.5rem,85vw)] shrink-0 snap-start flex-col rounded-3xl border bg-card p-4 text-left shadow-lg transition ${
                   selected
-                    ? "border-primary ring-1 ring-primary"
+                    ? "border-gold ring-1 ring-gold"
                     : "border-line hover:border-gold"
                 }`}
               >
-                <p className="line-clamp-2 min-h-[2.75rem] font-semibold leading-snug">
+                <p className="line-clamp-2 min-h-[2.75rem] font-semibold leading-snug text-foreground">
                   {hall.cinemaName} ({hall.name})
                 </p>
                 <div className="mt-3 grid flex-1 grid-cols-2 gap-2">
-                  <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-primary/10 px-3 py-2">
-                    <p className="text-[11px] text-primary/80">Тип зала</p>
-                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-primary">
+                  <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
+                    <p className="text-[11px] text-gold">Тип зала</p>
+                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">
                       {hall.formatName}
                     </p>
                   </div>
-                  <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-primary/10 px-3 py-2">
-                    <p className="text-[11px] text-primary/80">Мест в зале</p>
-                    <p className="mt-1 text-sm font-semibold text-primary">
+                  <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
+                    <p className="text-[11px] text-gold">Мест в зале</p>
+                    <p className="mt-1 text-sm font-semibold text-foreground">
                       {hall.capacity}
                     </p>
                   </div>
-                  <div className="col-span-2 flex min-h-[4.25rem] flex-col rounded-2xl bg-primary/10 px-3 py-2">
-                    <p className="text-[11px] text-primary/80">Стоимость аренды</p>
-                    <p className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold text-primary">
+                  <div className="col-span-2 flex min-h-[4.25rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
+                    <p className="text-[11px] text-gold">Стоимость аренды</p>
+                    <p className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold text-foreground">
                       <span>пн–пт: {formatRubles(hall.rentalPriceWeekday)}</span>
                       <span>сб–вс: {formatRubles(hall.rentalPriceWeekend)}</span>
                     </p>
                   </div>
                 </div>
-                <span className="mt-4 flex items-center justify-between rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">
+                <span
+                  className={`mt-4 flex items-center justify-between rounded-full border px-4 py-2 text-sm font-semibold ${
+                    selected
+                      ? "border-primary bg-primary text-white"
+                      : "border-line text-foreground"
+                  }`}
+                >
                   {selected ? "Выбран" : "Выбрать"}
                   <span aria-hidden="true">›</span>
                 </span>
