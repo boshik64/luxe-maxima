@@ -3,6 +3,7 @@ import {
   AutumnCardAccent,
   type AutumnAccentKind,
 } from "@/components/landing/AutumnDecor";
+import { GroupTerms } from "@/components/landing/GroupTerms";
 import { PRODUCT_LIST, type ProductId } from "@/lib/products";
 
 const ACCENT_BY_PRODUCT: Record<ProductId, AutumnAccentKind> = {
@@ -34,7 +35,13 @@ export function Products({
             className="autumn-card relative flex flex-col rounded-3xl border border-line bg-card p-7 sm:p-8 transition"
           >
             <AutumnCardAccent kind={ACCENT_BY_PRODUCT[product.id]} />
-            <p className="text-xs tracking-[0.2em] text-gold uppercase">
+            <p
+              className={
+                product.id === "group"
+                  ? "text-sm leading-snug text-gold"
+                  : "text-xs tracking-[0.2em] text-gold uppercase"
+              }
+            >
               {product.kicker}
             </p>
             <h3 className="mt-3 font-[family-name:var(--font-display)] text-2xl">
@@ -48,18 +55,19 @@ export function Products({
                 </li>
               ))}
             </ul>
+            {product.termsLabel ? <GroupTerms label={product.termsLabel} /> : null}
             {onSelect ? (
               <button
                 type="button"
                 onClick={() => onSelect(product.id)}
-                className="mt-8 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+                className={`${product.termsLabel ? "mt-4" : "mt-8"} rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110`}
               >
                 {product.cta}
               </button>
             ) : (
               <Link
                 href={`/${product.slug}#form`}
-                className="mt-8 inline-flex justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110"
+                className={`${product.termsLabel ? "mt-4" : "mt-8"} inline-flex justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:brightness-110`}
               >
                 {product.cta}
               </Link>

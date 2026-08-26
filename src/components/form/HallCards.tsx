@@ -1,5 +1,6 @@
 "use client";
 
+import { useDragScroll } from "@/hooks/useDragScroll";
 import { formatRubles } from "@/lib/catalog/format";
 
 export type HallCardItem = {
@@ -25,6 +26,8 @@ export function HallCards({
   error?: string;
   onSelect: (hall: HallCardItem | null) => void;
 }) {
+  const scrollRef = useDragScroll<HTMLDivElement>();
+
   if (loading) {
     return <p className="text-sm text-muted">Загружаем залы…</p>;
   }
@@ -50,6 +53,7 @@ export function HallCards({
       </p>
       <div className="relative">
         <div
+          ref={scrollRef}
           className="hall-cards-scroll pretty-scroll -mx-1 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-scroll px-1 pb-3"
           role="listbox"
           aria-label="Залы"

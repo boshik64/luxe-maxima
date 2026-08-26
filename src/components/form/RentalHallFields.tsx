@@ -1,15 +1,26 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CascadeSelect,
   type CascadeValue,
 } from "@/components/form/CascadeSelect";
 import { FormStep } from "@/components/form/Field";
 import { HallCards, type HallCardItem } from "@/components/form/HallCards";
-import { CUSTOM_OPTION, CUSTOM_OPTION_ID, type ScheduleOption } from "@/lib/karo/types";
+import { CardRow, PickCard } from "@/components/form/PickCards";
+import { formatCinemaCount } from "@/lib/karo/cities";
+import {
+  CUSTOM_OPTION_ID,
+  type CinemaOption,
+  type ScheduleOption,
+} from "@/lib/karo/types";
 
 const empty: CascadeValue = { id: "", name: "", custom: "" };
+
+type CityCardOption = ScheduleOption & {
+  cinemaCount?: number;
+  crestUrl?: string;
+};
 
 type FormatOption = ScheduleOption & {
   benefits: string[];
@@ -23,7 +34,11 @@ async function loadJson<T>(url: string): Promise<T> {
 }
 
 function isCatalogId(id: string) {
-  return Boolean(id) && id !== CUSTOM_OPTION.id;
+  return Boolean(id) && id !== CUSTOM_OPTION_ID;
+}
+
+function catalogOnly<T extends { id: string }>(items: T[]) {
+  return items.filter((item) => item.id !== CUSTOM_OPTION_ID);
 }
 
 function cascadeReady(value: CascadeValue) {
@@ -51,8 +66,8 @@ export function RentalHallFields({
   const [cinema, setCinema] = useState(empty);
   const [hallFormat, setHallFormat] = useState(empty);
   const [hall, setHall] = useState(empty);
-  const [cities, setCities] = useState<ScheduleOption[]>([]);
-  const [cinemas, setCinemas] = useState<ScheduleOption[]>([]);
+  const [cities, setCities] = useState<CityCardOption[]>([]);
+  const [cinemas, setCinemas] = useState<CinemaOption[]>([]);
   const [formats, setFormats] = useState<FormatOption[]>([]);
   const [halls, setHalls] = useState<HallCardItem[]>([]);
   const [loading, setLoading] = useState({
@@ -63,23 +78,21 @@ export function RentalHallFields({
   });
   const [catalogError, setCatalogError] = useState("");
 
+  const cinemaList = useMemo(() => catalogOnly(cinemas), [cinemas]);
   const selectedFormat = formats.find((item) => item.id === hallFormat.id);
-  const cityReady = cascadeReady(city);
   const cinemaReady = cascadeReady(cinema);
   const formatReady = cascadeReady(hallFormat);
 
   useEffect(() => {
     let cancelled = false;
-    loadJson<{ items: ScheduleOption[] }>("/api/schedule/cities")
+    loadJson<{ items: CityCardOption[] }>("/api/schedule/cities")
       .then((data) => {
-        if (!cancelled) setCities(data.items);
+        if (!cancelled) setCities(catalogOnly(data.items));
       })
       .catch(() => {
         if (!cancelled) {
-          setCities([CUSTOM_OPTION]);
-          setCatalogError(
-            "Не удалось загрузить города. Можно указать город вручную.",
-          );
+          setCities([]);
+          setCatalogError("Не удалось загрузить города. Попробуйте позже.");
         }
       })
       .finally(() => {
@@ -93,7 +106,7 @@ export function RentalHallFields({
   useEffect(() => {
     if (!isCatalogId(city.id)) return;
     let cancelled = false;
-    loadJson<{ items: ScheduleOption[] }>(`/api/catalog/cinemas?cityId=${city.id}`)
+    loadJson<{ items: CinemaOption[] }>(`/api/catalog/cinemas?cityId=${city.id}`)
       .then((data) => {
         if (!cancelled) {
           setCinemas(data.items);
@@ -173,68 +186,90 @@ export function RentalHallFields({
         </p>
       ) : null}
       <FormStep show>
-        <CascadeSelect
-          id="city"
-          label="Город"
-          required
-          value={city}
-          options={cities}
-          loading={loading.cities}
-          errorId={errors["city.id"]}
-          errorCustom={errors["city.custom"]}
-          onChange={(value) => {
-            setCity(value);
-            setCinema(empty);
-            setHallFormat(empty);
-            setHall(empty);
-            setCinemas([]);
-            setFormats([]);
-            setHalls([]);
-            setLoading((state) => ({
-              ...state,
-              cinemas: isCatalogId(value.id),
-              formats: false,
-              halls: false,
-            }));
-            emit({
-              city: value,
-              cinema: empty,
-              hallFormat: empty,
-              hall: empty,
-            });
-          }}
-        />
+        {loading.cities ? (
+          <p className="text-sm text-muted">Загружаем города…</p>
+        ) : cities.length ? (
+          <CardRow label="Город" count={cities.length} error={errors["city.id"]}>
+            {cities.map((item) => (
+              <PickCard
+                key={item.id}
+                selected={item.id === city.id}
+                title={item.name}
+                crestUrl={item.crestUrl}
+                lines={[formatCinemaCount(item.cinemaCount ?? 0)]}
+                action={item.id === city.id ? "Выбран" : "Выбрать"}
+                onClick={() => {
+                  const next = { id: item.id, name: item.name, custom: "" };
+                  setCity(next);
+                  setCinema(empty);
+                  setHallFormat(empty);
+                  setHall(empty);
+                  setCinemas([]);
+                  setFormats([]);
+                  setHalls([]);
+                  setLoading((state) => ({
+                    ...state,
+                    cinemas: true,
+                    formats: false,
+                    halls: false,
+                  }));
+                  emit({
+                    city: next,
+                    cinema: empty,
+                    hallFormat: empty,
+                    hall: empty,
+                  });
+                }}
+              />
+            ))}
+          </CardRow>
+        ) : (
+          <p className="text-sm text-muted">Города временно недоступны.</p>
+        )}
       </FormStep>
-      <FormStep show={cityReady}>
-        <CascadeSelect
-          id="cinema"
-          label="Кинотеатр"
-          required
-          allowCustom={false}
-          value={cinema}
-          options={cinemas}
-          loading={loading.cinemas}
-          disabled={!isCatalogId(city.id)}
-          errorId={errors["cinema.id"]}
-          onChange={(value) => {
-            setCinema(value);
-            setHallFormat(empty);
-            setHall(empty);
-            setFormats([]);
-            setHalls([]);
-            setLoading((state) => ({
-              ...state,
-              formats: isCatalogId(value.id),
-              halls: false,
-            }));
-            emit({
-              city,
-              cinema: value,
-              hallFormat: empty,
-              hall: empty,
-            });
-          }}
-        />
+      <FormStep show={isCatalogId(city.id)}>
+        {loading.cinemas ? (
+          <p className="text-sm text-muted">Загружаем кинотеатры…</p>
+        ) : cinemaList.length ? (
+          <CardRow
+            label="Кинотеатр"
+            count={cinemaList.length}
+            error={errors["cinema.id"]}
+          >
+            {cinemaList.map((item) => (
+              <PickCard
+                key={item.id}
+                selected={item.id === cinema.id}
+                title={item.name}
+                lines={item.address ? [item.address] : []}
+                action={item.id === cinema.id ? "Выбран" : "Выбрать"}
+                onClick={() => {
+                  const next = { id: item.id, name: item.name, custom: "" };
+                  setCinema(next);
+                  setHallFormat(empty);
+                  setHall(empty);
+                  setFormats([]);
+                  setHalls([]);
+                  setLoading((state) => ({
+                    ...state,
+                    formats: true,
+                    halls: false,
+                  }));
+                  emit({
+                    city,
+                    cinema: next,
+                    hallFormat: empty,
+                    hall: empty,
+                  });
+                }}
+              />
+            ))}
+          </CardRow>
+        ) : (
+          <p className="text-sm text-muted">
+            В этом городе пока нет кинотеатров для аренды.
+          </p>
+        )}
       </FormStep>
       <FormStep show={cinemaReady}>
         <div className="space-y-5">

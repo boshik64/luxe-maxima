@@ -118,6 +118,17 @@ select {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--gold) 85%, transparent)
     color-mix(in srgb, var(--line) 90%, transparent);
+  cursor: grab;
+}
+
+.hall-cards-scroll.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+
+.hall-cards-scroll.is-dragging * {
+  pointer-events: none;
 }
 
 .hall-cards-scroll::-webkit-scrollbar {
@@ -1120,6 +1131,11 @@ select {
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--gold);
+}
+
+.form-product-kicker.is-sentence {
+  letter-spacing: 0.01em;
+  text-transform: none;
 }
 
 .form-product-title {

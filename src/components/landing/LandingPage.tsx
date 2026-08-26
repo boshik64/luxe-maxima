@@ -80,14 +80,23 @@ export function LandingPage({
       <Header />
       <main>
         <Hero
-          kicker={lockProduct ? product?.kicker ?? "" : "Осень в КАРО"}
+          kicker={
+            lockProduct && productId === "group"
+              ? "Групповые билеты"
+              : lockProduct
+                ? product?.kicker ?? ""
+                : "Осень в КАРО"
+          }
           title={lockProduct ? product?.title ?? "" : "Кино по твоему сценарию"}
           text={
             lockProduct
               ? product?.summary ?? ""
-              : "Приватный просмотр, групповой билет или мероприятие в кинозале КАРО — подберем формат для твоего повода"
+              : "Приватный зал, билеты для большой компании или мероприятие в КАРО — выбирай свой формат."
           }
           ctaHref={lockProduct ? "#form" : "#products"}
+          ctaLabel={
+            lockProduct && productId === "group" ? "Купить билеты" : "Оставить заявку"
+          }
         />
         {lockProduct || !liveBanner ? null : <HomeBanner banner={liveBanner} />}
         {lockProduct ? null : <Products onSelect={selectProduct} />}
@@ -96,17 +105,21 @@ export function LandingPage({
         )}
         <section id="form" className="mx-auto max-w-6xl px-4 pb-24">
           <p className="mb-3 font-[family-name:var(--font-display)] text-xs tracking-[0.28em] text-gold uppercase">
-            Заявка
+            {productId === "group" ? "Билеты" : "Заявка"}
           </p>
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold sm:text-4xl">
-            {lockProduct
-              ? product?.title ?? "Оставьте заявку"
-              : "Оставьте заявку и узнайте стоимость предложения"}
+            {productId === "group"
+              ? "Выберите сеанс и купите билеты"
+              : lockProduct
+                ? product?.title ?? "Оставьте заявку"
+                : "Оставьте заявку и узнайте стоимость предложения"}
           </h2>
           <p className="mt-4 mb-8 max-w-3xl text-xl leading-relaxed text-foreground/90">
-            {lockProduct
-              ? product?.summary
-              : "Сначала выберите формат – дальше форма откроется шаг за шагом."}
+            {productId === "group"
+              ? "Кинотеатр, фильм и сеанс — покупка откроется на сайте КАРО."
+              : lockProduct
+                ? product?.summary
+                : "Сначала выберите формат – дальше форма откроется шаг за шагом."}
           </p>
           <ApplicationForm
             productId={productId}

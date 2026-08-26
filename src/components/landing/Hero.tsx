@@ -4,14 +4,16 @@ import { HashLink } from "@/components/ui/HashLink";
 export function Hero({
   kicker = "Осень в КАРО",
   title = "Кино по твоему сценарию",
-  text = "Приватный просмотр, групповой билет или мероприятие в кинозале КАРО — подберем формат для твоего повода",
+  text = "Приватный зал, билеты для большой компании или мероприятие в КАРО — выбирай свой формат.",
   ctaHref = "#products",
+  ctaLabel = "Оставить заявку",
   note = "подберём формат →",
 }: {
   kicker?: string;
   title?: string;
   text?: string;
   ctaHref?: string;
+  ctaLabel?: string;
   note?: string;
 }) {
   return (
@@ -37,7 +39,7 @@ export function Hero({
               href={ctaHref}
               className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:brightness-110"
             >
-              Оставить заявку
+              {ctaLabel}
             </HashLink>
           </div>
         </div>

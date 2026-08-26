@@ -4,6 +4,7 @@ import {
   CUSTOM_OPTION,
   CUSTOM_SESSION_OPTION,
   karoAssetUrl,
+  type FilmOption,
   type KaroFilmMedia,
   type ScheduleOption,
   type SessionOption,
@@ -78,17 +79,21 @@ export async function searchRepertoire(query = ""): Promise<ScheduleOption[]> {
 export async function listFilms(
   cinemaId: number,
   query = "",
-): Promise<ScheduleOption[]> {
+): Promise<FilmOption[]> {
   const schedule = await fetchCinemaSchedule(cinemaId);
   const needle = query.trim().toLowerCase();
   const films = (schedule.items ?? [])
     .map((film) => ({
       id: String(film.id),
       name: film.name,
+      ageRestriction:
+        typeof film.age_restriction === "number" ? film.age_restriction : null,
+      duration: typeof film.duration === "number" ? film.duration : null,
+      posterUrl: mediaPath(film.media),
     }))
-    .filter((film) => (needle ? film.name.toLowerCase().includes(needle) : true))
-    .slice(0, 20);
-  return withCustom(films);
+    .filter((film) => (needle ? film.name.toLowerCase().includes(needle) : true));
+  const limited = needle ? films.slice(0, 20) : films;
+  return [...limited, CUSTOM_OPTION];
 }
 
 export async function listSessions(

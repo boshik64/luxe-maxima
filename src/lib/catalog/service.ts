@@ -3,6 +3,7 @@ import {
   FORMAT_SHOWCASE_MAX,
   type PublicHallShowcaseItem,
 } from "@/lib/catalog/admin-types";
+import { fetchCinemas } from "@/lib/karo/client";
 
 export class CatalogError extends Error {
   constructor(
@@ -18,11 +19,32 @@ function isPublished(value: boolean | null | undefined) {
 }
 
 export async function listPublicCinemas(cityId: string) {
-  return prisma.rentalCinema.findMany({
+  const cinemas = await prisma.rentalCinema.findMany({
     where: { cityId, enabled: true },
     orderBy: { name: "asc" },
     select: { id: true, name: true, address: true, karoCinemaId: true },
   });
+
+  const karoCityId = Number(cityId);
+  if (!Number.isFinite(karoCityId) || karoCityId <= 0) {
+    return cinemas;
+  }
+
+  try {
+    const karoCinemas = await fetchCinemas(karoCityId);
+    const addressByKaroId = new Map(
+      karoCinemas.map((cinema) => [String(cinema.id), cinema.address?.trim() || ""]),
+    );
+    return cinemas.map((cinema) => ({
+      ...cinema,
+      address:
+        cinema.address?.trim() ||
+        addressByKaroId.get(cinema.karoCinemaId) ||
+        null,
+    }));
+  } catch {
+    return cinemas;
+  }
 }
 
 export async function listPublicFormats(cinemaId: string) {
