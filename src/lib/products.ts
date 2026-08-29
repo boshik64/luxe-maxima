@@ -1,6 +1,9 @@
 export const PRODUCT_IDS = ["keys", "group", "event"] as const;
 
 export type ProductId = (typeof PRODUCT_IDS)[number];
+export type StoredProductId = ProductId;
+
+export const STORED_PRODUCT_IDS = PRODUCT_IDS;
 
 export const TICKET_TYPES = [
   { value: "standard", label: "Стандартный" },
@@ -8,14 +11,26 @@ export const TICKET_TYPES = [
   { value: "child", label: "Детский до 12 лет" },
 ] as const;
 
-export type ProductConfig = {
-  id: ProductId;
+export const GROUP_TICKET_TERMS = [
+  "Групповая покупка — это возможность приобрести от 7 до 20 билетов на один сеанс одним заказом.",
+  "Предложение действует при покупке от 7 до 20 билетов.",
+  "Для покупки необходимо быть зарегистрированным и авторизованным участником программы лояльности КАРОНА.",
+  "Стоимость билетов определяется выбранными кинотеатром, сеансом, залом, местами и действующими тарифами.",
+  "Экономия 10%",
+  "Групповые билеты доступны для покупки на любые сеансы, доступные для онлайн-продажи, если иное не предусмотрено условиями конкретного фильма.",
+  "К заказу можно добавить продукцию кинобара.",
+  "Возврат осуществляется для всего заказа целиком в соответствии с действующими правилами возврата билетов КАРО.",
+] as const;
+
+export type ProductConfig<I extends StoredProductId = StoredProductId> = {
+  id: I;
   slug: string;
   title: string;
   kicker: string;
   summary: string;
   bullets: string[];
   cta: string;
+  termsLabel?: string;
   fields: {
     hall: boolean;
     film: boolean;
@@ -26,18 +41,18 @@ export type ProductConfig = {
   };
 };
 
-export const PRODUCTS: Record<ProductId, ProductConfig> = {
+export const PRODUCTS: { [K in StoredProductId]: ProductConfig<K> } = {
   keys: {
     id: "keys",
     slug: "keys",
     title: "Ключи от зала",
-    kicker: "Частный сеанс",
+    kicker: "Приватный сеанс",
     summary:
-      "Забронируйте зал под свою компанию: фильм из репертуара или свой контент.",
+      "Полная приватность: зал только для вашей компании — без посторонних зрителей.",
     bullets: [
-      "Кинотеатры и залы из каталога аренды, не вся сеть КАРО",
-      "Формат зала с преимуществами, вместимость и стоимость сразу в форме",
-      "Заявка сразу попадает менеджеру в административную панель",
+      "Полная приватность: зал только для вашей компании — без посторонних зрителей",
+      "Индивидуальное время: сеанс стартует по вашему расписанию",
+      "Просмотр своего контента: ролик, презентация или запись",
     ],
     cta: "Оставить заявку",
     fields: {
@@ -52,16 +67,20 @@ export const PRODUCTS: Record<ProductId, ProductConfig> = {
   group: {
     id: "group",
     slug: "group",
-    title: "Групповые походы",
-    kicker: "Групповые билеты",
+    title: "Групповой билет",
+    kicker: "В кино большой компанией — проще и выгоднее",
     summary:
-      "Организуйте поход в кино для класса, команды или компании — подберём сеанс и тип билета.",
+      "От 7 до 20 билетов в одном заказе. Выгода 10% для участников программы лояльности КАРОНА.",
     bullets: [
-      "Актуальные сеансы выбранного кинотеатра",
-      "Тип билета: стандартный, школьник / студент, детский",
-      "Количество гостей и пожелания в одной заявке",
+      "От 7 до 20 билетов в одном заказе",
+      "Выбирай любой доступный сеанс",
+      "Доступны все типы билетов",
+      "Выгода 10%",
+      "Добавляй попкорн, напитки и другую продукцию кинобара",
+      "Предложение доступно только для участников программы лояльности КАРОНА",
     ],
-    cta: "Оставить заявку",
+    cta: "Купить билеты",
+    termsLabel: "Условия",
     fields: {
       hall: false,
       film: true,
@@ -75,13 +94,12 @@ export const PRODUCTS: Record<ProductId, ProductConfig> = {
     id: "event",
     slug: "event",
     title: "Мероприятие в КАРО",
-    kicker: "Аренда под ивент",
+    kicker: "Для особого случая",
     summary:
-      "Корпоратив, презентация, день рождения — зал и интервал аренды без привязки к сеансу.",
+      "Корпоратив, романтичное свидание, день рождения или вечеринка — индивидуальное время и сервис под ключ.",
     bullets: [
-      "Город, кинотеатр, формат и конкретный зал из каталога аренды",
-      "Дата и время начала и окончания — можно на несколько дней",
-      "Описание мероприятия в комментарии",
+      "Корпоратив, романтичное свидание, день рождения или вечеринка — индивидуальное время и сервис под ключ",
+      "от камерного до главной премьерной площадки страны",
     ],
     cta: "Оставить заявку",
     fields: {
@@ -98,5 +116,9 @@ export const PRODUCTS: Record<ProductId, ProductConfig> = {
 export const PRODUCT_LIST = PRODUCT_IDS.map((id) => PRODUCTS[id]);
 
 export function isProductId(value: string): value is ProductId {
-  return PRODUCT_IDS.includes(value as ProductId);
+  return (PRODUCT_IDS as readonly string[]).includes(value);
+}
+
+export function isStoredProductId(value: string): value is StoredProductId {
+  return (STORED_PRODUCT_IDS as readonly string[]).includes(value);
 }

@@ -1,40 +1,47 @@
+import { AutumnHeroBanner } from "@/components/landing/AutumnDecor";
 import { HashLink } from "@/components/ui/HashLink";
 
 export function Hero({
-  kicker = "Роскошный максимум",
-  title = "Три услуги КАРО — одна заявка менеджеру",
-  text = "Ключи от зала, групповой поход и мероприятие. Заявка сразу попадает в административную панель.",
+  kicker = "Осень в КАРО",
+  title = "Кино по твоему сценарию",
+  text = "Приватный зал, билеты для большой компании или мероприятие в КАРО — выбирай свой формат.",
   ctaHref = "#products",
+  ctaLabel = "Оставить заявку",
+  note = "подберём формат →",
 }: {
   kicker?: string;
   title?: string;
   text?: string;
   ctaHref?: string;
+  ctaLabel?: string;
+  note?: string;
 }) {
   return (
     <section className="relative overflow-hidden border-b border-line">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          background:
-            "radial-gradient(1200px 500px at 80% -10%, rgba(233,26,59,0.35), transparent), radial-gradient(800px 400px at 10% 110%, rgba(212,179,122,0.18), transparent)",
-        }}
-      />
-      <div className="relative mx-auto max-w-6xl px-4 py-16 sm:py-24 lg:py-32">
-        <p className="mb-4 font-[family-name:var(--font-display)] text-xs tracking-[0.28em] text-gold uppercase">
-          {kicker}
-        </p>
-        <h1 className="max-w-3xl font-[family-name:var(--font-display)] text-4xl leading-tight font-semibold sm:text-5xl lg:text-6xl">
-          {title}
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg text-muted">{text}</p>
-        <div className="mt-10">
-          <HashLink
-            href={ctaHref}
-            className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:brightness-110"
-          >
-            Оставить заявку
-          </HashLink>
+      <div className="hero-glow pointer-events-none absolute inset-0 opacity-40" />
+      <div className="hero-stage relative">
+        <AutumnHeroBanner />
+        <div className="hero-copy relative z-10 px-4 py-16 sm:px-8 sm:py-24 lg:px-12 lg:py-28">
+          <p className="mb-4 font-[family-name:var(--font-display)] text-xs tracking-[0.28em] text-gold uppercase">
+            {kicker}
+          </p>
+          <h1 className="max-w-xl font-[family-name:var(--font-display)] text-4xl leading-tight font-semibold sm:text-5xl lg:text-6xl">
+            {title}
+          </h1>
+          <p className="mt-6 max-w-2xl text-xl leading-relaxed text-foreground/90 sm:text-2xl">
+            {text}
+          </p>
+          <div className="mt-10 flex flex-wrap items-center gap-5">
+            <span className="autumn-only autumn-note hero-note" aria-hidden="true">
+              {note}
+            </span>
+            <HashLink
+              href={ctaHref}
+              className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 font-semibold text-white transition hover:brightness-110"
+            >
+              {ctaLabel}
+            </HashLink>
+          </div>
         </div>
       </div>
     </section>

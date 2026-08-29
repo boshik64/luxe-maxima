@@ -104,10 +104,8 @@ export async function createApplication(input: ApplicationInput) {
           ? input.session.custom?.trim() || null
           : null,
       rentalDate:
-        input.productId === "event"
+        input.productId === "event" || input.productId === "keys"
           ? input.rentalStart?.slice(0, 10) || null
-          : input.productId === "keys"
-            ? input.rentalStart?.slice(0, 10) || null
           : input.productId === "group"
             ? input.rentalDate || null
             : null,
@@ -117,9 +115,9 @@ export async function createApplication(input: ApplicationInput) {
           : null,
       rentalDuration: null,
       rentalStart: input.productId === "event" ? input.rentalStart || null : null,
-      rentalEnd: input.productId === "event" ? input.rentalEnd || null : null,
+      rentalEnd: null,
       guests: input.guests ? Number(input.guests) : null,
-      ticketType: input.productId === "group" ? input.ticketType || null : null,
+      ticketType: input.ticketType?.trim() || null,
       contactName: input.contactName,
       phone: input.phone,
       email: input.email,

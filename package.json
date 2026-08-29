@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/lib/applications/schema.test.ts src/lib/applications/admin-patch.test.ts src/lib/captcha.test.ts src/lib/email/mailbox.test.ts src/lib/email/smtp-probe.test.ts",
+    "test": "tsx --test src/lib/applications/schema.test.ts src/lib/applications/admin-patch.test.ts src/lib/captcha.test.ts src/lib/email/mailbox.test.ts src/lib/email/smtp-probe.test.ts src/lib/carousel/href.test.ts",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed"

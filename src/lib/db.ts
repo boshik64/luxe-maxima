@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { PrismaClient } from "@prisma/client";
 
-const SCHEMA_STAMP = "site-banner-v3";
+const SCHEMA_STAMP = "event-promo-v2";
 const nodeRequire = createRequire(`${process.cwd()}/package.json`);
 
 const globalForPrisma = globalThis as unknown as {
@@ -13,10 +13,38 @@ function prismaLog(): ("error" | "warn")[] {
   return process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"];
 }
 
-function hasSiteBanner(client: PrismaClient) {
+function hasDelegate(
+  client: PrismaClient,
+  key: "siteBanner" | "carouselSlide" | "carouselSettings" | "eventPromo",
+) {
+  const delegate = (
+    client as unknown as Record<string, { findMany?: unknown; findFirst?: unknown }>
+  )[key];
   return (
-    typeof (client as unknown as { siteBanner?: { findFirst?: unknown } })
-      .siteBanner?.findFirst === "function"
+    typeof delegate?.findMany === "function" ||
+    typeof delegate?.findFirst === "function"
+  );
+}
+
+function modelHasField(client: PrismaClient, model: string, field: string) {
+  const models = (
+    client as unknown as {
+      _runtimeDataModel?: {
+        models?: Record<string, { fields?: Array<{ name?: string }> }>;
+      };
+    }
+  )._runtimeDataModel?.models;
+  const fields = models?.[model]?.fields;
+  return Array.isArray(fields) && fields.some((item) => item.name === field);
+}
+
+function isCurrentPrisma(client: PrismaClient) {
+  return (
+    hasDelegate(client, "siteBanner") &&
+    hasDelegate(client, "carouselSlide") &&
+    hasDelegate(client, "carouselSettings") &&
+    hasDelegate(client, "eventPromo") &&
+    modelHasField(client, "HallFormat", "showcasePublished")
   );
 }
 
@@ -32,7 +60,7 @@ function forgetPrismaModules() {
 
 function createPrisma(): PrismaClient {
   let client = new PrismaClient({ log: prismaLog() });
-  if (hasSiteBanner(client)) return client;
+  if (isCurrentPrisma(client)) return client;
 
   void client.$disconnect();
   forgetPrismaModules();
@@ -48,7 +76,7 @@ function createPrisma(): PrismaClient {
 if (
   globalForPrisma.prisma &&
   (globalForPrisma.prismaSchemaStamp !== SCHEMA_STAMP ||
-    !hasSiteBanner(globalForPrisma.prisma))
+    !isCurrentPrisma(globalForPrisma.prisma))
 ) {
   void globalForPrisma.prisma.$disconnect();
   globalForPrisma.prisma = undefined;

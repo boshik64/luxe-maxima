@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
-import { fetchCities } from "@/lib/karo/client";
+import { listCitiesWithCinemaCounts } from "@/lib/karo/cities";
 import { CUSTOM_OPTION } from "@/lib/karo/types";
 import { logger } from "@/lib/logger";
 
 export async function GET() {
   try {
-    const cities = await fetchCities();
+    const cities = await listCitiesWithCinemaCounts();
     return NextResponse.json({
       items: [
-        ...cities.map((city) => ({ id: String(city.id), name: city.name })),
+        ...cities.map((city) => ({
+          id: city.id,
+          name: city.name,
+          cinemaCount: city.cinemaCount,
+          crestUrl: city.crestUrl,
+        })),
         CUSTOM_OPTION,
       ],
     });

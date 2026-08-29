@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="КАРО">
+  <rect width="32" height="32" rx="7" fill="#0b0708"/>
+  <rect
+    x="1"
+    y="1"
+    width="30"
+    height="30"
+    rx="6"
+    fill="none"
+    stroke="#6d1220"
+    stroke-width="1"
+  />
+  <path
+    fill="#d4152f"
+    d="M8.25 7h3.75v8.05l6.85-8.05h4.55l-7.35 8.65 7.95 9.35h-4.65l-6.35-7.55v7.55H8.25V7z"
+  />
+</svg>

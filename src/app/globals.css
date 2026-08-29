@@ -22,6 +22,44 @@
   --font-display: var(--font-unbounded);
 }
 
+/*
+ * Тема кампании «Осень в КАРО»: cinematic + лёгкий ретро-винтаж.
+ * Класс вешается на <html> публичной части; админка возвращает нейтральные токены.
+ */
+.theme-autumn {
+  --karo-ink: #0b0708;
+  --karo-graphite: #171013;
+  --karo-wine-deep: #3b0c14;
+  --karo-wine: #6d1220;
+  --karo-wine-bright: #9c1a2c;
+  --karo-red: #d4152f;
+  --karo-ivory: #f5ece0;
+  --karo-paper: #f2e7d4;
+  --karo-caramel: #d7a05c;
+
+  --background: var(--karo-ink);
+  --foreground: var(--karo-ivory);
+  --muted: #a3908a;
+  --line: rgba(245, 236, 224, 0.14);
+  --card: var(--karo-graphite);
+  --primary: var(--karo-red);
+  --gold: var(--karo-caramel);
+  --font-display: var(--font-oswald);
+  color-scheme: dark;
+}
+
+.theme-neutral {
+  --background: #0c0d12;
+  --foreground: #f4f1ea;
+  --muted: #9a958c;
+  --line: rgba(244, 241, 234, 0.12);
+  --card: #15161d;
+  --primary: #e91a3b;
+  --gold: #d4b37a;
+  --font-display: var(--font-unbounded);
+  color-scheme: dark;
+}
+
 html {
   scroll-behavior: smooth;
 }
@@ -80,6 +118,17 @@ select {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--gold) 85%, transparent)
     color-mix(in srgb, var(--line) 90%, transparent);
+  cursor: grab;
+}
+
+.hall-cards-scroll.is-dragging {
+  cursor: grabbing;
+  scroll-snap-type: none;
+  user-select: none;
+}
+
+.hall-cards-scroll.is-dragging * {
+  pointer-events: none;
 }
 
 .hall-cards-scroll::-webkit-scrollbar {
@@ -350,5 +399,906 @@ select {
 
   .ticket-captcha-title {
     font-size: 0.95rem;
+  }
+}
+
+/* ——— Визуальный слой «Осень в КАРО» ——— */
+
+.hero-glow {
+  background:
+    radial-gradient(1200px 500px at 80% -10%, rgba(233, 26, 59, 0.35), transparent),
+    radial-gradient(800px 400px at 10% 110%, rgba(212, 179, 122, 0.18), transparent);
+}
+
+/* Декор живёт только в сезонной теме: без класса лендинг возвращается к прежнему виду. */
+.autumn-only {
+  display: none;
+}
+
+.theme-autumn .autumn-only {
+  display: revert;
+}
+
+.theme-autumn body {
+  background-color: var(--karo-ink);
+  background-image:
+    radial-gradient(
+      1000px 620px at 88% -14%,
+      color-mix(in srgb, var(--karo-wine) 62%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      820px 520px at 4% 6%,
+      color-mix(in srgb, var(--karo-wine-deep) 70%, transparent),
+      transparent
+    ),
+    linear-gradient(180deg, #150c0e 0%, var(--karo-ink) 46%, #120b0d 100%);
+  background-attachment: fixed;
+}
+
+/* Плёночное зерно поверх фона, но под контентом. */
+.theme-autumn body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' /><feColorMatrix type='saturate' values='0' /></filter><rect width='160' height='160' filter='url(%23f)' opacity='0.32' /></svg>");
+  mix-blend-mode: soft-light;
+}
+
+.theme-autumn .hero-glow {
+  background:
+    radial-gradient(
+      900px 460px at 72% -18%,
+      color-mix(in srgb, var(--karo-wine-bright) 42%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      680px 420px at 6% 116%,
+      color-mix(in srgb, var(--karo-caramel) 20%, transparent),
+      transparent
+    );
+}
+
+.theme-autumn h1,
+.theme-autumn h2,
+.theme-autumn h3 {
+  letter-spacing: 0.005em;
+}
+
+/* Баннер во всю ширину страницы, без контейнера. */
+.theme-autumn .hero-stage {
+  overflow: hidden;
+  width: 100%;
+}
+
+.theme-autumn .autumn-hero-banner {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.theme-autumn .autumn-hero-banner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgb(11 7 8 / 0.88) 0%,
+    rgb(11 7 8 / 0.62) 28%,
+    rgb(11 7 8 / 0.18) 52%,
+    transparent 70%
+  );
+}
+
+.theme-autumn .hero-copy {
+  max-width: 38rem;
+}
+
+.theme-autumn .hero-note {
+  color: var(--karo-caramel);
+}
+
+.theme-autumn .autumn-hero-banner .autumn-stamp {
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 2;
+}
+
+@media (min-width: 1024px) {
+  .theme-autumn .hero-stage {
+    min-height: min(72vh, 46rem);
+  }
+
+  .theme-autumn .hero-copy {
+    display: flex;
+    min-height: min(72vh, 46rem);
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1023px) {
+  .theme-autumn .hero-stage {
+    min-height: 34rem;
+  }
+
+  .theme-autumn .autumn-hero-banner::after {
+    background: linear-gradient(
+      180deg,
+      rgb(11 7 8 / 0.82) 0%,
+      rgb(11 7 8 / 0.55) 48%,
+      rgb(11 7 8 / 0.2) 72%,
+      transparent 100%
+    );
+  }
+
+  .theme-autumn .autumn-hero-banner img {
+    object-position: 88% center;
+  }
+}
+
+/* Коллаж: «вырезанный» кадр с неровным белым контуром. */
+
+.theme-autumn .autumn-collage {
+  position: relative;
+  display: block;
+  padding: 0.85rem 0.85rem 3.25rem;
+  background: linear-gradient(180deg, #fbf6ec 0%, #f0e6d5 100%);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.55),
+    0 2px 0 rgba(255, 255, 255, 0.35) inset;
+  transform: rotate(-2.2deg);
+  clip-path: polygon(
+    1.5% 2%,
+    22% 0.6%,
+    47% 2.4%,
+    71% 0.5%,
+    99% 2.2%,
+    98.4% 24%,
+    100% 49%,
+    98.6% 73%,
+    99.4% 98%,
+    76% 99.6%,
+    51% 97.8%,
+    26% 99.8%,
+    1% 98.2%,
+    2.2% 74%,
+    0.4% 50%,
+    1.8% 26%
+  );
+}
+
+.theme-autumn .autumn-collage-frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 2px;
+  background:
+    radial-gradient(120% 90% at 50% 0%, #4a1119 0%, transparent 60%),
+    linear-gradient(180deg, #2a0f13 0%, #150a0c 100%);
+}
+
+/* Вертикальный кадр-«билет» в сезонном блоке. */
+.theme-autumn .autumn-collage-portrait {
+  padding: 0.7rem;
+  transform: rotate(2.4deg);
+}
+
+.theme-autumn .autumn-collage-frame-portrait {
+  aspect-ratio: 788 / 1400;
+}
+
+.theme-autumn .autumn-collage-caption {
+  position: absolute;
+  right: 1.4rem;
+  bottom: 0.9rem;
+  left: 1.4rem;
+}
+
+/* Рукописная ремарка: короткая, не больше одной на экран. */
+.theme-autumn .autumn-note {
+  display: block;
+  font-family: var(--font-caveat), cursive;
+  font-size: 1.4rem;
+  line-height: 1.15;
+  color: #7a2230;
+  transform: rotate(-1.2deg);
+}
+
+/* Штамп: максимум один на экран. Цена — главный акцент. */
+.theme-autumn .autumn-stamp {
+  position: absolute;
+  top: -1.75rem;
+  right: -1.5rem;
+  display: flex;
+  width: 9.5rem;
+  height: 9.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  padding: 0.35rem 0.45rem 0.45rem;
+  border: 2px solid color-mix(in srgb, var(--karo-wine-bright) 75%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--karo-paper) 95%, transparent);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--karo-wine-bright) 22%, transparent);
+  color: var(--karo-wine-bright);
+  font-family: var(--font-display), sans-serif;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(-11deg);
+}
+
+.theme-autumn .autumn-stamp-kicker {
+  max-width: 7.4rem;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.theme-autumn .autumn-stamp-from {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+}
+
+.theme-autumn .autumn-stamp-price {
+  color: var(--karo-red);
+  font-size: 2.15rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+/* Сезонный блок: один визуальный герой — билет кампании. */
+.theme-autumn .autumn-season {
+  display: block;
+  border-top: 1px solid var(--line);
+  background-image: radial-gradient(
+    900px 420px at 12% 0%,
+    color-mix(in srgb, var(--karo-wine-deep) 45%, transparent),
+    transparent
+  );
+}
+
+.theme-autumn .season-carousel-shell {
+  position: relative;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 4rem 1rem 3.5rem;
+}
+
+.theme-autumn .season-carousel {
+  --season-carousel-art-width: min(100%, 28rem);
+  --season-carousel-art-height: 21rem;
+}
+
+.theme-autumn .season-carousel-viewport {
+  overflow: hidden;
+}
+
+.theme-autumn .season-carousel-track {
+  display: flex;
+  transition: transform 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-autumn .season-carousel-item {
+  flex: 0 0 100%;
+  min-width: 100%;
+}
+
+.theme-autumn .season-carousel-slide {
+  display: flex;
+  flex-direction: column;
+  gap: 2.75rem;
+  min-width: 0;
+}
+
+.theme-autumn .season-carousel-copy {
+  min-width: 0;
+}
+
+.theme-autumn .season-carousel-slide.is-image-right {
+  flex-direction: column-reverse;
+}
+
+.theme-autumn .season-carousel-art-slot {
+  width: min(100%, var(--season-carousel-art-width));
+  height: var(--season-carousel-art-height);
+  max-width: 100%;
+  flex-shrink: 0;
+  margin-inline: auto;
+  overflow: hidden;
+}
+
+.theme-autumn .season-carousel-art.is-duo {
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.theme-autumn .season-carousel-art-duo-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.theme-autumn .season-carousel-art {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--karo-graphite);
+  box-shadow: 0 22px 44px rgba(0, 0, 0, 0.4);
+}
+
+.theme-autumn .season-carousel-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.theme-autumn .season-carousel-art.is-duo .season-carousel-art-back,
+.theme-autumn .season-carousel-art.is-duo .season-carousel-art-front {
+  position: absolute;
+  width: 62%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--karo-graphite);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+}
+
+.theme-autumn .season-carousel-art.is-duo.is-poster-duo .season-carousel-art-duo-frame {
+  width: 82%;
+  height: 100%;
+  margin-inline: auto;
+}
+
+.theme-autumn .season-carousel-art.is-duo.is-poster-duo .season-carousel-art-back,
+.theme-autumn .season-carousel-art.is-duo.is-poster-duo .season-carousel-art-front {
+  width: 56%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  max-height: 100%;
+}
+
+.theme-autumn .season-carousel-art.is-duo .season-carousel-art-back {
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+.theme-autumn .season-carousel-art.is-duo .season-carousel-art-front {
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  outline: 3px solid var(--karo-graphite);
+}
+
+.theme-autumn .season-carousel-slide.is-image-right .season-carousel-art.is-duo .season-carousel-art-back {
+  left: auto;
+  right: 0;
+}
+
+.theme-autumn .season-carousel-slide.is-image-right .season-carousel-art.is-duo .season-carousel-art-front {
+  right: auto;
+  left: 0;
+}
+
+.theme-autumn .season-carousel-art.is-duo .season-carousel-art-back img,
+.theme-autumn .season-carousel-art.is-duo .season-carousel-art-front img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.theme-autumn .season-carousel-arrow {
+  display: none;
+}
+
+.theme-autumn .season-carousel-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 1.75rem;
+}
+
+.theme-autumn .season-carousel-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--karo-ivory) 35%, transparent);
+}
+
+.theme-autumn .season-carousel-dot.is-active {
+  width: 1.35rem;
+  background: var(--karo-caramel);
+}
+
+@media (min-width: 1024px) {
+  .theme-autumn .season-carousel {
+    --season-carousel-art-width: 36rem;
+    --season-carousel-art-height: 27rem;
+  }
+
+  .theme-autumn .season-carousel-shell {
+    max-width: 80rem;
+    padding: 6rem 0.75rem;
+  }
+
+  .theme-autumn .season-carousel-viewport {
+    max-width: 64rem;
+    margin: 0 auto;
+  }
+
+  .theme-autumn .season-carousel-slide,
+  .theme-autumn .season-carousel-slide.is-image-right {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: 3.5rem;
+  }
+
+  .theme-autumn .season-carousel-slide.is-image-left .season-carousel-art-slot {
+    grid-column: 1;
+    grid-row: 1;
+    margin-inline: 0 auto;
+    justify-self: end;
+    max-width: 100%;
+  }
+
+  .theme-autumn .season-carousel-slide.is-image-left .season-carousel-copy {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .theme-autumn .season-carousel-slide.is-image-right .season-carousel-copy {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  .theme-autumn .season-carousel-slide.is-image-right .season-carousel-art-slot {
+    grid-column: 2;
+    grid-row: 1;
+    margin-inline: auto 0;
+    justify-self: start;
+    max-width: 100%;
+  }
+
+  .theme-autumn .season-carousel-arrow {
+    position: absolute;
+    top: 50%;
+    z-index: 2;
+    display: flex;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--karo-ivory) 28%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--karo-ink) 72%, transparent);
+    color: var(--karo-ivory);
+    font-size: 1.75rem;
+    line-height: 1;
+    transform: translateY(-50%);
+  }
+
+  .theme-autumn .season-carousel-arrow:hover {
+    border-color: var(--karo-caramel);
+    color: var(--karo-caramel);
+  }
+
+  .theme-autumn .season-carousel-arrow.is-prev {
+    left: 0.15rem;
+  }
+
+  .theme-autumn .season-carousel-arrow.is-next {
+    right: 0.15rem;
+  }
+
+  .theme-autumn .season-carousel-dots {
+    display: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .theme-autumn .season-carousel-viewport {
+    max-width: 72rem;
+  }
+
+  .theme-autumn .season-carousel-arrow.is-prev {
+    left: 0.35rem;
+  }
+
+  .theme-autumn .season-carousel-arrow.is-next {
+    right: 0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-autumn .season-carousel-track {
+    transition: none;
+  }
+}
+
+.theme-autumn .hall-showcase-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.75rem;
+}
+
+.theme-autumn .hall-showcase-art {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--karo-graphite);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.theme-autumn .hall-showcase-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.theme-autumn .hall-showcase-caption {
+  margin-top: 0.9rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 768px) {
+  .theme-autumn .hall-showcase-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+.theme-autumn .event-promo {
+  display: block;
+  border-top: 1px solid var(--line);
+  background-image: radial-gradient(
+    900px 480px at 88% 0%,
+    color-mix(in srgb, var(--karo-wine-deep) 40%, transparent),
+    transparent
+  );
+}
+
+.theme-autumn .event-promo-lists {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin-top: 3rem;
+}
+
+.theme-autumn .event-promo-lists ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.theme-autumn .event-promo-lists li {
+  position: relative;
+  padding: 0.55rem 0 0.55rem 1.25rem;
+  color: var(--foreground);
+  border-bottom: 1px solid color-mix(in srgb, var(--karo-ivory) 10%, transparent);
+}
+
+.theme-autumn .event-promo-lists li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: var(--karo-caramel);
+}
+
+.theme-autumn .event-promo-highlights {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 2.75rem;
+}
+
+.theme-autumn .event-promo-highlights p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin: 0;
+  min-height: 9.5rem;
+  padding: 1.35rem 1.15rem;
+  border-radius: 1.1rem;
+  background: color-mix(in srgb, var(--karo-wine-deep) 42%, transparent);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.theme-autumn .event-promo-highlights img {
+  width: 3.5rem;
+  height: 3.5rem;
+  object-fit: contain;
+}
+
+.theme-autumn .event-promo-pdf {
+  margin: 2.75rem 0 0;
+  max-width: 42rem;
+}
+
+.theme-autumn .event-promo-pdf a {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  color: var(--karo-caramel);
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.45;
+  text-decoration: underline;
+  text-underline-offset: 0.28em;
+}
+
+.theme-autumn .event-promo-pdf-icon {
+  flex-shrink: 0;
+  margin-top: 0.12rem;
+}
+
+.theme-autumn .event-promo-pdf a:hover {
+  color: var(--karo-ivory);
+}
+
+@media (min-width: 768px) {
+  .theme-autumn .event-promo-lists {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3rem;
+  }
+
+  .theme-autumn .event-promo-highlights {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Карточки услуг: тёмные, с одним маленьким коллажным акцентом. */
+.theme-autumn .autumn-card {
+  position: relative;
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--karo-wine-deep) 34%, transparent),
+    transparent 58%
+  );
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+}
+
+.theme-autumn .autumn-card:hover {
+  border-color: color-mix(in srgb, var(--karo-wine-bright) 60%, transparent);
+}
+
+.theme-autumn .autumn-card-accent {
+  position: absolute;
+  top: -1.1rem;
+  right: 1.5rem;
+  display: block;
+  width: 3.5rem;
+  padding: 0.28rem;
+  background: linear-gradient(180deg, #fbf6ec 0%, #efe4d2 100%);
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.45);
+  transform: rotate(5deg);
+  clip-path: polygon(
+    3% 3%,
+    38% 0,
+    72% 3%,
+    100% 1%,
+    97% 34%,
+    100% 68%,
+    98% 99%,
+    64% 97%,
+    31% 100%,
+    2% 98%,
+    4% 66%,
+    0 33%
+  );
+}
+
+.theme-autumn .autumn-card:nth-child(2) .autumn-card-accent {
+  transform: rotate(-6deg);
+}
+
+.theme-autumn .autumn-card:nth-child(3) .autumn-card-accent {
+  transform: rotate(3.5deg);
+}
+
+.theme-autumn .autumn-card-accent svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 1023px) {
+  .theme-autumn .autumn-collage {
+    transform: rotate(-1.4deg);
+  }
+
+  .theme-autumn .autumn-hero-banner .autumn-stamp {
+    top: auto;
+    bottom: 1.25rem;
+    right: 0.75rem;
+    width: 7.75rem;
+    height: 7.75rem;
+  }
+
+  .theme-autumn .autumn-stamp-kicker {
+    max-width: 6.2rem;
+    font-size: 11px;
+  }
+
+  .theme-autumn .autumn-stamp-from {
+    font-size: 11px;
+  }
+
+  .theme-autumn .autumn-stamp-price {
+    font-size: 1.7rem;
+  }
+}
+
+.form-product-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .form-product-grid {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+}
+
+.form-product-btn {
+  display: flex;
+  min-height: 10rem;
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 1.5rem;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.form-product-btn:hover {
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.form-product-btn.is-active {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.form-product-glyph {
+  display: flex;
+  width: 4.75rem;
+  height: 3.4rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #fbf6ec 0%, #efe4d2 100%);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
+}
+
+.form-product-glyph svg {
+  width: 3.4rem;
+  height: 2.4rem;
+}
+
+.form-product-kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.form-product-kicker.is-sentence {
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.form-product-title {
+  font-family: var(--font-display), sans-serif;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.form-step {
+  animation: form-step-in 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.form-step-contacts {
+  animation-duration: 0.62s;
+}
+
+.form-step-contacts > * {
+  animation: form-step-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.form-step-contacts > *:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.form-step-contacts > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.form-step-contacts > *:nth-child(3) {
+  animation-delay: 0.16s;
+}
+.form-step-contacts > *:nth-child(4) {
+  animation-delay: 0.22s;
+}
+.form-step-contacts > *:nth-child(5) {
+  animation-delay: 0.28s;
+}
+.form-step-contacts > *:nth-child(6) {
+  animation-delay: 0.34s;
+}
+
+.date-picker-popover {
+  width: 16.5rem;
+  max-width: calc(100vw - 2rem);
+}
+
+@keyframes form-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-autumn .autumn-collage,
+  .theme-autumn .autumn-stamp,
+  .theme-autumn .autumn-card-accent {
+    transform: none;
+  }
+
+  .form-product-btn,
+  .form-step,
+  .form-step-contacts > * {
+    animation: none;
+    transform: none;
   }
 }

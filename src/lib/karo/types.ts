@@ -95,6 +95,16 @@ export type CinemaOption = ScheduleOption & {
   formats?: string[];
 };
 
+export type FilmOption = ScheduleOption & {
+  ageRestriction?: number | null;
+  duration?: number | null;
+  posterUrl?: string | null;
+};
+
+export function karoSessionOrderUrl(sessionId: string) {
+  return `https://karofilm.ru/order/session/${sessionId}/`;
+}
+
 export type SessionOption = ScheduleOption & {
   showtime: string;
   filmName: string;

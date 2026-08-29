@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { CAROUSEL_EVENT_SLIDES } from "../src/lib/carousel/defaults";
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,9 @@ const FORMAT_STUBS = [
       "Классический зал для частных сеансов",
       "Подходит для компаний и классов",
     ],
+    imageUrl: "/halls/standart.png",
+    showcasePublished: true,
+    showcaseOrder: 1,
   },
   {
     name: "Комфорт+",
@@ -17,10 +21,16 @@ const FORMAT_STUBS = [
       "Кресла повышенной комфортности",
       "Удобен для камерных мероприятий",
     ],
+    imageUrl: "/halls/comfort.png",
+    showcasePublished: true,
+    showcaseOrder: 2,
   },
   {
     name: "Премиум",
     benefits: ["Меньше мест и больше пространства", "Для закрытых показов"],
+    imageUrl: "/halls/black.png",
+    showcasePublished: true,
+    showcaseOrder: 3,
   },
   {
     name: "IMAX",
@@ -49,8 +59,24 @@ async function seedCatalog() {
     formats.push(
       await prisma.hallFormat.upsert({
         where: { name: format.name },
-        update: { benefits: format.benefits },
-        create: format,
+        update: {
+          benefits: format.benefits,
+          ...("imageUrl" in format
+            ? {
+                imageUrl: format.imageUrl,
+                showcasePublished: format.showcasePublished === true,
+                showcaseOrder: format.showcaseOrder ?? 0,
+              }
+            : {}),
+        },
+        create: {
+          name: format.name,
+          benefits: format.benefits,
+          imageUrl: "imageUrl" in format ? format.imageUrl : undefined,
+          showcasePublished:
+            "showcasePublished" in format ? format.showcasePublished === true : false,
+          showcaseOrder: "showcaseOrder" in format ? format.showcaseOrder ?? 0 : 0,
+        },
       }),
     );
   }
@@ -152,6 +178,16 @@ async function seedCatalog() {
   }
 }
 
+async function seedCarousel() {
+  await prisma.carouselSlide.deleteMany();
+  await prisma.carouselSlide.createMany({ data: CAROUSEL_EVENT_SLIDES });
+  await prisma.carouselSettings.upsert({
+    where: { id: "default" },
+    create: { id: "default", intervalSeconds: 6 },
+    update: {},
+  });
+}
+
 async function main() {
   const email = (process.env.ADMIN_EMAIL ?? "admin@karofilm.ru").toLowerCase();
   const password = process.env.ADMIN_PASSWORD ?? "changeme";
@@ -187,6 +223,7 @@ async function main() {
   });
 
   await seedCatalog();
+  await seedCarousel();
 }
 
 main()

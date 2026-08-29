@@ -200,20 +200,22 @@ export function ApplicationModal({
               value={item.rentalDate}
               onSave={(value) => onSave({ rentalDate: value })}
             />
-          ) : item.rentalStart || item.rentalEnd ? (
+          ) : item.rentalStart ? (
             <>
               <GuestField
                 id="rentalStart"
-                label="Начало аренды"
+                label="Дата и время"
                 value={item.rentalStart ?? ""}
                 onSave={(value) => onSave({ rentalStart: value })}
               />
-              <GuestField
-                id="rentalEnd"
-                label="Окончание аренды"
-                value={item.rentalEnd ?? ""}
-                onSave={(value) => onSave({ rentalEnd: value })}
-              />
+              {item.rentalEnd ? (
+                <GuestField
+                  id="rentalEnd"
+                  label="Окончание аренды"
+                  value={item.rentalEnd}
+                  onSave={(value) => onSave({ rentalEnd: value })}
+                />
+              ) : null}
             </>
           ) : (
             <GuestField

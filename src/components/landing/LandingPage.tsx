@@ -6,13 +6,19 @@ import { Footer } from "@/components/landing/Footer";
 import { Header } from "@/components/landing/Header";
 import { Hero } from "@/components/landing/Hero";
 import { HomeBanner } from "@/components/landing/HomeBanner";
+import { EventsPromo } from "@/components/landing/EventsPromo";
+import { HallShowcase } from "@/components/landing/HallShowcase";
 import { Products } from "@/components/landing/Products";
+import { SeasonBlock } from "@/components/landing/SeasonBlock";
 import { parseResponseJson } from "@/lib/api-json";
 import {
   HOME_BANNER_SLOT,
   HOME_FORM_BANNER_SLOT,
   type PublicBanner,
 } from "@/lib/banner/types";
+import type { PublicHallShowcaseItem } from "@/lib/catalog/admin-types";
+import type { PublicCarousel } from "@/lib/carousel/types";
+import type { PublicEventPromo } from "@/lib/events/types";
 import { PRODUCTS, type ProductId } from "@/lib/products";
 
 export function LandingPage({
@@ -21,17 +27,23 @@ export function LandingPage({
   source = "/",
   banner = null,
   formBanner = null,
+  carousel = null,
+  hallShowcase = [],
+  eventsPromo = null,
 }: {
   initialProduct?: ProductId;
   lockProduct?: boolean;
   source?: string;
   banner?: PublicBanner | null;
   formBanner?: PublicBanner | null;
+  carousel?: PublicCarousel | null;
+  hallShowcase?: PublicHallShowcaseItem[];
+  eventsPromo?: PublicEventPromo | null;
 }) {
-  const [productId, setProductId] = useState<ProductId>(initialProduct ?? "keys");
+  const [productId, setProductId] = useState<ProductId | undefined>(initialProduct);
   const [liveBanner, setLiveBanner] = useState<PublicBanner | null>(banner);
   const [liveFormBanner, setLiveFormBanner] = useState<PublicBanner | null>(formBanner);
-  const product = PRODUCTS[productId];
+  const product = productId ? PRODUCTS[productId] : null;
 
   useEffect(() => {
     if (lockProduct) return;
@@ -68,18 +80,23 @@ export function LandingPage({
       <Header />
       <main>
         <Hero
-          kicker={lockProduct ? product.kicker : "Роскошный максимум"}
-          title={
-            lockProduct
-              ? product.title
-              : "Ключи от зала, групповой поход и мероприятие"
+          kicker={
+            lockProduct && productId === "group"
+              ? "Групповые билеты"
+              : lockProduct
+                ? product?.kicker ?? ""
+                : "Осень в КАРО"
           }
+          title={lockProduct ? product?.title ?? "" : "Кино по твоему сценарию"}
           text={
             lockProduct
-              ? product.summary
-              : "Три лендинга услуг и сводная страница. Все заявки падают в одну административную панель."
+              ? product?.summary ?? ""
+              : "Приватный зал, билеты для большой компании или мероприятие в КАРО — выбирай свой формат."
           }
           ctaHref={lockProduct ? "#form" : "#products"}
+          ctaLabel={
+            lockProduct && productId === "group" ? "Купить билеты" : "Оставить заявку"
+          }
         />
         {lockProduct || !liveBanner ? null : <HomeBanner banner={liveBanner} />}
         {lockProduct ? null : <Products onSelect={selectProduct} />}
@@ -88,15 +105,21 @@ export function LandingPage({
         )}
         <section id="form" className="mx-auto max-w-6xl px-4 pb-24">
           <p className="mb-3 font-[family-name:var(--font-display)] text-xs tracking-[0.28em] text-gold uppercase">
-            Заявка
+            {productId === "group" ? "Билеты" : "Заявка"}
           </p>
           <h2 className="font-[family-name:var(--font-display)] text-3xl font-semibold sm:text-4xl">
-            {product.title}
+            {productId === "group"
+              ? "Выберите сеанс и купите билеты"
+              : lockProduct
+                ? product?.title ?? "Оставьте заявку"
+                : "Оставьте заявку и узнайте стоимость предложения"}
           </h2>
-          <p className="mt-3 mb-8 max-w-2xl text-muted">
-            {lockProduct
-              ? product.summary
-              : "Сначала выберите услугу выше. Поля формы зависят от продукта: аренда зала — из каталога, групповой поход — из расписания КАРО."}
+          <p className="mt-4 mb-8 max-w-3xl text-xl leading-relaxed text-foreground/90">
+            {productId === "group"
+              ? "Кинотеатр, фильм и сеанс — покупка откроется на сайте КАРО."
+              : lockProduct
+                ? product?.summary
+                : "Сначала выберите формат – дальше форма откроется шаг за шагом."}
           </p>
           <ApplicationForm
             productId={productId}
@@ -105,6 +128,9 @@ export function LandingPage({
             source={source}
           />
         </section>
+        {lockProduct ? null : <SeasonBlock initial={carousel} />}
+        {lockProduct ? null : <HallShowcase initial={hallShowcase} />}
+        {lockProduct ? null : <EventsPromo initial={eventsPromo} />}
       </main>
       <Footer />
     </>

@@ -10,7 +10,7 @@ import {
   CatalogTable,
   catalogRowClass,
 } from "@/components/admin/catalog/CatalogTable";
-import type { FormatItem } from "@/lib/catalog/admin-types";
+import { FORMAT_SHOWCASE_MAX, type FormatItem } from "@/lib/catalog/admin-types";
 
 export function FormatsList() {
   const router = useRouter();
@@ -79,7 +79,7 @@ export function FormatsList() {
   return (
     <CatalogShell
       title="Форматы зала"
-      description="Записи открываются на отдельной странице. Там можно изменить название, преимущества и изображение."
+      description={`Картинка на главной — не больше ${FORMAT_SHOWCASE_MAX} форматов. Очередность и публикацию картинки задайте в карточке формата.`}
       action={
         <Link
           href="/admin/catalogs/formats/new"
@@ -91,11 +91,11 @@ export function FormatsList() {
     >
       {error ? <p className="mb-4 text-sm text-primary">{error}</p> : null}
       <CatalogTable
-        columns={["Название", "Преимущества", "Залов", "Публикация", ""]}
+        columns={["Название", "Преимущества", "Залов", "Публикация", "На главной", ""]}
       >
         {items.length === 0 ? (
           <tr>
-            <td colSpan={5} className="px-5 py-12 text-center text-sm text-muted">
+            <td colSpan={6} className="px-5 py-12 text-center text-sm text-muted">
               {error
                 ? "Список недоступен."
                 : "Пока нет форматов. Добавьте первую запись."}
@@ -120,6 +120,9 @@ export function FormatsList() {
                   pending={pendingId === item.id}
                   onToggle={() => void togglePublished(item)}
                 />
+              </td>
+              <td className="px-5 py-4 text-sm text-muted">
+                {item.showcasePublished ? `да · ${item.showcaseOrder}` : "нет"}
               </td>
               <td className="px-5 py-4 text-right">
                 <CatalogRowLink href={`/admin/catalogs/formats/${item.id}`}>
