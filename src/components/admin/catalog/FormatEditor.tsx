@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field, inputClassName } from "@/components/form/Field";
 import {
@@ -19,7 +19,10 @@ export function FormatEditor({ id }: { id?: string }) {
   const [benefits, setBenefits] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState("");
+  const previewUrl = useMemo(
+    () => (file ? URL.createObjectURL(file) : ""),
+    [file],
+  );
   const [showcasePublished, setShowcasePublished] = useState(false);
   const [showcaseOrder, setShowcaseOrder] = useState("0");
   const [publishedCount, setPublishedCount] = useState(0);
@@ -86,14 +89,10 @@ export function FormatEditor({ id }: { id?: string }) {
   }, [load]);
 
   useEffect(() => {
-    if (!file) {
-      setPreviewUrl("");
-      return;
-    }
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const shown = previewUrl || imageUrl || "";
   const othersPublished = showcasePublished

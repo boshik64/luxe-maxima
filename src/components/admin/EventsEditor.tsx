@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Field, inputClassName } from "@/components/form/Field";
 import { AdminPage } from "@/components/admin/AdminPage";
 import {
@@ -24,6 +25,7 @@ function CharCount({ value, max }: { value: string; max: number }) {
 }
 
 export function EventsEditor() {
+  const router = useRouter();
   const [item, setItem] = useState<EventPromoContent | null>(null);
   const [kicker, setKicker] = useState("");
   const [title, setTitle] = useState("");
@@ -42,7 +44,7 @@ export function EventsEditor() {
   const load = useCallback(() => {
     return fetch("/api/admin/events").then(async (response) => {
       if (response.status === 401) {
-        window.location.href = "/admin/login";
+        router.push("/admin/login");
         return;
       }
       const data = (await response.json()) as {
@@ -66,7 +68,7 @@ export function EventsEditor() {
       setEnabled(next.enabled);
       setError("");
     });
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     let cancelled = false;
