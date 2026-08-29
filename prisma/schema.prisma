@@ -179,7 +179,9 @@ model CarouselSlide {
   ctaLabel  String   @default("")
   ctaHref   String   @default("#form")
   imageUrl  String
+  imageUrl2 String   @default("")
   alt       String   @default("")
+  alt2      String   @default("")
   layout    String   @default("image-left")
   enabled   Boolean  @default(true)
   sortOrder Int      @default(0)

@@ -13,7 +13,7 @@ export const CAROUSEL_IMAGE_SPEC = {
   ratio: "4:3",
   maxMb: 8,
   label:
-    "Любой размер: кадр обрежется или растянется под 4:3. Удобнее всего 1200×900, JPG / PNG / WEBP до 8 МБ",
+    "Любой размер: кадр обрежется или растянется под 4:3. Удобнее всего 1200×900, JPG / PNG / WEBP до 8 МБ. Можно добавить второе фото — они наложатся углом.",
 } as const;
 
 /** Подсказки внутренних ссылок для кнопки поста. */
@@ -86,7 +86,9 @@ export type PublicCarouselSlide = {
   ctaLabel: string;
   ctaHref: string;
   imageUrl: string;
+  imageUrl2?: string;
   alt: string;
+  alt2?: string;
   layout: CarouselLayout;
 };
 

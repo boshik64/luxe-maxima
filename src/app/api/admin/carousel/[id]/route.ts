@@ -67,7 +67,10 @@ export async function PATCH(
       throw new CatalogError("Не удалось прочитать файл. Попробуйте JPG или PNG до 8 МБ.");
     }
     const file = asUpload(form.get("file"));
+    const file2 = asUpload(form.get("file2"));
     const imageUrl = file ? await saveBannerUpload(file) : undefined;
+    const imageUrl2 = file2 ? await saveBannerUpload(file2) : undefined;
+    const removeImage2 = form.get("removeImage2") === "true";
     const item = await updateCarouselSlide(id, {
       ...(form.has("kicker") ? { kicker: String(form.get("kicker") ?? "") } : {}),
       ...(form.has("title") ? { title: String(form.get("title") ?? "") } : {}),
@@ -75,6 +78,7 @@ export async function PATCH(
       ...(form.has("ctaLabel") ? { ctaLabel: String(form.get("ctaLabel") ?? "") } : {}),
       ...(form.has("ctaHref") ? { ctaHref: String(form.get("ctaHref") ?? "") } : {}),
       ...(form.has("alt") ? { alt: String(form.get("alt") ?? "") } : {}),
+      ...(form.has("alt2") ? { alt2: String(form.get("alt2") ?? "") } : {}),
       ...(form.has("layout")
         ? { layout: parseCarouselLayout(String(form.get("layout") ?? "")) }
         : {}),
@@ -82,10 +86,15 @@ export async function PATCH(
         ? { enabled: String(form.get("enabled")) === "true" }
         : {}),
       ...(imageUrl ? { imageUrl } : {}),
+      ...(imageUrl2 ? { imageUrl2 } : removeImage2 ? { imageUrl2: "" } : {}),
     });
     revalidateHome();
     return NextResponse.json({
-      item: { ...item, imageUrl: bannerPublicUrl(item.imageUrl) },
+      item: {
+        ...item,
+        imageUrl: bannerPublicUrl(item.imageUrl),
+        imageUrl2: item.imageUrl2 ? bannerPublicUrl(item.imageUrl2) : "",
+      },
     });
   } catch (error) {
     return errorResponse(error);

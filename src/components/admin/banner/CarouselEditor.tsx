@@ -23,7 +23,9 @@ type SlideItem = {
   ctaLabel: string;
   ctaHref: string;
   imageUrl: string;
+  imageUrl2: string;
   alt: string;
+  alt2: string;
   layout: CarouselLayout;
   enabled: boolean;
   updatedAt: string;
@@ -37,11 +39,15 @@ type SlotDraft = {
   ctaLabel: string;
   ctaHref: string;
   alt: string;
+  alt2: string;
   layout: CarouselLayout;
   enabled: boolean;
   imageUrl: string;
+  imageUrl2: string;
   updatedAt: string;
   file: File | null;
+  file2: File | null;
+  removeImage2: boolean;
 };
 
 function emptySlot(): SlotDraft {
@@ -53,11 +59,15 @@ function emptySlot(): SlotDraft {
     ctaLabel: "Забрать сеанс",
     ctaHref: "#form",
     alt: "",
+    alt2: "",
     layout: "image-left",
     enabled: false,
     imageUrl: "",
+    imageUrl2: "",
     updatedAt: "",
     file: null,
+    file2: null,
+    removeImage2: false,
   };
 }
 
@@ -70,22 +80,29 @@ function itemToSlot(item: SlideItem): SlotDraft {
     ctaLabel: item.ctaLabel,
     ctaHref: item.ctaHref,
     alt: item.alt,
+    alt2: item.alt2,
     layout: item.layout,
     enabled: item.enabled,
     imageUrl: item.imageUrl,
+    imageUrl2: item.imageUrl2,
     updatedAt: item.updatedAt,
     file: null,
+    file2: null,
+    removeImage2: false,
   };
 }
 
 function appendSlotForm(body: FormData, slot: SlotDraft) {
   if (slot.file) body.set("file", slot.file);
+  if (slot.file2) body.set("file2", slot.file2);
+  if (slot.removeImage2) body.set("removeImage2", "true");
   body.set("kicker", slot.kicker);
   body.set("title", slot.title);
   body.set("body", slot.body);
   body.set("ctaLabel", slot.ctaLabel);
   body.set("ctaHref", slot.ctaHref);
   body.set("alt", slot.alt);
+  body.set("alt2", slot.alt2);
   body.set("layout", slot.layout);
   body.set("enabled", slot.enabled ? "true" : "false");
 }
@@ -142,40 +159,62 @@ function LayoutPicker({
   );
 }
 
-function CoverPreview({ src, emptyLabel }: { src: string; emptyLabel: string }) {
-  if (!src) {
-    return (
-      <div className="flex aspect-[4/3] max-w-md items-center justify-center rounded-2xl border border-dashed border-line bg-background text-sm text-muted">
-        {emptyLabel}
-      </div>
-    );
-  }
-  return (
-    <div className="aspect-[4/3] max-w-md overflow-hidden rounded-2xl border border-line bg-background">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" className="h-full w-full object-cover object-center" />
-    </div>
-  );
-}
-
 function SlotPreview({ slot }: { slot: SlotDraft }) {
   const objectUrl = useMemo(
     () => (slot.file ? URL.createObjectURL(slot.file) : ""),
     [slot.file],
   );
+  const objectUrl2 = useMemo(
+    () => (slot.file2 ? URL.createObjectURL(slot.file2) : ""),
+    [slot.file2],
+  );
   useEffect(
     () => () => {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (objectUrl2) URL.revokeObjectURL(objectUrl2);
     },
-    [objectUrl],
+    [objectUrl, objectUrl2],
   );
   const src =
     objectUrl || (slot.imageUrl ? `${slot.imageUrl}?v=${slot.updatedAt}` : "");
+  const src2 =
+    objectUrl2 ||
+    (!slot.removeImage2 && slot.imageUrl2
+      ? `${slot.imageUrl2}?v=${slot.updatedAt}`
+      : "");
+
+  if (src && src2) {
+    return (
+      <div className="season-carousel-art-slot max-w-md">
+        <div className="season-carousel-art is-duo">
+          <div className="season-carousel-art-duo-frame">
+            <div className="season-carousel-art-back">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt="" className="h-full w-full object-cover" />
+            </div>
+            <div className="season-carousel-art-front">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src2} alt="" className="h-full w-full object-cover" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <CoverPreview
-      src={src}
-      emptyLabel="Картинка подгонится под 4:3: лишнее обрежется, мелкое растянется"
-    />
+    <div className="season-carousel-art-slot max-w-md">
+      {src ? (
+        <div className="season-carousel-art">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={src} alt="" className="h-full w-full object-cover" />
+        </div>
+      ) : (
+        <div className="flex h-full w-full items-center justify-center rounded-2xl border border-dashed border-line bg-background text-sm text-muted">
+          Картинка подгонится под 4:3: лишнее обрежется, мелкое растянется
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -485,6 +524,34 @@ export function CarouselEditor() {
               }
             />
           </Field>
+          <Field
+            id={`file2-${index}`}
+            label={slot.imageUrl2 || slot.file2 ? "Заменить второе изображение" : "Второе изображение (необязательно)"}
+          >
+            <input
+              id={`file2-${index}`}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="block w-full text-sm text-muted file:mr-4 file:rounded-full file:border-0 file:bg-primary file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+              onChange={(event) =>
+                patchSlot(index, {
+                  file2: event.target.files?.[0] ?? null,
+                  removeImage2: false,
+                })
+              }
+            />
+          </Field>
+          {slot.imageUrl2 && !slot.file2 ? (
+            <button
+              type="button"
+              className="text-sm text-primary"
+              onClick={() =>
+                patchSlot(index, { removeImage2: true, file2: null })
+              }
+            >
+              Убрать второе изображение
+            </button>
+          ) : null}
           <p className="text-xs text-muted">{CAROUSEL_IMAGE_SPEC.label}</p>
           <Field id={`kicker-${index}`} label="Надзаголовок">
             <input

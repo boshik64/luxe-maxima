@@ -55,7 +55,9 @@ function serializeSlide(item: {
   ctaLabel: string;
   ctaHref: string;
   imageUrl: string;
+  imageUrl2: string;
   alt: string;
+  alt2: string;
   layout: string;
   enabled: boolean;
   sortOrder: number;
@@ -64,6 +66,7 @@ function serializeSlide(item: {
   return {
     ...item,
     imageUrl: bannerPublicUrl(item.imageUrl),
+    imageUrl2: item.imageUrl2 ? bannerPublicUrl(item.imageUrl2) : "",
     updatedAt: item.updatedAt.toISOString(),
   };
 }
@@ -105,16 +108,20 @@ export async function POST(request: NextRequest) {
     }
     const file = asUpload(form.get("file"));
     if (!file) throw new CatalogError("Загрузите изображение поста");
+    const file2 = asUpload(form.get("file2"));
 
     const imageUrl = await saveBannerUpload(file);
+    const imageUrl2 = file2 ? await saveBannerUpload(file2) : "";
     const item = await createCarouselSlide({
       imageUrl,
+      imageUrl2,
       kicker: String(form.get("kicker") ?? ""),
       title: String(form.get("title") ?? ""),
       body: String(form.get("body") ?? ""),
       ctaLabel: String(form.get("ctaLabel") ?? ""),
       ctaHref: String(form.get("ctaHref") ?? "#form"),
       alt: String(form.get("alt") ?? ""),
+      alt2: String(form.get("alt2") ?? ""),
       layout: parseCarouselLayout(String(form.get("layout") ?? "")),
       enabled: String(form.get("enabled")) === "true",
     });

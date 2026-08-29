@@ -26,14 +26,47 @@ function Cta({ href, label }: { href: string; label: string }) {
   );
 }
 
-function Slide({ item }: { item: PublicCarouselSlide }) {
-  const image = (
-    <div className="season-carousel-art">
-      {/* Пользовательский кадр неизвестного размера */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={item.imageUrl} alt={item.alt || item.title} />
+function CarouselArt({ item }: { item: PublicCarouselSlide }) {
+  const duo = Boolean(item.imageUrl2);
+
+  if (duo) {
+    const posterDuo =
+      item.imageUrl.includes("film-ivan") || item.imageUrl.includes("film-myatezh");
+    return (
+      <div className="season-carousel-art-slot">
+        <div
+          className={`season-carousel-art is-duo${posterDuo ? " is-poster-duo" : ""}`}
+        >
+          <div className="season-carousel-art-duo-frame">
+            <div className="season-carousel-art-back">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={item.imageUrl} alt={item.alt || item.title} />
+            </div>
+            <div className="season-carousel-art-front">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.imageUrl2!}
+                alt={item.alt2 || item.title}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="season-carousel-art-slot">
+      <div className="season-carousel-art">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={item.imageUrl} alt={item.alt || item.title} />
+      </div>
     </div>
   );
+}
+
+function Slide({ item }: { item: PublicCarouselSlide }) {
+  const image = <CarouselArt item={item} />;
   const copy = (
     <div className="season-carousel-copy">
       {item.kicker ? (

@@ -134,6 +134,12 @@ export async function getPublicCarousel(): Promise<PublicCarousel> {
           ctaLabel: item.ctaLabel,
           ctaHref: publicHref(item.ctaHref),
           imageUrl: toPublicImage(item.imageUrl),
+          ...(item.imageUrl2?.trim()
+            ? {
+                imageUrl2: toPublicImage(item.imageUrl2),
+                alt2: item.alt2 || item.title,
+              }
+            : {}),
           alt: item.alt || item.title,
           layout: parseCarouselLayout(item.layout),
         })),
@@ -151,7 +157,9 @@ export async function createCarouselSlide(data: {
   ctaLabel?: string;
   ctaHref?: string;
   imageUrl: string;
+  imageUrl2?: string;
   alt?: string;
+  alt2?: string;
   layout?: CarouselLayout;
   enabled?: boolean;
 }) {
@@ -181,7 +189,9 @@ export async function createCarouselSlide(data: {
       ctaLabel: data.ctaLabel?.trim() ?? "",
       ctaHref: slideHref(data.ctaHref),
       imageUrl: data.imageUrl,
+      imageUrl2: data.imageUrl2?.trim() ?? "",
       alt: data.alt?.trim() ?? "",
+      alt2: data.alt2?.trim() ?? "",
       layout: parseCarouselLayout(data.layout),
       enabled: data.enabled === true,
       sortOrder: count,
@@ -198,7 +208,9 @@ export async function updateCarouselSlide(
     ctaLabel?: string;
     ctaHref?: string;
     imageUrl?: string;
+    imageUrl2?: string;
     alt?: string;
+    alt2?: string;
     layout?: CarouselLayout;
     enabled?: boolean;
     sortOrder?: number;
@@ -220,6 +232,13 @@ export async function updateCarouselSlide(
   if (data.imageUrl && current.imageUrl && data.imageUrl !== current.imageUrl) {
     await removeBannerUpload(current.imageUrl);
   }
+  if (
+    data.imageUrl2 !== undefined &&
+    current.imageUrl2 &&
+    data.imageUrl2 !== current.imageUrl2
+  ) {
+    await removeBannerUpload(current.imageUrl2);
+  }
 
   return slides.update({
     where: { id },
@@ -230,7 +249,9 @@ export async function updateCarouselSlide(
       ...(data.ctaLabel !== undefined ? { ctaLabel: data.ctaLabel.trim() } : {}),
       ...(data.ctaHref !== undefined ? { ctaHref: slideHref(data.ctaHref) } : {}),
       ...(data.imageUrl !== undefined ? { imageUrl: data.imageUrl } : {}),
+      ...(data.imageUrl2 !== undefined ? { imageUrl2: data.imageUrl2.trim() } : {}),
       ...(data.alt !== undefined ? { alt: data.alt.trim() } : {}),
+      ...(data.alt2 !== undefined ? { alt2: data.alt2.trim() } : {}),
       ...(data.layout !== undefined ? { layout: parseCarouselLayout(data.layout) } : {}),
       ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
       ...(data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
@@ -243,5 +264,6 @@ export async function deleteCarouselSlide(id: string) {
   const current = await slides.findUnique({ where: { id } });
   if (!current) return;
   if (current.imageUrl) await removeBannerUpload(current.imageUrl);
+  if (current.imageUrl2) await removeBannerUpload(current.imageUrl2);
   await slides.delete({ where: { id } });
 }

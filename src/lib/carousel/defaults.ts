@@ -8,7 +8,9 @@ export const CAROUSEL_EVENT_SLIDES: Array<{
   ctaLabel: string;
   ctaHref: string;
   imageUrl: string;
+  imageUrl2?: string;
   alt: string;
+  alt2?: string;
   layout: CarouselLayout;
   enabled: boolean;
   sortOrder: number;
@@ -19,8 +21,10 @@ export const CAROUSEL_EVENT_SLIDES: Array<{
     body: "Можешь выбрать из текущего репертуара на сайте либо запросить список всех доступных фильмов у менеджера после оформления заявки.",
     ctaLabel: "Забронировать",
     ctaHref: "#form",
-    imageUrl: "/carousel/film.jpg",
-    alt: "Постеры фильмов в кинотеатре КАРО",
+    imageUrl: "/carousel/film-ivan.jpg",
+    imageUrl2: "/carousel/film-myatezh.jpg",
+    alt: "Как Иван в сказку попал",
+    alt2: "Мятеж",
     layout: "image-left",
     enabled: true,
     sortOrder: 0,
@@ -31,8 +35,10 @@ export const CAROUSEL_EVENT_SLIDES: Array<{
     body: "Позови до 30 гостей и закажи закуски и напитки из нашего кинобара. Хочешь устроить уникальное поздравление? Покажи своё видео или презентацию на огромном экране кинотеатра.",
     ctaLabel: "Забронировать",
     ctaHref: "#form",
-    imageUrl: "/carousel/birthday.png",
-    alt: "День рождения в кинозале КАРО",
+    imageUrl: "/carousel/birthday-1.jpg",
+    imageUrl2: "/carousel/birthday-2.jpg",
+    alt: "Компания в фойе кинотеатра КАРО",
+    alt2: "День рождения в кинозале КАРО",
     layout: "image-right",
     enabled: true,
     sortOrder: 1,
@@ -43,8 +49,10 @@ export const CAROUSEL_EVENT_SLIDES: Array<{
     body: "Забронируй кинозал и играй в любимые игры на большом экране. Зови друзей и приноси игровую приставку. Залы, в которых доступна услуга, отмечены специальным символом. Стоимость указана за 2 часа бронирования.",
     ctaLabel: "Забронировать",
     ctaHref: "#form",
-    imageUrl: "/carousel/gaming.png",
+    imageUrl: "/carousel/gaming-1.jpg",
+    imageUrl2: "/carousel/gaming-2.jpg",
     alt: "Игровая вечеринка в кинотеатре КАРО",
+    alt2: "Игра на большом экране в кинотеатре КАРО",
     layout: "image-left",
     enabled: true,
     sortOrder: 2,
@@ -55,7 +63,7 @@ export const CAROUSEL_EVENT_SLIDES: Array<{
     body: "Хочешь, чтобы в зале были только вы вдвоём? Собираешься сделать предложение на большом экране? Мы поможем: менеджеры вовремя выведут на экран видео или презентацию и помогут сделать этот момент незабываемым.",
     ctaLabel: "Забронировать",
     ctaHref: "#form",
-    imageUrl: "/carousel/date.png",
+    imageUrl: "/carousel/date.jpg",
     alt: "Свидание в кинозале КАРО",
     layout: "image-right",
     enabled: true,
@@ -67,8 +75,10 @@ export const CAROUSEL_EVENT_SLIDES: Array<{
     body: "Организуем мероприятия любой сложности: премьеры, конференции, семинары и тренинги, крупные корпоративы и фуршеты. Оформление залов, тематические стенды, кофе-брейки в фойе, залы от 18 до 1509 гостей, премиум-форматы, фото и видеосъёмка.",
     ctaLabel: "Оставить заявку",
     ctaHref: "#form",
-    imageUrl: "/carousel/events.png",
-    alt: "Мероприятия в кинотеатрах КАРО",
+    imageUrl: "/carousel/events-1.jpg",
+    imageUrl2: "/carousel/events-2.jpg",
+    alt: "Мероприятие в зале кинотеатра КАРО",
+    alt2: "Фуршет в кинотеатре КАРО",
     layout: "image-left",
     enabled: true,
     sortOrder: 4,
