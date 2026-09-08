@@ -53,17 +53,38 @@ test("application guest email is branded html", () => {
 });
 
 test("application staff email includes admin link and escapes html", () => {
-  const mail = applicationStaffEmail(application);
-  assert.match(mail.subject, /Новая заявка/);
-  assert.match(mail.html, /admin\/applications\/app-demo-id/);
-  assert.match(mail.html, /Открыть в админке/);
-  assert.match(mail.html, /&lt;микрофон&gt;/);
-  assert.doesNotMatch(mail.html, /<микрофон>/);
+  const previous = process.env.APP_URL;
+  process.env.APP_URL = "https://event.karofilm.ru";
+  try {
+    const mail = applicationStaffEmail(application);
+    assert.match(mail.subject, /Новая заявка/);
+    assert.match(
+      mail.html,
+      /https:\/\/event\.karofilm\.ru\/admin\/applications\/app-demo-id/,
+    );
+    assert.match(mail.html, /Открыть в админке/);
+    assert.match(mail.html, /&lt;микрофон&gt;/);
+    assert.doesNotMatch(mail.html, /<микрофон>/);
+    assert.doesNotMatch(mail.html, /localhost/);
+  } finally {
+    if (previous === undefined) delete process.env.APP_URL;
+    else process.env.APP_URL = previous;
+  }
 });
 
 test("feedback emails escape content", () => {
-  const guest = feedbackGuestEmail(feedback);
-  const staff = feedbackStaffEmail(feedback);
-  assert.match(guest.html, /&lt;стоимость&gt;/);
-  assert.match(staff.html, /admin\/feedback\/fb-demo-id/);
+  const previous = process.env.APP_URL;
+  process.env.APP_URL = "https://event.karofilm.ru";
+  try {
+    const guest = feedbackGuestEmail(feedback);
+    const staff = feedbackStaffEmail(feedback);
+    assert.match(guest.html, /&lt;стоимость&gt;/);
+    assert.match(
+      staff.html,
+      /https:\/\/event\.karofilm\.ru\/admin\/feedback\/fb-demo-id/,
+    );
+  } finally {
+    if (previous === undefined) delete process.env.APP_URL;
+    else process.env.APP_URL = previous;
+  }
 });

@@ -66,16 +66,26 @@ export function AdminNav() {
               );
             })}
         </nav>
-        <button
-          type="button"
-          className="rounded-full border border-line px-4 py-2 text-sm"
-          onClick={async () => {
-            await fetch("/api/admin/logout", { method: "POST" });
-            router.push("/admin/login");
-          }}
-        >
-          Выйти
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="/docs/operator-guide.pdf"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full border border-line px-4 py-2 text-sm text-muted hover:text-foreground"
+          >
+            Инструкция
+          </a>
+          <button
+            type="button"
+            className="rounded-full border border-line px-4 py-2 text-sm"
+            onClick={async () => {
+              await fetch("/api/admin/logout", { method: "POST" });
+              router.push("/admin/login");
+            }}
+          >
+            Выйти
+          </button>
+        </div>
       </div>
     </div>
   );

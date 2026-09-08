@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#18181b" opacity="0.45"/>
+  <rect x="220" y="40" width="520" height="460" rx="16" fill="#fff"/>
+  <text x="248" y="78" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#18181b">Заявка Â· Ключи от зала</text>
+  <text x="248" y="110" font-family="Arial, sans-serif" font-size="12" fill="#71717a">Статус</text>
+  <rect x="248" y="118" width="160" height="32" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="260" y="139" font-family="Arial, sans-serif" font-size="13" fill="#1d4ed8">В работе</text>
+  <text x="248" y="180" font-family="Arial, sans-serif" font-size="12" fill="#71717a">Контактное лицо</text>
+  <text x="248" y="200" font-family="Arial, sans-serif" font-size="14" fill="#18181b">Анна Иванова</text>
+  <text x="248" y="235" font-family="Arial, sans-serif" font-size="12" fill="#71717a">Телефон</text>
+  <text x="248" y="255" font-family="Arial, sans-serif" font-size="14" fill="#18181b">+7 (999) 123-45-67</text>
+  <text x="500" y="235" font-family="Arial, sans-serif" font-size="12" fill="#71717a">Email</text>
+  <text x="500" y="255" font-family="Arial, sans-serif" font-size="14" fill="#18181b">anna@example.com</text>
+  <text x="248" y="295" font-family="Arial, sans-serif" font-size="12" fill="#71717a">Город / кинотеатр / зал</text>
+  <text x="248" y="315" font-family="Arial, sans-serif" font-size="14" fill="#18181b">Москва Â· 11 Октябрь Â· Зал 1</text>
+  <text x="248" y="360" font-family="Arial, sans-serif" font-size="12" fill="#71717a">Комментарий администратора</text>
+  <rect x="248" y="370" width="464" height="70" rx="10" fill="#fafafa" stroke="#e4e4e7"/>
+  <text x="260" y="400" font-family="Arial, sans-serif" font-size="13" fill="#52525b">Перезвонили, ждём подтверждение даты</text>
+  <text x="480" y="475" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#a1a1aa">Статус и комментарий сохраняются сами</text>
+</svg>

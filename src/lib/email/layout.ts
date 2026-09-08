@@ -22,8 +22,10 @@ export function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
+/** Public site origin for links in staff emails («Открыть в админке»). */
 export function appBaseUrl() {
-  return (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const raw = process.env.APP_URL?.trim() || "http://localhost:3000";
+  return raw.replace(/\/$/, "");
 }
 
 type DetailRow = { label: string; value: string };
