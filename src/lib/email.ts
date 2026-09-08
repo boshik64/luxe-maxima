@@ -12,27 +12,39 @@ import {
   feedbackStaffEmail,
 } from "@/lib/email/templates";
 
+function smtpConfigured() {
+  return Boolean(process.env.SMTP_HOST?.trim());
+}
+
 function transport() {
-  if (!process.env.SMTP_HOST) return null;
+  const host = process.env.SMTP_HOST?.trim();
+  if (!host) return null;
+
+  const port = Number(process.env.SMTP_PORT ?? 587);
+  const secure =
+    process.env.SMTP_SECURE === "true" || port === 465;
+  const user = process.env.SMTP_USER?.trim();
+  const pass = process.env.SMTP_PASSWORD ?? "";
+
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: process.env.SMTP_SECURE === "true",
+    host,
+    port,
+    secure,
+    // Port 587: plain connect, then STARTTLS (Encryption = TLS in mail panels).
+    requireTLS: !secure && port === 587,
     connectionTimeout: 8000,
     greetingTimeout: 8000,
     socketTimeout: 8000,
-    auth:
-      process.env.SMTP_USER && process.env.SMTP_PASSWORD
-        ? {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASSWORD,
-          }
-        : undefined,
+    auth: user ? { user, pass } : undefined,
   });
 }
 
 function fromAddress() {
-  return process.env.SMTP_FROM ?? process.env.SMTP_USER;
+  return (
+    process.env.SMTP_FROM?.trim() ||
+    process.env.SMTP_USER?.trim() ||
+    undefined
+  );
 }
 
 async function staffRecipients(kind: StaffNotifyKind) {
@@ -48,14 +60,19 @@ async function sendMail(options: {
 }) {
   const mailer = transport();
   if (!mailer) {
-    logger.info("Email skipped: SMTP is not configured");
+    logger.info("Email skipped: SMTP is not configured (set SMTP_HOST)");
+    return false;
+  }
+  const from = fromAddress();
+  if (!from) {
+    logger.info("Email skipped: set SMTP_FROM (or SMTP_USER)");
     return false;
   }
   const to = Array.isArray(options.to) ? options.to.filter(Boolean) : [options.to];
   if (!to.length) return false;
 
   await mailer.sendMail({
-    from: fromAddress(),
+    from,
     to,
     replyTo: options.replyTo,
     subject: options.subject,
@@ -74,6 +91,9 @@ function applicationNotifyKind(
 }
 
 export async function notifyNewFeedback(item: Feedback) {
+  if (!smtpConfigured()) {
+    logger.info("Feedback emails skipped: SMTP_HOST is empty");
+  }
   const staff = await staffRecipients("feedback");
   const guest = feedbackGuestEmail(item);
   const forStaff = feedbackStaffEmail(item);
@@ -109,6 +129,9 @@ export async function notifyNewFeedback(item: Feedback) {
 }
 
 export async function notifyNewApplication(application: Application) {
+  if (!smtpConfigured()) {
+    logger.info("Application emails skipped: SMTP_HOST is empty");
+  }
   const kind = applicationNotifyKind(application.productId);
   const staff = kind ? await staffRecipients(kind) : [];
   const guest = applicationGuestEmail(application);

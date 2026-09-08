@@ -22,3 +22,14 @@ test("treats RFC 7505 null MX as no mail", () => {
   assert.equal(isNullMx(""), true);
   assert.equal(isNullMx("mx.yandex.net."), false);
 });
+
+test("accepts karofilm.ru without RCPT probe by default", async () => {
+  const previous = process.env.MAILBOX_SMTP;
+  delete process.env.MAILBOX_SMTP;
+  try {
+    assert.equal(await checkMailbox("someone@karofilm.ru"), null);
+  } finally {
+    if (previous === undefined) delete process.env.MAILBOX_SMTP;
+    else process.env.MAILBOX_SMTP = previous;
+  }
+});
