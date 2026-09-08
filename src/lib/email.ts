@@ -1,14 +1,16 @@
 import nodemailer from "nodemailer";
-import { logger } from "@/lib/logger";
-import { PRODUCTS } from "@/lib/products";
 import type { Application, Feedback } from "@prisma/client";
-
-function recipients() {
-  return (process.env.NOTIFY_EMAILS ?? "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
+import {
+  listStaffNotifyEmails,
+  type StaffNotifyKind,
+} from "@/lib/admin/users";
+import { logger } from "@/lib/logger";
+import {
+  applicationGuestEmail,
+  applicationStaffEmail,
+  feedbackGuestEmail,
+  feedbackStaffEmail,
+} from "@/lib/email/templates";
 
 function transport() {
   if (!process.env.SMTP_HOST) return null;
@@ -29,100 +31,119 @@ function transport() {
   });
 }
 
-function applicationUrl(id: string) {
-  const base = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
-  return `${base}/admin/applications/${id}`;
+function fromAddress() {
+  return process.env.SMTP_FROM ?? process.env.SMTP_USER;
 }
 
-function body(application: Application) {
-  const product = PRODUCTS[application.productId].title;
-  const lines = [
-    `Новая заявка: ${product}`,
-    `Номер: ${application.id}`,
-    `Источник: ${application.source}`,
-    `Город: ${application.cityName}`,
-    `Кинотеатр: ${application.cinemaName}`,
-    application.hallName ? `Зал: ${application.hallName}` : null,
-    application.hallFormatName ? `Формат: ${application.hallFormatName}` : null,
-    application.hallCapacity ? `Вместимость: ${application.hallCapacity}` : null,
-    application.hallRentalPriceWeekday != null ||
-    application.hallRentalPriceWeekend != null
-      ? `Стоимость аренды: пн–пт ${application.hallRentalPriceWeekday ?? application.hallRentalPrice ?? "—"} ₽, сб–вс ${application.hallRentalPriceWeekend ?? "—"} ₽`
-      : application.hallRentalPrice != null
-        ? `Стоимость аренды: ${application.hallRentalPrice} ₽`
-        : null,
-    application.filmName ? `Фильм / контент: ${application.filmName}` : null,
-    application.sessionLabel || application.sessionCustom
-      ? `Сеанс: ${application.sessionLabel || application.sessionCustom}`
-      : null,
-    application.rentalStart
-      ? `Начало: ${application.rentalStart}`
-      : application.rentalDate
-        ? `Аренда: ${application.rentalDate} ${application.rentalTime ?? ""} ${application.rentalDuration ?? ""}`.trim()
-        : null,
-    application.rentalEnd ? `Окончание: ${application.rentalEnd}` : null,
-    application.guests ? `Гостей: ${application.guests}` : null,
-    application.ticketType ? `Тип билета: ${application.ticketType}` : null,
-    `Контакт: ${application.contactName}`,
-    `Телефон: ${application.phone}`,
-    `Email: ${application.email}`,
-    application.comment ? `Комментарий: ${application.comment}` : null,
-    `Карточка: ${applicationUrl(application.id)}`,
-  ].filter(Boolean);
+async function staffRecipients(kind: StaffNotifyKind) {
+  return listStaffNotifyEmails(kind);
+}
 
-  return lines.join("\n");
+async function sendMail(options: {
+  to: string | string[];
+  subject: string;
+  text: string;
+  html: string;
+  replyTo?: string;
+}) {
+  const mailer = transport();
+  if (!mailer) {
+    logger.info("Email skipped: SMTP is not configured");
+    return false;
+  }
+  const to = Array.isArray(options.to) ? options.to.filter(Boolean) : [options.to];
+  if (!to.length) return false;
+
+  await mailer.sendMail({
+    from: fromAddress(),
+    to,
+    replyTo: options.replyTo,
+    subject: options.subject,
+    text: options.text,
+    html: options.html,
+  });
+  return true;
+}
+
+function applicationNotifyKind(
+  productId: Application["productId"],
+): StaffNotifyKind | null {
+  if (productId === "keys") return "keys";
+  if (productId === "event") return "event";
+  return null;
 }
 
 export async function notifyNewFeedback(item: Feedback) {
-  const to = recipients();
-  const mailer = transport();
-  if (!to.length || !mailer) {
-    logger.info("Email skipped: SMTP or recipients are not configured");
-    return;
-  }
-
-  const base = (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const staff = await staffRecipients("feedback");
+  const guest = feedbackGuestEmail(item);
+  const forStaff = feedbackStaffEmail(item);
 
   try {
-    await mailer.sendMail({
-      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
-      to,
-      replyTo: item.email,
-      subject: `Обратная связь — ${item.name}`,
-      text: [
-        `Новое обращение с сайта`,
-        `Имя: ${item.name}`,
-        `Email: ${item.email}`,
-        item.phone ? `Телефон: ${item.phone}` : null,
-        `Сообщение:`,
-        item.message,
-        `Карточка: ${base}/admin/feedback/${item.id}`,
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    });
+    if (item.email) {
+      await sendMail({
+        to: item.email,
+        subject: guest.subject,
+        text: guest.text,
+        html: guest.html,
+      });
+    }
   } catch (error) {
-    logger.error("Failed to send feedback email", error);
+    logger.error("Failed to send feedback guest email", error);
+  }
+
+  try {
+    if (staff.length) {
+      await sendMail({
+        to: staff,
+        replyTo: item.email,
+        subject: forStaff.subject,
+        text: forStaff.text,
+        html: forStaff.html,
+      });
+    } else {
+      logger.info("Staff feedback email skipped: no subscribers");
+    }
+  } catch (error) {
+    logger.error("Failed to send feedback staff email", error);
   }
 }
 
 export async function notifyNewApplication(application: Application) {
-  const to = recipients();
-  const mailer = transport();
-  if (!to.length || !mailer) {
-    logger.info("Email skipped: SMTP or recipients are not configured");
-    return;
+  const kind = applicationNotifyKind(application.productId);
+  const staff = kind ? await staffRecipients(kind) : [];
+  const guest = applicationGuestEmail(application);
+  const forStaff = applicationStaffEmail(application);
+
+  try {
+    if (application.email) {
+      await sendMail({
+        to: application.email,
+        subject: guest.subject,
+        text: guest.text,
+        html: guest.html,
+      });
+    }
+  } catch (error) {
+    logger.error("Failed to send application guest email", error);
   }
 
   try {
-    await mailer.sendMail({
-      from: process.env.SMTP_FROM ?? process.env.SMTP_USER,
-      to,
-      replyTo: application.email,
-      subject: `Новая заявка — ${PRODUCTS[application.productId].title}`,
-      text: body(application),
-    });
+    if (staff.length) {
+      await sendMail({
+        to: staff,
+        replyTo: application.email,
+        subject: forStaff.subject,
+        text: forStaff.text,
+        html: forStaff.html,
+      });
+    } else {
+      logger.info(
+        kind
+          ? `Staff application email skipped: no subscribers for ${kind}`
+          : "Staff application email skipped: product has no staff routing",
+      );
+    }
   } catch (error) {
-    logger.error("Failed to send application email", error);
+    logger.error("Failed to send application staff email", error);
   }
 }

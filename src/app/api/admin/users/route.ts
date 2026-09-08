@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Role } from "@prisma/client";
 import { requireRole } from "@/lib/admin/auth";
-import { createUser, listUsers, UserAdminError } from "@/lib/admin/users";
+import {
+  createUser,
+  listUsers,
+  notifyPrefsFromBody,
+  UserAdminError,
+} from "@/lib/admin/users";
 import { logger } from "@/lib/logger";
 
 function errorResponse(error: unknown) {
@@ -38,11 +43,13 @@ export async function POST(request: NextRequest) {
   try {
     await requireRole(["ADMIN"]);
     const body = (await request.json()) as Record<string, unknown>;
+    const prefs = notifyPrefsFromBody(body);
     const item = await createUser({
       email: typeof body.email === "string" ? body.email : "",
       name: typeof body.name === "string" ? body.name : "",
       password: typeof body.password === "string" ? body.password : "",
       role: parseRole(body.role),
+      ...prefs,
     });
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {

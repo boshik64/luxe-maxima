@@ -11,14 +11,58 @@ export class UserAdminError extends Error {
   }
 }
 
+export type NotifyPrefs = {
+  notifyKeys: boolean;
+  notifyEvent: boolean;
+  notifyFeedback: boolean;
+};
+
+export type StaffNotifyKind = "keys" | "event" | "feedback";
+
 const publicUser = {
   id: true,
   email: true,
   name: true,
   role: true,
+  notifyKeys: true,
+  notifyEvent: true,
+  notifyFeedback: true,
   createdAt: true,
   updatedAt: true,
 } as const;
+
+function parseNotifyFlag(value: unknown, fallback?: boolean) {
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return fallback;
+}
+
+export function notifyPrefsFromBody(
+  body: Record<string, unknown>,
+  fallback?: Partial<NotifyPrefs>,
+): NotifyPrefs {
+  return {
+    notifyKeys: parseNotifyFlag(body.notifyKeys, fallback?.notifyKeys) ?? false,
+    notifyEvent: parseNotifyFlag(body.notifyEvent, fallback?.notifyEvent) ?? false,
+    notifyFeedback:
+      parseNotifyFlag(body.notifyFeedback, fallback?.notifyFeedback) ?? false,
+  };
+}
+
+export function notifyPrefsPatchFromBody(body: Record<string, unknown>) {
+  const patch: Partial<NotifyPrefs> = {};
+  if ("notifyKeys" in body) {
+    patch.notifyKeys = parseNotifyFlag(body.notifyKeys) ?? false;
+  }
+  if ("notifyEvent" in body) {
+    patch.notifyEvent = parseNotifyFlag(body.notifyEvent) ?? false;
+  }
+  if ("notifyFeedback" in body) {
+    patch.notifyFeedback = parseNotifyFlag(body.notifyFeedback) ?? false;
+  }
+  return patch;
+}
 
 export async function listUsers() {
   return prisma.user.findMany({
@@ -36,6 +80,9 @@ export async function createUser(data: {
   name: string;
   password: string;
   role: Role;
+  notifyKeys?: boolean;
+  notifyEvent?: boolean;
+  notifyFeedback?: boolean;
 }) {
   const email = data.email.trim().toLowerCase();
   if (!email.includes("@")) {
@@ -54,6 +101,9 @@ export async function createUser(data: {
         name,
         role: data.role,
         passwordHash: await hashPassword(data.password),
+        notifyKeys: data.notifyKeys === true,
+        notifyEvent: data.notifyEvent === true,
+        notifyFeedback: data.notifyFeedback === true,
       },
       select: publicUser,
     });
@@ -75,6 +125,9 @@ export async function updateUser(
     name?: string;
     password?: string;
     role?: Role;
+    notifyKeys?: boolean;
+    notifyEvent?: boolean;
+    notifyFeedback?: boolean;
   },
 ) {
   const current = await prisma.user.findUnique({ where: { id } });
@@ -99,6 +152,11 @@ export async function updateUser(
         ...(name ? { name } : {}),
         ...(data.role ? { role: data.role } : {}),
         ...(data.password ? { passwordHash: await hashPassword(data.password) } : {}),
+        ...(data.notifyKeys !== undefined ? { notifyKeys: data.notifyKeys } : {}),
+        ...(data.notifyEvent !== undefined ? { notifyEvent: data.notifyEvent } : {}),
+        ...(data.notifyFeedback !== undefined
+          ? { notifyFeedback: data.notifyFeedback }
+          : {}),
       },
       select: publicUser,
     });
@@ -111,6 +169,30 @@ export async function updateUser(
     }
     throw error;
   }
+}
+
+export async function updateOwnNotifyPrefs(id: string, prefs: NotifyPrefs) {
+  return prisma.user.update({
+    where: { id },
+    data: prefs,
+    select: publicUser,
+  });
+}
+
+/** Emails of staff who opted into this notification type. */
+export async function listStaffNotifyEmails(kind: StaffNotifyKind) {
+  const where =
+    kind === "keys"
+      ? { notifyKeys: true }
+      : kind === "event"
+        ? { notifyEvent: true }
+        : { notifyFeedback: true };
+
+  const users = await prisma.user.findMany({
+    where,
+    select: { email: true },
+  });
+  return [...new Set(users.map((user) => user.email.trim().toLowerCase()).filter(Boolean))];
 }
 
 export async function deleteUser(id: string, actorId: string) {
