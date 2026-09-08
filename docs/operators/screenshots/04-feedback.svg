@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#fafafa"/>
+  <rect width="960" height="56" fill="#fff" stroke="#e4e4e7"/>
+  <rect x="20" y="14" width="78" height="28" rx="14" fill="#fff" stroke="#d4d4d8"/>
+  <text x="59" y="33" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#52525b">Заявки</text>
+  <rect x="108" y="14" width="140" height="28" rx="14" fill="#e91a3b"/>
+  <text x="165" y="33" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#fff">Обратная связь</text>
+  <circle cx="230" cy="20" r="8" fill="#d4b37a"/>
+  <text x="230" y="24" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#18181b">2</text>
+  <text x="24" y="95" font-family="Arial, sans-serif" font-size="20" font-weight="700" fill="#18181b">Обратная связь</text>
+  <g font-family="Arial, sans-serif" font-size="12">
+    <rect x="24" y="115" width="56" height="28" rx="14" fill="#fff" stroke="#d4d4d8"/>
+    <text x="52" y="134" text-anchor="middle" fill="#52525b">Все</text>
+    <rect x="90" y="115" width="72" height="28" rx="14" fill="#e91a3b"/>
+    <text x="126" y="134" text-anchor="middle" fill="#fff">Новые</text>
+    <rect x="172" y="115" width="88" height="28" rx="14" fill="#fff" stroke="#d4d4d8"/>
+    <text x="216" y="134" text-anchor="middle" fill="#52525b">В работе</text>
+    <rect x="270" y="115" width="88" height="28" rx="14" fill="#fff" stroke="#d4d4d8"/>
+    <text x="314" y="134" text-anchor="middle" fill="#52525b">Закрытые</text>
+  </g>
+  <rect x="24" y="170" width="912" height="80" rx="12" fill="#fff" stroke="#e4e4e7"/>
+  <text x="44" y="200" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#18181b">Иван Петров</text>
+  <text x="200" y="200" font-family="Arial, sans-serif" font-size="13" fill="#71717a">ivan@example.com</text>
+  <rect x="860" y="186" width="56" height="22" rx="11" fill="#fef3c7"/>
+  <text x="888" y="201" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#a16207">Новая</text>
+  <text x="44" y="225" font-family="Arial, sans-serif" font-size="13" fill="#52525b">Хотим уточнить стоимость аренды зала на субботу…</text>
+  <rect x="24" y="266" width="912" height="80" rx="12" fill="#fff" stroke="#e4e4e7"/>
+  <text x="44" y="296" font-family="Arial, sans-serif" font-size="14" font-weight="600" fill="#18181b">Мария К.</text>
+  <text x="160" y="296" font-family="Arial, sans-serif" font-size="13" fill="#71717a">maria@company.ru</text>
+  <rect x="860" y="282" width="56" height="22" rx="11" fill="#fef3c7"/>
+  <text x="888" y="297" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#a16207">Новая</text>
+  <text x="44" y="321" font-family="Arial, sans-serif" font-size="13" fill="#52525b">Подскажите, можно ли принести свой кейтеринг?</text>
+</svg>

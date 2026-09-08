@@ -48,6 +48,8 @@ npm run dev
 Сайт: [http://localhost:3000](http://localhost:3000)  
 Админка: [http://localhost:3000/admin](http://localhost:3000/admin)
 
+Инструкция для операторов: [`docs/operators/ИНСТРУКЦИЯ.md`](docs/operators/ИНСТРУКЦИЯ.md) (в админке — кнопка «Инструкция»).
+
 Вход по умолчанию:
 
 - администратор: `admin@karofilm.ru` / `changeme`

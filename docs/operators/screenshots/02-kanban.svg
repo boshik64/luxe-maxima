@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#fafafa"/>
+  <rect width="960" height="56" fill="#fff" stroke="#e4e4e7"/>
+  <rect x="20" y="14" width="78" height="28" rx="14" fill="#e91a3b"/>
+  <text x="59" y="33" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#fff">Заявки</text>
+  <rect x="108" y="14" width="110" height="28" rx="14" fill="#fff" stroke="#d4d4d8"/>
+  <text x="163" y="33" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#52525b">Справочники</text>
+  <rect x="228" y="14" width="110" height="28" rx="14" fill="#fff" stroke="#d4d4d8"/>
+  <text x="283" y="33" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#52525b">Мероприятия</text>
+  <rect x="348" y="14" width="130" height="28" rx="14" fill="#fff" stroke="#d4d4d8"/>
+  <text x="400" y="33" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#52525b">Обратная связь</text>
+  <circle cx="468" cy="20" r="8" fill="#d4b37a"/>
+  <text x="468" y="24" text-anchor="middle" font-family="Arial, sans-serif" font-size="9" fill="#18181b">2</text>
+  <rect x="860" y="14" width="70" height="28" rx="14" fill="#fff" stroke="#d4d4d8"/>
+  <text x="895" y="33" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#52525b">Выйти</text>
+  <g font-family="Arial, sans-serif">
+    <rect x="20" y="80" width="220" height="430" rx="12" fill="#f4f4f5"/>
+    <text x="36" y="110" font-size="14" font-weight="700" fill="#a16207">Новая</text>
+    <rect x="36" y="130" width="188" height="72" rx="10" fill="#fff" stroke="#e4e4e7"/>
+    <text x="48" y="155" font-size="13" font-weight="600" fill="#18181b">Анна Иванова</text>
+    <text x="48" y="176" font-size="12" fill="#71717a">Ключи от зала Â· Москва</text>
+    <rect x="252" y="80" width="220" height="430" rx="12" fill="#f4f4f5"/>
+    <text x="268" y="110" font-size="14" font-weight="700" fill="#2563eb">В работе</text>
+    <rect x="268" y="130" width="188" height="72" rx="10" fill="#fff" stroke="#e4e4e7"/>
+    <text x="280" y="155" font-size="13" font-weight="600" fill="#18181b">Пётр Сидоров</text>
+    <text x="280" y="176" font-size="12" fill="#71717a">Мероприятие Â· СПб</text>
+    <rect x="484" y="80" width="220" height="430" rx="12" fill="#f4f4f5"/>
+    <text x="500" y="110" font-size="14" font-weight="700" fill="#15803d">Закрыта</text>
+    <rect x="500" y="130" width="188" height="72" rx="10" fill="#fff" stroke="#e4e4e7"/>
+    <text x="512" y="155" font-size="13" font-weight="600" fill="#18181b">ООО Â«ПраздникÂ»</text>
+    <text x="512" y="176" font-size="12" fill="#71717a">Ключи от зала</text>
+    <rect x="716" y="80" width="220" height="430" rx="12" fill="#f4f4f5"/>
+    <text x="732" y="110" font-size="14" font-weight="700" fill="#e91a3b">Отклонена</text>
+  </g>
+  <text x="480" y="525" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#a1a1aa">Перетащите карточку между колонками, чтобы сменить статус</text>
+</svg>
