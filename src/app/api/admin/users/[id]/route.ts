@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/admin/auth";
 import {
   deleteUser,
   getUser,
+  notifyPrefsFromBody,
+  notifyPrefsPatchFromBody,
   updateUser,
   UserAdminError,
 } from "@/lib/admin/users";
@@ -51,6 +53,7 @@ export async function PATCH(
       body.role === Role.ADMIN || body.role === Role.OPERATOR
         ? body.role
         : undefined;
+    const prefs = notifyPrefsPatchFromBody(body);
     const item = await updateUser(id, {
       email: typeof body.email === "string" ? body.email : undefined,
       name: typeof body.name === "string" ? body.name : undefined,
@@ -59,6 +62,7 @@ export async function PATCH(
           ? body.password
           : undefined,
       role,
+      ...prefs,
     });
     return NextResponse.json({ item });
   } catch (error) {

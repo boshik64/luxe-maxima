@@ -12,7 +12,48 @@ type UserItem = {
   email: string;
   name: string;
   role: "ADMIN" | "OPERATOR";
+  notifyKeys: boolean;
+  notifyEvent: boolean;
+  notifyFeedback: boolean;
 };
+
+function NotifyChecks({
+  notifyKeys,
+  notifyEvent,
+  notifyFeedback,
+  onChange,
+}: {
+  notifyKeys: boolean;
+  notifyEvent: boolean;
+  notifyFeedback: boolean;
+  onChange: (patch: Partial<Pick<UserItem, "notifyKeys" | "notifyEvent" | "notifyFeedback">>) => void;
+}) {
+  return (
+    <fieldset className="space-y-3 rounded-2xl border border-line bg-background/40 px-4 py-4">
+      <legend className="px-1 text-sm font-medium">Получать письма по</legend>
+      <p className="text-xs text-muted">
+        Письма уходят на email этой учётной записи, если галочка включена.
+      </p>
+      {(
+        [
+          ["notifyKeys", "Ключи от зала", notifyKeys],
+          ["notifyEvent", "Мероприятие в КАРО", notifyEvent],
+          ["notifyFeedback", "Обратная связь", notifyFeedback],
+        ] as const
+      ).map(([key, label, checked]) => (
+        <label key={key} className="flex items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(event) => onChange({ [key]: event.target.checked })}
+            className="h-4 w-4 accent-[var(--primary)]"
+          />
+          <span>{label}</span>
+        </label>
+      ))}
+    </fieldset>
+  );
+}
 
 export function UserEditor({ id }: { id?: string }) {
   const router = useRouter();
@@ -21,6 +62,9 @@ export function UserEditor({ id }: { id?: string }) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"ADMIN" | "OPERATOR">("OPERATOR");
   const [password, setPassword] = useState("");
+  const [notifyKeys, setNotifyKeys] = useState(false);
+  const [notifyEvent, setNotifyEvent] = useState(false);
+  const [notifyFeedback, setNotifyFeedback] = useState(false);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -45,6 +89,9 @@ export function UserEditor({ id }: { id?: string }) {
       setName(data.item.name);
       setEmail(data.item.email);
       setRole(data.item.role);
+      setNotifyKeys(data.item.notifyKeys === true);
+      setNotifyEvent(data.item.notifyEvent === true);
+      setNotifyFeedback(data.item.notifyFeedback === true);
     });
   }, [id, router]);
 
@@ -77,6 +124,9 @@ export function UserEditor({ id }: { id?: string }) {
           email,
           role,
           password: password || undefined,
+          notifyKeys,
+          notifyEvent,
+          notifyFeedback,
         }),
       },
     );
@@ -152,6 +202,18 @@ export function UserEditor({ id }: { id?: string }) {
               onChange={(value) => setRole(value as "ADMIN" | "OPERATOR")}
             />
           </Field>
+          <NotifyChecks
+            notifyKeys={notifyKeys}
+            notifyEvent={notifyEvent}
+            notifyFeedback={notifyFeedback}
+            onChange={(patch) => {
+              if (patch.notifyKeys !== undefined) setNotifyKeys(patch.notifyKeys);
+              if (patch.notifyEvent !== undefined) setNotifyEvent(patch.notifyEvent);
+              if (patch.notifyFeedback !== undefined) {
+                setNotifyFeedback(patch.notifyFeedback);
+              }
+            }}
+          />
           <Field
             id="user-password"
             label={isNew ? "Пароль" : "Новый пароль"}
