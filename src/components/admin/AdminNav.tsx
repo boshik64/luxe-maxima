@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { NotifyPrefsCard } from "@/components/admin/NotifyPrefsCard";
 
 const SHOW_BANNER_NAV = false; // true — снова показать пункт «Баннеры»
 
@@ -78,7 +77,6 @@ export function AdminNav() {
           Выйти
         </button>
       </div>
-      {pathname === "/admin" ? <NotifyPrefsCard /> : null}
     </div>
   );
 }

@@ -64,6 +64,7 @@ const DOMAIN_TYPOS: Record<string, string> = {
   "hotmail.con": "hotmail.com",
 };
 
+/** Domains where RCPT probing often false-rejects (corp / large providers). */
 const SKIP_SMTP_DOMAINS = new Set([
   "gmail.com",
   "googlemail.com",
@@ -86,6 +87,7 @@ const SKIP_SMTP_DOMAINS = new Set([
   "proton.me",
   "protonmail.com",
   "rambler.ru",
+  "karofilm.ru",
 ]);
 
 const SKIP_SMTP_MX = [
@@ -161,16 +163,43 @@ async function lookupMxHosts(domain: string) {
       .sort((a, b) => a.priority - b.priority)
       .map((item) => item.exchange.replace(/\.$/, ""))
       .filter((item) => !isNullMx(item));
-    mxCache.set(domain, { hosts: hosts.length ? hosts : null, at: Date.now() });
-    return hosts.length ? hosts : null;
+    if (hosts.length) {
+      mxCache.set(domain, { hosts, at: Date.now() });
+      return hosts;
+    }
   } catch {
-    mxCache.set(domain, { hosts: null, at: Date.now() });
-    return null;
+    // ниже — implicit MX через A/AAAA
   }
+
+  // RFC 5321: без MX почту принимают на A/AAAA самого домена.
+  try {
+    const a = await withTimeout(dns.resolve4(domain), DNS_TIMEOUT_MS, "dns-timeout");
+    if (a.length) {
+      const hosts = [domain];
+      mxCache.set(domain, { hosts, at: Date.now() });
+      return hosts;
+    }
+  } catch {
+    // try AAAA
+  }
+  try {
+    const aaaa = await withTimeout(dns.resolve6(domain), DNS_TIMEOUT_MS, "dns-timeout");
+    if (aaaa.length) {
+      const hosts = [domain];
+      mxCache.set(domain, { hosts, at: Date.now() });
+      return hosts;
+    }
+  } catch {
+    // нет ни MX, ни A/AAAA
+  }
+
+  mxCache.set(domain, { hosts: null, at: Date.now() });
+  return null;
 }
 
 async function confirmMailbox(email: string, domain: string, hosts: string[]) {
-  if (process.env.MAILBOX_SMTP === "0") return null;
+  // RCPT-probe is opt-in: many corp MX reject probes → false "mailbox missing".
+  if (process.env.MAILBOX_SMTP !== "1") return null;
   if (shouldSkipSmtp(domain, hosts)) return null;
 
   const { helo, from } = smtpIdentity();
