@@ -197,7 +197,7 @@ export function HallEditor({ id }: { id?: string }) {
               }
             />
           </Field>
-          <Field id="hall-price-weekday" label="Стоимость пн–пт, ₽" required>
+          <Field id="hall-price-weekday" label="Стоимость пн–чт, ₽" required>
             <input
               id="hall-price-weekday"
               className={inputClassName}
@@ -208,7 +208,7 @@ export function HallEditor({ id }: { id?: string }) {
               }
             />
           </Field>
-          <Field id="hall-price-weekend" label="Стоимость сб–вс, ₽" required>
+          <Field id="hall-price-weekend" label="Стоимость пт–вс, ₽" required>
             <input
               id="hall-price-weekend"
               className={inputClassName}
