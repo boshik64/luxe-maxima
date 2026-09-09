@@ -103,7 +103,7 @@ figcaption {{ font-size: 9pt; color: #71717a; margin-top: 3px; }}
 <figure class="shot"><img src="{data_png("04-feedback.png")}" alt=""><figcaption>Обратная связь</figcaption></figure>
 <h2>4. Справочники и мероприятия</h2>
 <ul>
-  <li><strong>Справочники</strong> — форматы, кинотеатры, залы и цены (пн–пт / сб–вс).</li>
+  <li><strong>Справочники</strong> — форматы, кинотеатры, залы и цены (пн–чт / пт–вс).</li>
   <li><strong>Мероприятия</strong> — тексты блока на главной.</li>
 </ul>
 <p>Удаление в справочниках — только админ. Раздел <strong>Пользователи</strong> оператору не виден.</p>

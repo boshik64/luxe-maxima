@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
       capacity: requiredInt(body.capacity, "Вместимость"),
       rentalPriceWeekday: requiredInt(
         body.rentalPriceWeekday,
-        "Стоимость пн–пт",
+        "Стоимость пн–чт",
         0,
       ),
       rentalPriceWeekend: requiredInt(
         body.rentalPriceWeekend,
-        "Стоимость сб–вс",
+        "Стоимость пт–вс",
         0,
       ),
     });

@@ -1,7 +1,11 @@
 "use client";
 
 import { useDragScroll } from "@/hooks/useDragScroll";
-import { formatRubles } from "@/lib/catalog/format";
+import {
+  formatRubles,
+  HALL_PRICE_WEEKDAY_LABEL,
+  HALL_PRICE_WEEKEND_LABEL,
+} from "@/lib/catalog/format";
 
 export type HallCardItem = {
   id: string;
@@ -92,8 +96,14 @@ export function HallCards({
                   <div className="col-span-2 flex min-h-[4.25rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
                     <p className="text-[11px] text-gold">Стоимость аренды</p>
                     <p className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold text-foreground">
-                      <span>пн–пт: {formatRubles(hall.rentalPriceWeekday)}</span>
-                      <span>сб–вс: {formatRubles(hall.rentalPriceWeekend)}</span>
+                      <span>
+                        {HALL_PRICE_WEEKDAY_LABEL}:{" "}
+                        {formatRubles(hall.rentalPriceWeekday)}
+                      </span>
+                      <span>
+                        {HALL_PRICE_WEEKEND_LABEL}:{" "}
+                        {formatRubles(hall.rentalPriceWeekend)}
+                      </span>
                     </p>
                   </div>
                 </div>

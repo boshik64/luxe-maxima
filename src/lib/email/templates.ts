@@ -33,7 +33,7 @@ export function applicationDetailRows(application: Application) {
   ) {
     rows.push({
       label: "Стоимость аренды",
-      value: `пн–пт ${application.hallRentalPriceWeekday ?? application.hallRentalPrice ?? "—"} ₽, сб–вс ${application.hallRentalPriceWeekend ?? "—"} ₽`,
+      value: `пн–чт ${application.hallRentalPriceWeekday ?? application.hallRentalPrice ?? "—"} ₽, пт–вс ${application.hallRentalPriceWeekend ?? "—"} ₽`,
     });
   } else if (application.hallRentalPrice != null) {
     rows.push({

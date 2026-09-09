@@ -236,9 +236,9 @@ export function ApplicationModal({
           item.hallRentalPriceWeekend != null ? (
             <Field id="hallRentalPrice" label="Стоимость аренды, ₽">
               <p className="min-h-12 rounded-2xl border border-line bg-background/60 px-4 py-3 text-sm">
-                пн–пт: {item.hallRentalPriceWeekday ?? item.hallRentalPrice ?? "—"}
+                пн–чт: {item.hallRentalPriceWeekday ?? item.hallRentalPrice ?? "—"}
                 <br />
-                сб–вс: {item.hallRentalPriceWeekend ?? "—"}
+                пт–вс: {item.hallRentalPriceWeekend ?? "—"}
               </p>
             </Field>
           ) : item.hallRentalPrice != null ? (

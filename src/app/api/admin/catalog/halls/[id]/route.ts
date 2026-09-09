@@ -36,11 +36,11 @@ export async function PATCH(
           : undefined,
       rentalPriceWeekday:
         body.rentalPriceWeekday !== undefined
-          ? requiredInt(body.rentalPriceWeekday, "Стоимость пн–пт", 0)
+          ? requiredInt(body.rentalPriceWeekday, "Стоимость пн–чт", 0)
           : undefined,
       rentalPriceWeekend:
         body.rentalPriceWeekend !== undefined
-          ? requiredInt(body.rentalPriceWeekend, "Стоимость сб–вс", 0)
+          ? requiredInt(body.rentalPriceWeekend, "Стоимость пт–вс", 0)
           : undefined,
       enabled: typeof body.enabled === "boolean" ? body.enabled : undefined,
     });
