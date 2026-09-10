@@ -365,6 +365,7 @@ export function ApplicationForm({
           hallFilled &&
           (productId === "event" || contentFilled)
         }
+        scrollOnShow={false}
       >
         <Field
           id={productId === "keys" ? "keysRentalStart" : "rentalStart"}
