@@ -303,51 +303,210 @@ export function DatePicker({
   );
 }
 
+export function formatIsoDateTime(iso: string) {
+  if (!iso) return "";
+  const [datePart, timePartRaw] = iso.includes("T")
+    ? iso.split("T")
+    : [iso.slice(0, 10), iso.slice(11, 16)];
+  const dateLabel = formatIsoDate(datePart || "");
+  if (!dateLabel) return "";
+  const time = (timePartRaw || "").slice(0, 5);
+  return time ? `${dateLabel}, ${time}` : dateLabel;
+}
+
 export function DateTimePicker({
   id,
   value,
   onChange,
   disabled,
   invalid,
+  min,
 }: {
   id: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   invalid?: boolean;
+  min?: string;
 }) {
-  const [datePart, timePart] = value.includes("T")
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [datePart, timePartRaw] = value.includes("T")
     ? value.split("T")
     : [value.slice(0, 10), value.slice(11, 16)];
-  const date = datePart || "";
-  const time = timePart || "";
+  const date = datePart && /^\d{4}-\d{2}-\d{2}$/.test(datePart) ? datePart : "";
+  const time = (timePartRaw || "").slice(0, 5);
+  const selected = date ? new Date(`${date}T00:00:00`) : new Date();
+  const [viewYear, setViewYear] = useState(selected.getFullYear());
+  const [viewMonth, setViewMonth] = useState(selected.getMonth());
+  const cells = useMemo(() => monthCells(viewYear, viewMonth), [viewYear, viewMonth]);
+  const minDate = min ?? todayIso();
+  const shown = formatIsoDateTime(value);
+
+  function showMonth(iso: string) {
+    const next = new Date(`${iso}T00:00:00`);
+    setViewYear(next.getFullYear());
+    setViewMonth(next.getMonth());
+  }
+
+  function openCalendar() {
+    if (disabled) return;
+    if (date) showMonth(date);
+    setOpen(true);
+  }
 
   function emit(nextDate: string, nextTime: string) {
-    if (!nextDate && !nextTime) {
+    if (!nextDate) {
       onChange("");
       return;
     }
-    onChange(nextDate ? `${nextDate}T${nextTime || "00:00"}` : "");
+    onChange(`${nextDate}T${nextTime || "00:00"}`);
   }
 
+  function shiftMonth(delta: number) {
+    const next = new Date(viewYear, viewMonth + delta, 1);
+    setViewYear(next.getFullYear());
+    setViewMonth(next.getMonth());
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
-    <div className="grid max-w-sm gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]">
-      <DatePicker
-        id={id}
-        value={date}
-        disabled={disabled}
-        invalid={invalid}
-        onChange={(next) => emit(next, time)}
-      />
-      <input
-        id={`${id}-time`}
-        className={inputClassName}
-        type="time"
-        value={time}
-        disabled={disabled}
-        aria-label="Время"
-        onChange={(event) => emit(date, event.target.value)}
-      />
+    <div ref={rootRef} className="relative max-w-sm">
+      <div className="flex gap-2">
+        <button
+          type="button"
+          id={id}
+          disabled={disabled}
+          aria-invalid={invalid || undefined}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className={`${inputClassName} text-left ${
+            shown ? "text-foreground" : "text-muted"
+          }`}
+          onClick={() => {
+            if (open) setOpen(false);
+            else openCalendar();
+          }}
+        >
+          {shown || "ДД.ММ.ГГГГ, ЧЧ:ММ"}
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          className="shrink-0 rounded-2xl border border-line px-3 text-gold transition hover:border-gold disabled:opacity-60"
+          aria-label="Выбрать дату и время"
+          onClick={() => {
+            if (open) setOpen(false);
+            else openCalendar();
+          }}
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M3 10h18" stroke="currentColor" strokeWidth="1.6" />
+            <path d="M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+      {open ? (
+        <div
+          className="date-picker-popover absolute z-30 mt-2 rounded-2xl border border-line bg-card p-3 shadow-xl"
+          onMouseDown={(event) => event.preventDefault()}
+        >
+          <div className="mb-2 flex items-center justify-between gap-1">
+            <button
+              type="button"
+              className="rounded-full px-2 py-0.5 text-gold hover:bg-primary/10"
+              aria-label="Предыдущий месяц"
+              onClick={() => shiftMonth(-1)}
+            >
+              ‹
+            </button>
+            <p className="text-sm font-semibold">
+              {MONTHS[viewMonth]} {viewYear}
+            </p>
+            <button
+              type="button"
+              className="rounded-full px-2 py-0.5 text-gold hover:bg-primary/10"
+              aria-label="Следующий месяц"
+              onClick={() => shiftMonth(1)}
+            >
+              ›
+            </button>
+          </div>
+          <div className="mb-1 grid grid-cols-7 text-center text-[10px] text-muted">
+            {WEEKDAYS.map((day) => (
+              <span key={day}>{day}</span>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-0.5">
+            {cells.map((cell) => {
+              const selectedDay = cell.iso === date;
+              const today = cell.iso === todayIso();
+              const tooEarly = Boolean(minDate && cell.iso < minDate);
+              return (
+                <button
+                  key={cell.iso}
+                  type="button"
+                  disabled={tooEarly}
+                  className={`relative h-8 rounded-lg text-xs transition ${
+                    selectedDay
+                      ? "bg-primary text-white"
+                      : tooEarly
+                        ? "text-muted/40"
+                        : cell.current
+                          ? "hover:bg-primary/10"
+                          : "text-muted/50 hover:bg-primary/10"
+                  } ${today && !selectedDay ? "ring-1 ring-gold" : ""}`}
+                  onClick={() => {
+                    emit(cell.iso, time || "12:00");
+                    showMonth(cell.iso);
+                  }}
+                >
+                  {cell.day}
+                </button>
+              );
+            })}
+          </div>
+          <label className="mt-3 block space-y-1.5">
+            <span className="text-[11px] font-medium text-muted">Время</span>
+            <input
+              id={`${id}-time`}
+              className={inputClassName}
+              type="time"
+              value={time || "12:00"}
+              disabled={disabled || !date}
+              onChange={(event) => {
+                if (!date) return;
+                emit(date, event.target.value);
+              }}
+            />
+          </label>
+          <button
+            type="button"
+            className="mt-3 w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            disabled={!date}
+            onClick={() => setOpen(false)}
+          >
+            Готово
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
+
