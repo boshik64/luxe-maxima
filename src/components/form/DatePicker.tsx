@@ -342,6 +342,16 @@ export function DateTimePicker({
   const cells = useMemo(() => monthCells(viewYear, viewMonth), [viewYear, viewMonth]);
   const minDate = min ?? todayIso();
   const shown = formatIsoDateTime(value);
+  const hour = time.slice(0, 2) || "12";
+  const minute = time.slice(3, 5) || "00";
+  const hours = useMemo(
+    () => Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")),
+    [],
+  );
+  const minutes = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0")),
+    [],
+  );
 
   function showMonth(iso: string) {
     const next = new Date(`${iso}T00:00:00`);
@@ -423,10 +433,7 @@ export function DateTimePicker({
         </button>
       </div>
       {open ? (
-        <div
-          className="date-picker-popover absolute z-30 mt-2 rounded-2xl border border-line bg-card p-3 shadow-xl"
-          onMouseDown={(event) => event.preventDefault()}
-        >
+        <div className="date-picker-popover absolute z-30 mt-2 rounded-2xl border border-line bg-card p-3 shadow-xl">
           <div className="mb-2 flex items-center justify-between gap-1">
             <button
               type="button"
@@ -482,20 +489,49 @@ export function DateTimePicker({
               );
             })}
           </div>
-          <label className="mt-3 block space-y-1.5">
-            <span className="text-[11px] font-medium text-muted">Время</span>
-            <input
-              id={`${id}-time`}
-              className={inputClassName}
-              type="time"
-              value={time || "12:00"}
-              disabled={disabled || !date}
-              onChange={(event) => {
-                if (!date) return;
-                emit(date, event.target.value);
-              }}
-            />
-          </label>
+          <div className="mt-3 space-y-1.5">
+            <p className="text-[11px] font-medium text-muted">Время</p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="space-y-1">
+                <span className="sr-only">Часы</span>
+                <select
+                  id={`${id}-hour`}
+                  className={inputClassName}
+                  disabled={disabled || !date}
+                  value={hour}
+                  onChange={(event) => {
+                    if (!date) return;
+                    emit(date, `${event.target.value}:${minute}`);
+                  }}
+                >
+                  {hours.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1">
+                <span className="sr-only">Минуты</span>
+                <select
+                  id={`${id}-minute`}
+                  className={inputClassName}
+                  disabled={disabled || !date}
+                  value={minutes.includes(minute) ? minute : "00"}
+                  onChange={(event) => {
+                    if (!date) return;
+                    emit(date, `${hour}:${event.target.value}`);
+                  }}
+                >
+                  {minutes.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
           <button
             type="button"
             className="mt-3 w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
