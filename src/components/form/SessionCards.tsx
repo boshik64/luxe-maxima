@@ -1,6 +1,7 @@
 "use client";
 
 import { CUSTOM_OPTION_ID, type SessionOption } from "@/lib/karo/types";
+import { useClickLock } from "@/hooks/useClickLock";
 
 function sessionTime(session: SessionOption) {
   if (session.showtime.includes(" ")) {
@@ -23,6 +24,7 @@ export function SessionCards({
   onSelect: (session: SessionOption | null) => void;
 }) {
   const catalog = sessions.filter((item) => item.id !== CUSTOM_OPTION_ID);
+  const { run, locked } = useClickLock(2000);
 
   if (loading) {
     return <p className="text-sm text-muted">Загружаем сеансы…</p>;
@@ -58,12 +60,13 @@ export function SessionCards({
               type="button"
               role="option"
               aria-selected={selected}
-              onClick={() => onSelect(selected ? null : session)}
+              aria-busy={locked || undefined}
+              onClick={() => run(() => onSelect(selected ? null : session))}
               className={`rounded-full border px-4 py-2 text-sm transition ${
                 selected
                   ? "border-primary bg-primary/10 text-foreground"
                   : "border-line text-muted hover:border-gold hover:text-foreground"
-              }`}
+              } ${locked ? "pointer-events-none opacity-80" : ""}`}
             >
               <span className="font-semibold text-foreground">
                 {sessionTime(session) || session.name}

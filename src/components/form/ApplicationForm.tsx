@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DateTimePicker } from "@/components/form/DatePicker";
 import { Field, FormStep, inputClassName } from "@/components/form/Field";
 import { type CascadeValue } from "@/components/form/CascadeSelect";
@@ -10,6 +10,7 @@ import { GroupTicketFlow } from "@/components/form/GroupTicketFlow";
 import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCaptcha";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
 import { ProductGlyph } from "@/components/landing/AutumnDecor";
+import { useClickLock } from "@/hooks/useClickLock";
 import { parseResponseJson } from "@/lib/api-json";
 import { createClientId } from "@/lib/id";
 import {
@@ -95,6 +96,8 @@ export function ApplicationForm({
   const [formError, setFormError] = useState("");
   const [captcha, setCaptcha] = useState<CaptchaSolution | null>(null);
   const [captchaKey, setCaptchaKey] = useState(0);
+  const { run: runProductClick } = useClickLock(2000);
+  const submittingRef = useRef(false);
 
   function refreshCaptcha() {
     setCaptcha(null);
@@ -167,7 +170,8 @@ export function ApplicationForm({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!productId) return;
+    if (!productId || submittingRef.current || status === "loading") return;
+    submittingRef.current = true;
     setFormError("");
     const parsed = applicationInputSchema.safeParse({
       ...payload,
@@ -183,11 +187,13 @@ export function ApplicationForm({
       }
       setErrors(nextErrors);
       setStatus("error");
+      submittingRef.current = false;
       return;
     }
     if (!captcha) {
       setErrors({ captcha: "Оторвите корешок билета, чтобы отправить форму" });
       setStatus("error");
+      submittingRef.current = false;
       return;
     }
 
@@ -221,6 +227,8 @@ export function ApplicationForm({
     } catch {
       setFormError("Нет соединения с сервером. Данные формы сохранены — попробуйте ещё раз.");
       setStatus("error");
+    } finally {
+      submittingRef.current = false;
     }
   }
 
@@ -282,10 +290,12 @@ export function ApplicationForm({
                 type="button"
                 className={`form-product-btn ${item.id === productId ? "is-active" : ""}`}
                 aria-pressed={item.id === productId}
-                onClick={() => {
-                  if (item.id !== productId) resetDetails();
-                  onProductChange?.(item.id);
-                }}
+                onClick={() =>
+                  runProductClick(() => {
+                    if (item.id !== productId) resetDetails();
+                    onProductChange?.(item.id);
+                  })
+                }
               >
                 <ProductGlyph kind={PRODUCT_GLYPH[item.id]} />
                 <span className={`form-product-kicker ${item.id === "group" ? "is-sentence" : ""}`}>
