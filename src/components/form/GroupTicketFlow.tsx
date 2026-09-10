@@ -263,7 +263,7 @@ export function GroupTicketFlow() {
           <p className="text-sm text-muted">В этом кинотеатре сейчас нет сеансов.</p>
         )}
       </FormStep>
-      <FormStep show={isCatalogId(film.id)}>
+      <FormStep show={isCatalogId(film.id)} scrollOnShow={false}>
         <Field id="group-session-date" label="Дата" required>
           <DatePicker
             id="group-session-date"
