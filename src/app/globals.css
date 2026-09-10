@@ -70,6 +70,31 @@ body {
   font-family: var(--font-sans), sans-serif;
 }
 
+a[href],
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="link"],
+summary,
+label[for],
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"],
+select:not(:disabled),
+.cursor-pointer {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"],
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
+
 ::selection {
   background: var(--primary);
   color: white;
