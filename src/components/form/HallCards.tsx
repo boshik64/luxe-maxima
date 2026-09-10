@@ -1,6 +1,7 @@
 "use client";
 
 import { useDragScroll } from "@/hooks/useDragScroll";
+import { useClickLock } from "@/hooks/useClickLock";
 import {
   formatRubles,
   HALL_PRICE_WEEKDAY_LABEL,
@@ -62,64 +63,14 @@ export function HallCards({
           role="listbox"
           aria-label="Залы"
         >
-          {halls.map((hall) => {
-            const selected = hall.id === selectedId;
-            return (
-              <button
-                key={hall.id}
-                type="button"
-                role="option"
-                aria-selected={selected}
-                onClick={() => onSelect(selected ? null : hall)}
-                className={`flex w-[min(18.5rem,85vw)] shrink-0 snap-start flex-col rounded-3xl border bg-card p-4 text-left shadow-lg transition ${
-                  selected
-                    ? "border-gold ring-1 ring-gold"
-                    : "border-line hover:border-gold"
-                }`}
-              >
-                <p className="line-clamp-2 min-h-[2.75rem] font-semibold leading-snug text-foreground">
-                  {hall.cinemaName} ({hall.name})
-                </p>
-                <div className="mt-3 grid flex-1 grid-cols-2 gap-2">
-                  <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
-                    <p className="text-[11px] text-gold">Тип зала</p>
-                    <p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">
-                      {hall.formatName}
-                    </p>
-                  </div>
-                  <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
-                    <p className="text-[11px] text-gold">Мест в зале</p>
-                    <p className="mt-1 text-sm font-semibold text-foreground">
-                      {hall.capacity}
-                    </p>
-                  </div>
-                  <div className="col-span-2 flex min-h-[4.25rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
-                    <p className="text-[11px] text-gold">Стоимость аренды</p>
-                    <p className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold text-foreground">
-                      <span>
-                        {HALL_PRICE_WEEKDAY_LABEL}:{" "}
-                        {formatRubles(hall.rentalPriceWeekday)}
-                      </span>
-                      <span>
-                        {HALL_PRICE_WEEKEND_LABEL}:{" "}
-                        {formatRubles(hall.rentalPriceWeekend)}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className={`mt-4 flex items-center justify-between rounded-full border px-4 py-2 text-sm font-semibold ${
-                    selected
-                      ? "border-primary bg-primary text-white"
-                      : "border-line text-foreground"
-                  }`}
-                >
-                  {selected ? "Выбран" : "Выбрать"}
-                  <span aria-hidden="true">›</span>
-                </span>
-              </button>
-            );
-          })}
+          {halls.map((hall) => (
+            <HallCardButton
+              key={hall.id}
+              hall={hall}
+              selected={hall.id === selectedId}
+              onSelect={onSelect}
+            />
+          ))}
         </div>
         {showSwipeHint ? (
           <div
@@ -136,5 +87,71 @@ export function HallCards({
         </p>
       ) : null}
     </div>
+  );
+}
+
+function HallCardButton({
+  hall,
+  selected,
+  onSelect,
+}: {
+  hall: HallCardItem;
+  selected: boolean;
+  onSelect: (hall: HallCardItem | null) => void;
+}) {
+  const { run, locked } = useClickLock(2000);
+
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={selected}
+      aria-busy={locked || undefined}
+      onClick={() => run(() => onSelect(selected ? null : hall))}
+      className={`flex w-[min(18.5rem,85vw)] shrink-0 snap-start flex-col rounded-3xl border bg-card p-4 text-left shadow-lg transition ${
+        selected
+          ? "border-gold ring-1 ring-gold"
+          : "border-line hover:border-gold"
+      } ${locked ? "pointer-events-none opacity-80" : ""}`}
+    >
+      <p className="line-clamp-2 min-h-[2.75rem] font-semibold leading-snug text-foreground">
+        {hall.cinemaName} ({hall.name})
+      </p>
+      <div className="mt-3 grid flex-1 grid-cols-2 gap-2">
+        <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
+          <p className="text-[11px] text-gold">Тип зала</p>
+          <p className="mt-1 line-clamp-2 text-sm font-semibold text-foreground">
+            {hall.formatName}
+          </p>
+        </div>
+        <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
+          <p className="text-[11px] text-gold">Мест в зале</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {hall.capacity}
+          </p>
+        </div>
+        <div className="col-span-2 flex min-h-[4.25rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
+          <p className="text-[11px] text-gold">Стоимость аренды</p>
+          <p className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold text-foreground">
+            <span>
+              {HALL_PRICE_WEEKDAY_LABEL}: {formatRubles(hall.rentalPriceWeekday)}
+            </span>
+            <span>
+              {HALL_PRICE_WEEKEND_LABEL}: {formatRubles(hall.rentalPriceWeekend)}
+            </span>
+          </p>
+        </div>
+      </div>
+      <span
+        className={`mt-4 flex items-center justify-between rounded-full border px-4 py-2 text-sm font-semibold ${
+          selected
+            ? "border-primary bg-primary text-white"
+            : "border-line text-foreground"
+        }`}
+      >
+        {selected ? "Выбран" : "Выбрать"}
+        <span aria-hidden="true">›</span>
+      </span>
+    </button>
   );
 }

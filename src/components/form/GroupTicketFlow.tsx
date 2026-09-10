@@ -6,6 +6,7 @@ import { DatePicker, todayIso } from "@/components/form/DatePicker";
 import { Field, FormStep } from "@/components/form/Field";
 import { CardRow, PickCard } from "@/components/form/PickCards";
 import { GroupTerms } from "@/components/landing/GroupTerms";
+import { useClickLock } from "@/hooks/useClickLock";
 import { formatCinemaCount } from "@/lib/karo/cities";
 import {
   CUSTOM_OPTION_ID,
@@ -156,6 +157,8 @@ export function GroupTicketFlow() {
     window.open(karoSessionOrderUrl(session.id), "_blank", "noopener,noreferrer");
   }
 
+  const { run: runBuy } = useClickLock(2500);
+
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted">
@@ -166,7 +169,7 @@ export function GroupTicketFlow() {
           {error}
         </p>
       ) : null}
-      <FormStep show>
+      <FormStep show scrollOnShow={false}>
         {loading.cities ? (
           <p className="text-sm text-muted">Загружаем города…</p>
         ) : cities.length ? (
@@ -289,7 +292,7 @@ export function GroupTicketFlow() {
                   title={sessionTime(item) || item.name}
                   lines={lines}
                   action="Купить билеты"
-                  onClick={() => buySession(item)}
+                  onClick={() => runBuy(() => buySession(item))}
                 />
               );
             })}

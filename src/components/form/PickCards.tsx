@@ -2,6 +2,7 @@
 
 import { type ReactNode } from "react";
 import { useDragScroll } from "@/hooks/useDragScroll";
+import { useClickLock } from "@/hooks/useClickLock";
 
 export function CardRow({
   label,
@@ -71,18 +72,22 @@ export function PickCard({
 }) {
   const withPoster = Boolean(imageUrl);
   const withCrest = Boolean(crestUrl) && !withPoster;
+  const { run, locked } = useClickLock(2000);
 
   return (
     <button
       type="button"
       role="option"
       aria-selected={Boolean(selected)}
-      onClick={onClick}
+      aria-busy={locked || undefined}
+      onClick={() => run(onClick)}
       className={`relative flex shrink-0 snap-start overflow-hidden rounded-3xl border text-left shadow-lg transition ${
         withPoster
           ? "aspect-[2/3] w-[min(14.5rem,72vw)] flex-col"
           : "w-[min(18.5rem,85vw)] flex-col bg-background/40 p-4"
-      } ${selected ? "border-gold ring-1 ring-gold" : "border-line hover:border-gold"}`}
+      } ${selected ? "border-gold ring-1 ring-gold" : "border-line hover:border-gold"} ${
+        locked ? "pointer-events-none opacity-80" : ""
+      }`}
     >
       {withPoster ? (
         <>
