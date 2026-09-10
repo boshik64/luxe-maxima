@@ -38,6 +38,14 @@ function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/** True if the step is already on screen enough that scrolling would only annoy. */
+function isComfortablyVisible(node: HTMLElement) {
+  const rect = node.getBoundingClientRect();
+  const vh = window.innerHeight || 1;
+  // Top is in the upper ~70% of the viewport and some of the block is visible.
+  return rect.top >= 0 && rect.top <= vh * 0.7 && rect.bottom > 80;
+}
+
 export function FormStep({
   show,
   children,
@@ -69,9 +77,10 @@ export function FormStep({
 
     const delay = prefersReducedMotion() ? 0 : 280;
     const timer = window.setTimeout(() => {
+      if (isComfortablyVisible(node)) return;
       node.scrollIntoView({
         behavior: prefersReducedMotion() ? "auto" : "smooth",
-        block: "start",
+        block: "nearest",
         inline: "nearest",
       });
     }, delay);

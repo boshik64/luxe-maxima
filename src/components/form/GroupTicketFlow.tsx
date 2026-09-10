@@ -275,7 +275,7 @@ export function GroupTicketFlow() {
           />
         </Field>
       </FormStep>
-      <FormStep show={isCatalogId(film.id) && Boolean(sessionDateValue)}>
+      <FormStep show={isCatalogId(film.id) && Boolean(sessionDateValue)} scrollOnShow={false}>
         {loading.sessions ? (
           <p className="text-sm text-muted">Загружаем сеансы…</p>
         ) : sessionsOnDate.length ? (
