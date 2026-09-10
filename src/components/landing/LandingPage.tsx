@@ -10,7 +10,6 @@ import { EventsPromo } from "@/components/landing/EventsPromo";
 import { HallShowcase } from "@/components/landing/HallShowcase";
 import { Products } from "@/components/landing/Products";
 import { SeasonBlock } from "@/components/landing/SeasonBlock";
-import { useClickLock } from "@/hooks/useClickLock";
 import { parseResponseJson } from "@/lib/api-json";
 import {
   HOME_BANNER_SLOT,
@@ -45,7 +44,6 @@ export function LandingPage({
   const [liveBanner, setLiveBanner] = useState<PublicBanner | null>(banner);
   const [liveFormBanner, setLiveFormBanner] = useState<PublicBanner | null>(formBanner);
   const product = productId ? PRODUCTS[productId] : null;
-  const { run: runSelectProduct } = useClickLock(2000);
 
   useEffect(() => {
     if (lockProduct) return;
@@ -73,15 +71,13 @@ export function LandingPage({
   }, [lockProduct]);
 
   function selectProduct(id: ProductId) {
-    runSelectProduct(() => {
-      setProductId(id);
-      // После выбора услуги якорим блок «Формат», а не поля ниже него.
-      window.requestAnimationFrame(() => {
-        const target =
-          document.getElementById("form-format") ??
-          document.getElementById("form");
-        target?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
+    setProductId(id);
+    // После выбора услуги якорим блок «Формат», а не поля ниже него.
+    window.requestAnimationFrame(() => {
+      const target =
+        document.getElementById("form-format") ??
+        document.getElementById("form");
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   }
 
