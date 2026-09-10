@@ -10,7 +10,6 @@ import { GroupTicketFlow } from "@/components/form/GroupTicketFlow";
 import { TicketCaptcha, type CaptchaSolution } from "@/components/form/TicketCaptcha";
 import { digitsToPhone, formatPhoneDisplay } from "@/components/form/phone";
 import { ProductGlyph } from "@/components/landing/AutumnDecor";
-import { useClickLock } from "@/hooks/useClickLock";
 import { parseResponseJson } from "@/lib/api-json";
 import { createClientId } from "@/lib/id";
 import {
@@ -96,7 +95,6 @@ export function ApplicationForm({
   const [formError, setFormError] = useState("");
   const [captcha, setCaptcha] = useState<CaptchaSolution | null>(null);
   const [captchaKey, setCaptchaKey] = useState(0);
-  const { run: runProductClick } = useClickLock(2000);
   const submittingRef = useRef(false);
 
   function refreshCaptcha() {
@@ -290,17 +288,16 @@ export function ApplicationForm({
                 type="button"
                 className={`form-product-btn ${item.id === productId ? "is-active" : ""}`}
                 aria-pressed={item.id === productId}
-                onClick={() =>
-                  runProductClick(() => {
-                    if (item.id !== productId) resetDetails();
-                    onProductChange?.(item.id);
-                    window.requestAnimationFrame(() => {
-                      document
-                        .getElementById("form-format")
-                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    });
-                  })
-                }
+                onClick={() => {
+                  if (item.id === productId) return;
+                  resetDetails();
+                  onProductChange?.(item.id);
+                  window.requestAnimationFrame(() => {
+                    document
+                      .getElementById("form-format")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  });
+                }}
               >
                 <ProductGlyph kind={PRODUCT_GLYPH[item.id]} />
                 <span className={`form-product-kicker ${item.id === "group" ? "is-sentence" : ""}`}>
