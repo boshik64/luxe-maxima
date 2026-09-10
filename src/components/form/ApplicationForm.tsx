@@ -281,7 +281,7 @@ export function ApplicationForm({
       className="space-y-8 rounded-3xl border border-line bg-card p-6 sm:p-8"
     >
       {lockProduct ? null : (
-        <fieldset>
+        <fieldset id="form-format" className="scroll-mt-[5.5rem]">
           <legend className="mb-4 text-sm font-medium">Формат</legend>
           <div className="form-product-grid">
             {PRODUCT_LIST.map((item) => (
@@ -294,6 +294,11 @@ export function ApplicationForm({
                   runProductClick(() => {
                     if (item.id !== productId) resetDetails();
                     onProductChange?.(item.id);
+                    window.requestAnimationFrame(() => {
+                      document
+                        .getElementById("form-format")
+                        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
                   })
                 }
               >
@@ -308,7 +313,7 @@ export function ApplicationForm({
         </fieldset>
       )}
 
-      <FormStep show={rentalReady}>
+      <FormStep show={rentalReady} scrollOnShow={false}>
         <RentalHallFields
           key={productId}
           errors={errors}
@@ -336,7 +341,7 @@ export function ApplicationForm({
         />
       </FormStep>
 
-      <FormStep show={productId === "group"}>
+      <FormStep show={productId === "group"} scrollOnShow={false}>
         <GroupTicketFlow />
       </FormStep>
 

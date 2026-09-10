@@ -75,7 +75,13 @@ export function LandingPage({
   function selectProduct(id: ProductId) {
     runSelectProduct(() => {
       setProductId(id);
-      document.getElementById("form")?.scrollIntoView({ behavior: "smooth" });
+      // После выбора услуги якорим блок «Формат», а не поля ниже него.
+      window.requestAnimationFrame(() => {
+        const target =
+          document.getElementById("form-format") ??
+          document.getElementById("form");
+        target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
     });
   }
 
