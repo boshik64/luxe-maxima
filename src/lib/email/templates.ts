@@ -80,7 +80,6 @@ export function applicationStaffDetailRows(application: Application) {
     ...(application.comment
       ? [{ label: "Комментарий", value: application.comment }]
       : []),
-    { label: "Источник", value: application.source },
   ];
 }
 
