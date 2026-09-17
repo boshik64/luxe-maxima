@@ -1,8 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DateTimePicker } from "@/components/form/DatePicker";
-import { Field, FormStep, inputClassName } from "@/components/form/Field";
+import {
+  Field,
+  FormStep,
+  inputClassName,
+  scrollFormToCity,
+} from "@/components/form/Field";
 import { type CascadeValue } from "@/components/form/CascadeSelect";
 import { ContentFields } from "@/components/form/ContentFields";
 import { RentalHallFields } from "@/components/form/RentalHallFields";
@@ -96,6 +101,14 @@ export function ApplicationForm({
   const [captcha, setCaptcha] = useState<CaptchaSolution | null>(null);
   const [captchaKey, setCaptchaKey] = useState(0);
   const submittingRef = useRef(false);
+  const scrolledForProduct = useRef<ProductId | undefined>(undefined);
+
+  useEffect(() => {
+    if (!productId || lockProduct) return;
+    if (scrolledForProduct.current === productId) return;
+    scrolledForProduct.current = productId;
+    scrollFormToCity();
+  }, [productId, lockProduct]);
 
   function refreshCaptcha() {
     setCaptcha(null);
@@ -292,11 +305,6 @@ export function ApplicationForm({
                   if (item.id === productId) return;
                   resetDetails();
                   onProductChange?.(item.id);
-                  window.requestAnimationFrame(() => {
-                    document
-                      .getElementById("form-format")
-                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  });
                 }}
               >
                 <ProductGlyph kind={PRODUCT_GLYPH[item.id]} />

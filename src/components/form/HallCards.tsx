@@ -1,5 +1,7 @@
 "use client";
 
+import { useCallback, useState } from "react";
+import { CardRowNextButton } from "@/components/form/PickCards";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useClickLock } from "@/hooks/useClickLock";
 import {
@@ -32,6 +34,14 @@ export function HallCards({
   onSelect: (hall: HallCardItem | null) => void;
 }) {
   const scrollRef = useDragScroll<HTMLDivElement>();
+  const [scroller, setScroller] = useState<HTMLElement | null>(null);
+  const setScrollNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      scrollRef.current = node;
+      setScroller((prev) => (prev === node ? prev : node));
+    },
+    [scrollRef],
+  );
 
   if (loading) {
     return <p className="text-sm text-muted">Загружаем залы…</p>;
@@ -58,7 +68,7 @@ export function HallCards({
       </p>
       <div className="relative">
         <div
-          ref={scrollRef}
+          ref={setScrollNode}
           className="hall-cards-scroll pretty-scroll -mx-1 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-scroll px-1 pb-3"
           role="listbox"
           aria-label="Залы"
@@ -73,12 +83,7 @@ export function HallCards({
           ))}
         </div>
         {showSwipeHint ? (
-          <div
-            className="pointer-events-none absolute top-0 right-0 bottom-3 flex w-11 items-center justify-end bg-gradient-to-l from-background via-background/80 to-transparent sm:hidden"
-            aria-hidden="true"
-          >
-            <span className="mr-0.5 text-2xl font-semibold text-gold">→</span>
-          </div>
+          <CardRowNextButton scroller={scroller} label="Зал" fadeFrom="background" />
         ) : null}
       </div>
       {error ? (

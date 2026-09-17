@@ -185,7 +185,7 @@ export function RentalHallFields({
           {catalogError}
         </p>
       ) : null}
-      <FormStep show scrollOnShow={false}>
+      <FormStep show scrollOnShow={false} id="form-city">
         {loading.cities ? (
           <p className="text-sm text-muted">Загружаем города…</p>
         ) : cities.length ? (

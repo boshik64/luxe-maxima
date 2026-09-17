@@ -208,3 +208,11 @@ model EventPromo {
   enabled            Boolean  @default(true)
   updatedAt          DateTime @updatedAt
 }
+
+/// Механика продажи KARO (`sale_id` у фильма). Включённые показываются в формах лендинга.
+model FilmSaleMechanic {
+  saleId    Int      @id
+  enabled   Boolean  @default(true)
+  label     String   @default("")
+  updatedAt DateTime @updatedAt
+}
