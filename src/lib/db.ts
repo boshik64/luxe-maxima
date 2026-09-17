@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { PrismaClient } from "@prisma/client";
 
-const SCHEMA_STAMP = "event-promo-v2";
+const SCHEMA_STAMP = "film-sale-mechanic-v1";
 const nodeRequire = createRequire(`${process.cwd()}/package.json`);
 
 const globalForPrisma = globalThis as unknown as {
@@ -15,7 +15,12 @@ function prismaLog(): ("error" | "warn")[] {
 
 function hasDelegate(
   client: PrismaClient,
-  key: "siteBanner" | "carouselSlide" | "carouselSettings" | "eventPromo",
+  key:
+    | "siteBanner"
+    | "carouselSlide"
+    | "carouselSettings"
+    | "eventPromo"
+    | "filmSaleMechanic",
 ) {
   const delegate = (
     client as unknown as Record<string, { findMany?: unknown; findFirst?: unknown }>
@@ -44,6 +49,7 @@ function isCurrentPrisma(client: PrismaClient) {
     hasDelegate(client, "carouselSlide") &&
     hasDelegate(client, "carouselSettings") &&
     hasDelegate(client, "eventPromo") &&
+    hasDelegate(client, "filmSaleMechanic") &&
     modelHasField(client, "HallFormat", "showcasePublished")
   );
 }

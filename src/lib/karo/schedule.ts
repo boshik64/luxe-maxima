@@ -1,4 +1,5 @@
 import { fetchCinemaSchedule, fetchDirectory } from "@/lib/karo/client";
+import { getEnabledSaleIds } from "@/lib/films/sale-mechanics";
 import {
   ART_FILM_CATEGORY_ID,
   CUSTOM_OPTION,
@@ -6,6 +7,8 @@ import {
   karoAssetUrl,
   type FilmOption,
   type KaroFilmMedia,
+  type KaroMovie,
+  type KaroNestedFilm,
   type ScheduleOption,
   type SessionOption,
 } from "@/lib/karo/types";
@@ -28,6 +31,36 @@ function priceRubles(kopecks?: number) {
     return undefined;
   }
   return Math.round(kopecks / 100);
+}
+
+function orderingValue(value?: number | null) {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : Number.POSITIVE_INFINITY;
+}
+
+function sortByOrdering<T extends { ordering?: number | null; name: string }>(
+  items: T[],
+) {
+  return [...items].sort((a, b) => {
+    const byOrder = orderingValue(a.ordering) - orderingValue(b.ordering);
+    if (byOrder !== 0) return byOrder;
+    return a.name.localeCompare(b.name, "ru");
+  });
+}
+
+function movieById(movies: KaroMovie[]) {
+  return new Map(movies.map((movie) => [movie.id, movie]));
+}
+
+function isSaleAllowed(
+  movie: KaroMovie | undefined,
+  enabledSaleIds: number[] | null,
+) {
+  if (!enabledSaleIds) return true;
+  const saleId = movie?.sale_id;
+  if (typeof saleId !== "number") return false;
+  return enabledSaleIds.includes(saleId);
 }
 
 export async function listHalls(cinemaId: number): Promise<ScheduleOption[]> {
@@ -65,33 +98,56 @@ export async function listHalls(cinemaId: number): Promise<ScheduleOption[]> {
 }
 
 export async function searchRepertoire(query = ""): Promise<ScheduleOption[]> {
-  const directory = await fetchDirectory();
+  const [directory, enabledSaleIds] = await Promise.all([
+    fetchDirectory(),
+    getEnabledSaleIds(),
+  ]);
   const needle = query.trim().toLowerCase();
-  return (directory.movie ?? [])
-    .filter((movie) => movie.film_category_id !== ART_FILM_CATEGORY_ID)
-    .filter((movie) =>
-      needle ? movie.name.toLowerCase().includes(needle) : true,
-    )
-    .slice(0, 20)
-    .map((movie) => ({ id: String(movie.id), name: movie.name }));
+  const movies = sortByOrdering(
+    (directory.movie ?? [])
+      .filter((movie) => movie.film_category_id !== ART_FILM_CATEGORY_ID)
+      .filter((movie) => isSaleAllowed(movie, enabledSaleIds))
+      .filter((movie) =>
+        needle ? movie.name.toLowerCase().includes(needle) : true,
+      ),
+  );
+  return movies.slice(0, 20).map((movie) => ({
+    id: String(movie.id),
+    name: movie.name,
+  }));
+}
+
+function toFilmOption(film: KaroNestedFilm): FilmOption {
+  return {
+    id: String(film.id),
+    name: film.name,
+    ageRestriction:
+      typeof film.age_restriction === "number" ? film.age_restriction : null,
+    duration: typeof film.duration === "number" ? film.duration : null,
+    posterUrl: mediaPath(film.media),
+  };
 }
 
 export async function listFilms(
   cinemaId: number,
   query = "",
 ): Promise<FilmOption[]> {
-  const schedule = await fetchCinemaSchedule(cinemaId);
+  const [schedule, directory, enabledSaleIds] = await Promise.all([
+    fetchCinemaSchedule(cinemaId),
+    fetchDirectory(),
+    getEnabledSaleIds(),
+  ]);
+  const movies = movieById(directory.movie ?? []);
   const needle = query.trim().toLowerCase();
-  const films = (schedule.items ?? [])
-    .map((film) => ({
-      id: String(film.id),
-      name: film.name,
-      ageRestriction:
-        typeof film.age_restriction === "number" ? film.age_restriction : null,
-      duration: typeof film.duration === "number" ? film.duration : null,
-      posterUrl: mediaPath(film.media),
-    }))
-    .filter((film) => (needle ? film.name.toLowerCase().includes(needle) : true));
+
+  const films = sortByOrdering(
+    (schedule.items ?? [])
+      .filter((film) => isSaleAllowed(movies.get(film.id), enabledSaleIds))
+      .filter((film) =>
+        needle ? film.name.toLowerCase().includes(needle) : true,
+      ),
+  ).map(toFilmOption);
+
   const limited = needle ? films.slice(0, 20) : films;
   return [...limited, CUSTOM_OPTION];
 }

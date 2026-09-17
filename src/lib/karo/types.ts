@@ -30,6 +30,9 @@ export type KaroMovie = {
   name: string;
   film_category_id?: number;
   is_artfilm?: number;
+  sale_id?: number | null;
+  on_sale?: boolean | null;
+  ordering?: number | null;
 };
 
 /** Категория АРТ в /directory. Уточнить у заказчика, если id изменится. */
@@ -75,6 +78,7 @@ export type KaroNestedFilm = {
   name: string;
   age_restriction?: number;
   duration?: number;
+  ordering?: number | null;
   genres?: Record<string, string>;
   media?: KaroFilmMedia;
   formats: Array<{
