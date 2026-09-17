@@ -43,12 +43,14 @@ export function FormStep({
   children,
   variant = "row",
   scrollOnShow = true,
+  id,
 }: {
   show: boolean;
   children: ReactNode;
   variant?: "row" | "contacts";
   /** Scroll the step into view when it first appears (false→true). */
   scrollOnShow?: boolean;
+  id?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const wasShown = useRef(false);
@@ -83,11 +85,24 @@ export function FormStep({
   return (
     <div
       ref={ref}
+      id={id}
       className={variant === "contacts" ? "form-step form-step-contacts" : "form-step"}
     >
       {children}
     </div>
   );
+}
+
+export function scrollFormToCity() {
+  if (typeof window === "undefined") return;
+  const delay = prefersReducedMotion() ? 0 : 300;
+  window.setTimeout(() => {
+    document.getElementById("form-city")?.scrollIntoView({
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+      block: "start",
+      inline: "nearest",
+    });
+  }, delay);
 }
 
 export const inputClassName =
