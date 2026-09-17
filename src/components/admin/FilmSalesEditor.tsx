@@ -144,8 +144,9 @@ export function FilmSalesEditor() {
                       </span>
                     </label>
                     <div className="w-full max-w-xs">
-                      <Field label="Подпись в админке">
+                      <Field id={`sale-label-${item.saleId}`} label="Подпись в админке">
                         <input
+                          id={`sale-label-${item.saleId}`}
                           className={inputClassName}
                           value={item.label}
                           placeholder={`Механика ${item.saleId}`}
