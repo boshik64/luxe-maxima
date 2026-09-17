@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { CardRowNextButton } from "@/components/form/PickCards";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useClickLock } from "@/hooks/useClickLock";
@@ -35,10 +35,13 @@ export function HallCards({
 }) {
   const scrollRef = useDragScroll<HTMLDivElement>();
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setScroller(scrollRef.current);
-  }, [scrollRef, halls.length]);
+  const setScrollNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      scrollRef.current = node;
+      setScroller((prev) => (prev === node ? prev : node));
+    },
+    [scrollRef],
+  );
 
   if (loading) {
     return <p className="text-sm text-muted">Загружаем залы…</p>;
@@ -65,7 +68,7 @@ export function HallCards({
       </p>
       <div className="relative">
         <div
-          ref={scrollRef}
+          ref={setScrollNode}
           className="hall-cards-scroll pretty-scroll -mx-1 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-scroll px-1 pb-3"
           role="listbox"
           aria-label="Залы"

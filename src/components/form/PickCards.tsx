@@ -1,6 +1,11 @@
 "use client";
 
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useClickLock } from "@/hooks/useClickLock";
 
@@ -33,6 +38,28 @@ function scrollRowByCard(scroller: HTMLElement, direction: 1 | -1) {
   });
 }
 
+function canScrollNext(scroller: HTMLElement | null) {
+  if (!scroller) return false;
+  return scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft > 8;
+}
+
+function useCanScrollNext(scroller: HTMLElement | null) {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (!scroller) return () => undefined;
+      scroller.addEventListener("scroll", onStoreChange, { passive: true });
+      const observer = new ResizeObserver(onStoreChange);
+      observer.observe(scroller);
+      return () => {
+        scroller.removeEventListener("scroll", onStoreChange);
+        observer.disconnect();
+      };
+    },
+    () => canScrollNext(scroller),
+    () => true,
+  );
+}
+
 function SwipeNextButton({
   scroller,
   label,
@@ -42,32 +69,11 @@ function SwipeNextButton({
   label: string;
   fadeFrom?: "card" | "background";
 }) {
-  const [visible, setVisible] = useState(true);
+  const visible = useCanScrollNext(scroller);
   const fadeClass =
     fadeFrom === "background"
       ? "from-background from-40% via-background/95"
       : "from-card from-40% via-card/95";
-
-  const updateVisibility = useCallback(() => {
-    if (!scroller) {
-      setVisible(false);
-      return;
-    }
-    const remaining = scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft;
-    setVisible(remaining > 8);
-  }, [scroller]);
-
-  useEffect(() => {
-    if (!scroller) return;
-    updateVisibility();
-    scroller.addEventListener("scroll", updateVisibility, { passive: true });
-    const observer = new ResizeObserver(updateVisibility);
-    observer.observe(scroller);
-    return () => {
-      scroller.removeEventListener("scroll", updateVisibility);
-      observer.disconnect();
-    };
-  }, [scroller, updateVisibility]);
 
   if (!visible) return null;
 
@@ -119,10 +125,13 @@ export function CardRow({
 }) {
   const scrollRef = useDragScroll<HTMLDivElement>();
   const [scroller, setScroller] = useState<HTMLElement | null>(null);
-
-  useEffect(() => {
-    setScroller(scrollRef.current);
-  }, [scrollRef, count, children]);
+  const setScrollNode = useCallback(
+    (node: HTMLDivElement | null) => {
+      scrollRef.current = node;
+      setScroller((prev) => (prev === node ? prev : node));
+    },
+    [scrollRef],
+  );
 
   return (
     <div className="space-y-3">
@@ -135,7 +144,7 @@ export function CardRow({
       </p>
       <div className="relative">
         <div
-          ref={scrollRef}
+          ref={setScrollNode}
           className="hall-cards-scroll pretty-scroll -mx-1 flex snap-x snap-mandatory items-stretch gap-2.5 overflow-x-scroll px-1 pb-3"
           role="listbox"
           aria-label={label}
