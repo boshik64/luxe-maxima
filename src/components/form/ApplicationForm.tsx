@@ -318,6 +318,18 @@ export function ApplicationForm({
         </fieldset>
       )}
 
+      <FormStep show={productId === "keys"} scrollOnShow={false}>
+        {PRODUCTS.keys.notes?.length ? (
+          <div className="rounded-2xl border border-line bg-background/50 px-4 py-3 text-sm leading-relaxed text-muted">
+            {PRODUCTS.keys.notes.map((note) => (
+              <p key={note} className="mt-1 first:mt-0">
+                {note}
+              </p>
+            ))}
+          </div>
+        ) : null}
+      </FormStep>
+
       <FormStep show={rentalReady} scrollOnShow={false}>
         <RentalHallFields
           key={productId}

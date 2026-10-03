@@ -55,6 +55,13 @@ export function Products({
                 </li>
               ))}
             </ul>
+            {product.notes?.length ? (
+              <ul className="mt-4 space-y-1.5 text-sm leading-snug text-muted">
+                {product.notes.map((note) => (
+                  <li key={note}>— {note}</li>
+                ))}
+              </ul>
+            ) : null}
             {product.termsLabel ? <GroupTerms label={product.termsLabel} /> : null}
             {onSelect ? (
               <button

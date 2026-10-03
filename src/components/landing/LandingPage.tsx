@@ -101,7 +101,9 @@ export function LandingPage({
           }
           ctaHref={lockProduct ? "#form" : "#products"}
           ctaLabel={
-            lockProduct && productId === "group" ? "Купить билеты" : "Оставить заявку"
+            lockProduct && productId === "group"
+              ? product?.cta ?? "Выбрать сеанс"
+              : "Оставить заявку"
           }
         />
         {lockProduct || !liveBanner ? null : <HomeBanner banner={liveBanner} />}
