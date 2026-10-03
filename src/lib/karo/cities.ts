@@ -1,12 +1,14 @@
 import { fetchCinemas, fetchCities } from "@/lib/karo/client";
 
+/** Города КАРО, которые не показываем в формах лендинга. */
+const HIDDEN_CITY_IDS = new Set(["9"]); // Самара
+
 /** Официальные гербы городов (Wikimedia Commons). */
 const CITY_CREST_BY_ID: Record<string, string> = {
   "1": "/cities/moscow.svg",
   "2": "/cities/spb.svg",
   "5": "/cities/ekaterinburg.svg",
   "7": "/cities/kaliningrad.svg",
-  "9": "/cities/samara.svg",
   "10": "/cities/surgut.svg",
   "12": "/cities/tyumen.svg",
   "13": "/cities/novosibirsk.svg",
@@ -25,7 +27,9 @@ export function cityCrestUrl(cityId: string) {
 }
 
 export async function listCitiesWithCinemaCounts(): Promise<CityOption[]> {
-  const cities = await fetchCities();
+  const cities = (await fetchCities()).filter(
+    (city) => !HIDDEN_CITY_IDS.has(String(city.id)),
+  );
   const counts = await Promise.all(
     cities.map(async (city) => {
       try {
