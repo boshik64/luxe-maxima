@@ -236,14 +236,21 @@ select {
   pointer-events: none;
 }
 
-.console-gaming-sticker__icon,
 .console-gaming-sticker__label {
   position: relative;
   z-index: 1;
 }
 
 .console-gaming-sticker__icon {
-  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.45));
+  position: relative;
+  z-index: 2;
+  width: 2.25rem;
+  height: 2.25rem;
+  object-fit: contain;
+  border-radius: 0.35rem;
+  background: #0a0a0a;
+  box-shadow: 0 1px 2px rgba(26, 18, 8, 0.35);
+  isolation: isolate;
 }
 
 @keyframes console-sticker-shimmer {
