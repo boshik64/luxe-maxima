@@ -12,7 +12,7 @@ const links = [
   { href: "/admin/film-sales", label: "Механики продажи" },
   { href: "/admin/events", label: "Мероприятия" },
   { href: "/admin/banner", label: "Баннеры", hidden: !SHOW_BANNER_NAV },
-  { href: "/admin/feedback", label: "Обратная связь (скрыто)", adminOnly: true },
+  { href: "/admin/feedback", label: "Обратная связь" },
   { href: "/admin/users", label: "Пользователи", adminOnly: true },
 ];
 

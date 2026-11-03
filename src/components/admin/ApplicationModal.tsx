@@ -160,7 +160,11 @@ export function ApplicationModal({
   const [trackedItem, setTrackedItem] = useState(item);
   if (item !== trackedItem) {
     setTrackedItem(item);
-    setCurrent(item);
+    // Список канбана часто приходит без messages — не затираем уже загруженную переписку.
+    setCurrent((prev) => ({
+      ...item,
+      messages: Array.isArray(item.messages) ? item.messages : prev.messages,
+    }));
     if (!editing) setDraft(draftFromItem(item));
   }
 

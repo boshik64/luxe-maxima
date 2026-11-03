@@ -126,9 +126,9 @@ function HallCardButton({
         {hall.cinemaName} ({hall.name})
       </p>
       {hall.consoleGaming ? (
-        <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs text-gold">
-          <JoystickIcon />
-          {CONSOLE_GAMING_LABEL}
+        <p className="console-gaming-sticker mt-3 inline-flex max-w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-bold tracking-wide uppercase">
+          <GamepadIcon />
+          <span className="console-gaming-sticker__label">{CONSOLE_GAMING_LABEL}</span>
         </p>
       ) : null}
       <div className="mt-3 grid flex-1 grid-cols-2 gap-2">
@@ -176,13 +176,17 @@ function HallCardButton({
   );
 }
 
-function JoystickIcon() {
+function GamepadIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="10" width="18" height="10" rx="3" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="8" cy="15" r="1.6" fill="currentColor" />
-      <path d="M15 13.5h3M16.5 12v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M12 10V6.5a2.5 2.5 0 1 1 5 0V10" stroke="currentColor" strokeWidth="1.8" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element -- small sticker asset from /public
+    <img
+      className="console-gaming-sticker__icon shrink-0"
+      src="/icons/ps-gamepad.png"
+      alt=""
+      width={36}
+      height={36}
+      decoding="async"
+      draggable={false}
+    />
   );
 }
