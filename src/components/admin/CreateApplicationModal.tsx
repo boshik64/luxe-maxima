@@ -169,54 +169,60 @@ export function CreateApplicationModal({
   }, [isRental, isGroup, draft.productId]);
 
   useEffect(() => {
-    if (!isGroup || !draft.cityId) {
-      setScheduleCinemas([]);
-      return;
-    }
+    if (!isGroup) return;
+    const cityId = draft.cityId;
     let cancelled = false;
-    fetch(`/api/schedule/cinemas?cityId=${draft.cityId}`)
-      .then(async (response) => {
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      if (!cityId) {
+        setScheduleCinemas([]);
+        return;
+      }
+      void (async () => {
+        const response = await fetch(`/api/schedule/cinemas?cityId=${cityId}`);
         const data = (await response.json()) as {
           items?: Array<{ id: string; name: string }>;
         };
-        if (!cancelled) {
-          setScheduleCinemas(
-            (data.items ?? []).filter((cinema) => cinema.id !== "custom"),
-          );
-        }
-      })
-      .catch(() => undefined);
+        if (cancelled) return;
+        setScheduleCinemas(
+          (data.items ?? []).filter((cinema) => cinema.id !== "custom"),
+        );
+      })();
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [isGroup, draft.cityId]);
 
   useEffect(() => {
-    if (!isGroup || !draft.cinemaId || !draft.filmId || !/^\d+$/.test(draft.cinemaId)) {
-      setSessions([]);
-      return;
-    }
+    if (!isGroup) return;
+    const cinemaId = draft.cinemaId;
+    const filmId = draft.filmId;
     let cancelled = false;
-    const params = new URLSearchParams({
-      cinemaId: draft.cinemaId,
-      filmId: draft.filmId,
-    });
-    fetch(`/api/schedule/sessions?${params}`)
-      .then(async (response) => {
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      if (!cinemaId || !filmId || !/^\d+$/.test(cinemaId)) {
+        setSessions([]);
+        return;
+      }
+      void (async () => {
+        const params = new URLSearchParams({ cinemaId, filmId });
+        const response = await fetch(`/api/schedule/sessions?${params}`);
         const data = (await response.json()) as {
           items?: Array<{ id: string; name: string }>;
         };
-        if (!cancelled) {
-          setSessions(
-            (data.items ?? [])
-              .filter((session) => session.id !== "custom")
-              .map((session) => ({ value: session.id, label: session.name })),
-          );
-        }
-      })
-      .catch(() => undefined);
+        if (cancelled) return;
+        setSessions(
+          (data.items ?? [])
+            .filter((session) => session.id !== "custom")
+            .map((session) => ({ value: session.id, label: session.name })),
+        );
+      })();
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [isGroup, draft.cinemaId, draft.filmId]);
 
