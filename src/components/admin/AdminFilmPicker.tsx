@@ -30,14 +30,18 @@ export function AdminFilmPicker({
   const fieldId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const locked = Boolean(filmId && filmName && !watchCustom);
-  const [query, setQuery] = useState(watchCustom || filmName);
+  const propQuery = watchCustom || filmName;
+  const [query, setQuery] = useState(propQuery);
+  const [querySource, setQuerySource] = useState(propQuery);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<FilmOption[]>([]);
 
-  useEffect(() => {
-    setQuery(watchCustom || filmName);
-  }, [filmId, filmName, watchCustom]);
+  // Синхронизация с пропами без effect: при смене выбора снаружи сбрасываем локальный ввод.
+  if (propQuery !== querySource) {
+    setQuerySource(propQuery);
+    setQuery(propQuery);
+  }
 
   useEffect(() => {
     if (!endpoint || !open || locked) return;
@@ -100,6 +104,7 @@ export function AdminFilmPicker({
             onClick={() => {
               onSelectFilm({ id: "", name: "" });
               setQuery("");
+              setQuerySource("");
               setOpen(true);
             }}
           >
@@ -151,6 +156,7 @@ export function AdminFilmPicker({
                             onSelectFilm({ id: option.id, name: option.name });
                             onSelectCustom("");
                             setQuery(option.name);
+                            setQuerySource(option.name);
                             setOpen(false);
                           }}
                         >

@@ -157,10 +157,29 @@ export function ApplicationModal({
   const isRental = current.productId === "keys" || current.productId === "event";
   const isGroup = current.productId === "group";
 
-  useEffect(() => {
+  const [trackedItem, setTrackedItem] = useState(item);
+  if (item !== trackedItem) {
+    setTrackedItem(item);
     setCurrent(item);
     if (!editing) setDraft(draftFromItem(item));
-  }, [item, editing]);
+  }
+
+  if (editing && isRental && catalogCinemas.length > 0 && draft.cinemaId) {
+    const cinema = catalogCinemas.find((entry) => entry.id === draft.cinemaId);
+    if (
+      cinema &&
+      (draft.cityId !== cinema.cityId ||
+        draft.cityName !== cinema.cityName ||
+        draft.cinemaName !== cinema.name)
+    ) {
+      setDraft((prev) => ({
+        ...prev,
+        cityId: cinema.cityId,
+        cityName: cinema.cityName,
+        cinemaName: cinema.name,
+      }));
+    }
+  }
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -322,36 +341,62 @@ export function ApplicationModal({
   }, []);
 
   useEffect(() => {
-    if (!editing || !isRental || catalogCinemas.length === 0) return;
-    const cinema = catalogCinemas.find((item) => item.id === draft.cinemaId);
-    if (!cinema) return;
-    if (draft.cityId === cinema.cityId && draft.cityName === cinema.cityName) return;
-    setDraft((prev) => ({
-      ...prev,
-      cityId: cinema.cityId,
-      cityName: cinema.cityName,
-      cinemaName: cinema.name,
-    }));
-  }, [
-    editing,
-    isRental,
-    catalogCinemas,
-    draft.cinemaId,
-    draft.cityId,
-    draft.cityName,
-  ]);
-
-  useEffect(() => {
-    if (!editing) return;
-    if (isGroup && draft.cityId) void loadScheduleCinemas(draft.cityId);
-  }, [editing, isGroup, draft.cityId, loadScheduleCinemas]);
+    if (!editing || !isGroup) return;
+    const cityId = draft.cityId;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      if (!cityId) {
+        setScheduleCinemas([]);
+        return;
+      }
+      void (async () => {
+        const response = await fetch(`/api/schedule/cinemas?cityId=${cityId}`);
+        const data = (await response.json()) as {
+          items?: Array<{ id: string; name: string }>;
+        };
+        if (cancelled) return;
+        setScheduleCinemas(
+          (data.items ?? []).filter((cinema) => cinema.id !== "custom"),
+        );
+      })();
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [editing, isGroup, draft.cityId]);
 
   useEffect(() => {
     if (!editing || !isGroup) return;
-    if (draft.cinemaId && draft.filmId) {
-      void loadSessions(draft.cinemaId, draft.filmId);
-    }
-  }, [editing, isGroup, draft.cinemaId, draft.filmId, loadSessions]);
+    const cinemaId = draft.cinemaId;
+    const filmId = draft.filmId;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      if (!cinemaId || !filmId || !/^\d+$/.test(cinemaId)) {
+        setSessions([]);
+        return;
+      }
+      void (async () => {
+        const params = new URLSearchParams({ cinemaId, filmId });
+        const response = await fetch(`/api/schedule/sessions?${params}`);
+        const data = (await response.json()) as {
+          items?: Array<{ id: string; name: string }>;
+        };
+        if (cancelled) return;
+        setSessions(
+          (data.items ?? [])
+            .filter((session) => session.id !== "custom")
+            .map((session) => ({ value: session.id, label: session.name })),
+        );
+      })();
+    }, 0);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [editing, isGroup, draft.cinemaId, draft.filmId]);
 
   const filmEndpoint =
     current.productId === "keys"

@@ -133,15 +133,18 @@ export function UserEditor({ id }: { id?: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    load()
-      .catch(() => {
-        if (!cancelled) setError("Не удалось загрузить пользователя");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const timer = window.setTimeout(() => {
+      load()
+        .catch(() => {
+          if (!cancelled) setError("Не удалось загрузить пользователя");
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [load]);
 
