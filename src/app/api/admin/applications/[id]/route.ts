@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { requireRole, requireSession } from "@/lib/admin/auth";
+import { ASSIGNING_STATUSES } from "@/lib/admin/status";
 import {
   applicationAdminPatchSchema,
   flattenPatchErrors,
@@ -10,6 +12,7 @@ import {
   updateApplication,
 } from "@/lib/applications/service";
 import { checkMailbox } from "@/lib/email/mailbox";
+import { pollInboundMailbox } from "@/lib/chat/inbound";
 
 export async function GET(
   _request: NextRequest,
@@ -22,6 +25,7 @@ export async function GET(
   }
 
   const { id } = await context.params;
+  await pollInboundMailbox().catch(() => undefined);
   const item = await getApplication(id);
   if (!item) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
   return NextResponse.json({ item });
@@ -31,8 +35,9 @@ export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
+  let session;
   try {
-    await requireSession();
+    session = await requireSession();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -64,7 +69,18 @@ export async function PATCH(
     }
   }
 
-  const updated = await updateApplication(id, parsed.data);
+  const data: Prisma.ApplicationUpdateInput = { ...parsed.data };
+  if (parsed.data.status === "NEW") {
+    data.manager = { disconnect: true };
+  } else if (
+    parsed.data.status &&
+    ASSIGNING_STATUSES.includes(parsed.data.status) &&
+    !existing.managerId
+  ) {
+    data.manager = { connect: { id: session.sub } };
+  }
+
+  const updated = await updateApplication(id, data);
   return NextResponse.json({ item: updated });
 }
 

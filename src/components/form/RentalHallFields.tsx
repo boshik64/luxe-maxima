@@ -8,6 +8,7 @@ import {
 import { FormStep } from "@/components/form/Field";
 import { HallCards, type HallCardItem } from "@/components/form/HallCards";
 import { CardRow, PickCard } from "@/components/form/PickCards";
+import { HALL_HOLIDAY_PRICE_NOTE } from "@/lib/catalog/format";
 import { formatCinemaCount } from "@/lib/karo/cities";
 import {
   CUSTOM_OPTION_ID,
@@ -329,6 +330,7 @@ export function RentalHallFields({
             emit({ city, cinema, hallFormat, hall: next });
           }}
         />
+        <p className="text-xs text-muted">{HALL_HOLIDAY_PRICE_NOTE}</p>
       </FormStep>
     </div>
   );

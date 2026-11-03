@@ -3,8 +3,7 @@ import { FeedbackPage } from "@/components/feedback/FeedbackPage";
 
 export const metadata: Metadata = {
   title: "Обратная связь — КАРО",
-  description:
-    "Контакты КАРО и форма обратной связи по аренде зала и мероприятиям.",
+  description: "Контакты КАРО по аренде зала и мероприятиям.",
 };
 
 export default function Page() {

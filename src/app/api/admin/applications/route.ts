@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
   const result = await listApplications({
     status: searchParams.get("status") ?? undefined,
     productId: searchParams.get("productId") ?? undefined,
+    managerId: searchParams.get("managerId") ?? undefined,
+    createdFrom: searchParams.get("createdFrom") ?? undefined,
+    createdTo: searchParams.get("createdTo") ?? undefined,
     page: Number(searchParams.get("page") ?? 1),
     pageSize: Number(searchParams.get("pageSize") ?? 20) || 20,
   });

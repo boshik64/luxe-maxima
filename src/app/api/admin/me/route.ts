@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSession } from "@/lib/admin/auth";
 import {
   getUser,
-  notifyPrefsFromBody,
+  notifyPrefsPatchFromBody,
   updateOwnNotifyPrefs,
 } from "@/lib/admin/users";
 import { prisma } from "@/lib/db";
@@ -23,6 +23,7 @@ export async function GET() {
       notifyKeys: user?.notifyKeys ?? false,
       notifyEvent: user?.notifyEvent ?? false,
       notifyFeedback: user?.notifyFeedback ?? false,
+      emailSignature: user?.emailSignature ?? "",
     });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -33,8 +34,12 @@ export async function PATCH(request: NextRequest) {
   try {
     const session = await requireSession();
     const body = (await request.json()) as Record<string, unknown>;
-    const prefs = notifyPrefsFromBody(body);
-    const item = await updateOwnNotifyPrefs(session.sub, prefs);
+    const prefs = notifyPrefsPatchFromBody(body);
+    const item = await updateOwnNotifyPrefs(session.sub, {
+      ...prefs,
+      emailSignature:
+        typeof body.emailSignature === "string" ? body.emailSignature : undefined,
+    });
     return NextResponse.json({ item });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

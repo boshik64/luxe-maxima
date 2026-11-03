@@ -26,6 +26,8 @@ export type HallItem = {
   capacity: number;
   rentalPriceWeekday: number;
   rentalPriceWeekend: number;
+  priceOnRequest: boolean;
+  consoleGaming: boolean;
   enabled: boolean;
   cinemaId: string;
   formatId: string;

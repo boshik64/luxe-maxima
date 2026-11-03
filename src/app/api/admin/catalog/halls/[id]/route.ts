@@ -43,6 +43,10 @@ export async function PATCH(
           ? requiredInt(body.rentalPriceWeekend, "Стоимость пт–вс", 0)
           : undefined,
       enabled: typeof body.enabled === "boolean" ? body.enabled : undefined,
+      priceOnRequest:
+        typeof body.priceOnRequest === "boolean" ? body.priceOnRequest : undefined,
+      consoleGaming:
+        typeof body.consoleGaming === "boolean" ? body.consoleGaming : undefined,
     });
     return NextResponse.json({ item });
   } catch (error) {

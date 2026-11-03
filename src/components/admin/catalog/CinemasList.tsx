@@ -1,8 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  CatalogFilters,
+  matchesPublishFilter,
+  PUBLISH_FILTER_OPTIONS,
+} from "@/components/admin/catalog/CatalogFilters";
 import { CatalogShell } from "@/components/admin/catalog/CatalogShell";
 import { PublishStatusButton } from "@/components/admin/catalog/PublishStatusButton";
 import {
@@ -17,6 +22,8 @@ export function CinemasList() {
   const [items, setItems] = useState<CinemaItem[]>([]);
   const [error, setError] = useState("");
   const [pendingId, setPendingId] = useState("");
+  const [cityFilter, setCityFilter] = useState("all");
+  const [publishFilter, setPublishFilter] = useState("all");
 
   const load = useCallback(() => {
     return fetch("/api/admin/catalog/cinemas").then(async (response) => {
@@ -47,6 +54,28 @@ export function CinemasList() {
       cancelled = true;
     };
   }, [load]);
+
+  const cityOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const item of items) {
+      if (!map.has(item.cityId)) map.set(item.cityId, item.cityName);
+    }
+    return [
+      { value: "all", label: "Все города" },
+      ...[...map.entries()]
+        .sort((a, b) => a[1].localeCompare(b[1], "ru"))
+        .map(([value, label]) => ({ value, label })),
+    ];
+  }, [items]);
+
+  const filtered = useMemo(
+    () =>
+      items.filter((item) => {
+        if (cityFilter !== "all" && item.cityId !== cityFilter) return false;
+        return matchesPublishFilter(item.enabled !== false, publishFilter);
+      }),
+    [items, cityFilter, publishFilter],
+  );
 
   async function togglePublished(item: CinemaItem) {
     setPendingId(item.id);
@@ -90,17 +119,37 @@ export function CinemasList() {
       }
     >
       {error ? <p className="mb-4 text-sm text-primary">{error}</p> : null}
+      <CatalogFilters
+        fields={[
+          {
+            id: "cinema-city-filter",
+            label: "Город",
+            value: cityFilter,
+            options: cityOptions,
+            onChange: setCityFilter,
+          },
+          {
+            id: "cinema-publish-filter",
+            label: "Публикация",
+            value: publishFilter,
+            options: PUBLISH_FILTER_OPTIONS,
+            onChange: setPublishFilter,
+          },
+        ]}
+      />
       <CatalogTable columns={["Кинотеатр", "Город", "Залов", "Публикация", ""]}>
-        {items.length === 0 ? (
+        {filtered.length === 0 ? (
           <tr>
             <td colSpan={5} className="px-5 py-12 text-center text-sm text-muted">
               {error
                 ? "Список недоступен."
-                : "Пока нет кинотеатров в каталоге аренды."}
+                : items.length === 0
+                  ? "Пока нет кинотеатров в каталоге аренды."
+                  : "Нет записей по выбранным фильтрам."}
             </td>
           </tr>
         ) : (
-          items.map((item) => (
+          filtered.map((item) => (
             <tr key={item.id} className={catalogRowClass}>
               <td className="px-5 py-4 font-medium">
                 <CatalogRowLink href={`/admin/catalogs/cinemas/${item.id}`}>

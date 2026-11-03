@@ -111,7 +111,8 @@ export async function searchRepertoire(query = ""): Promise<ScheduleOption[]> {
         needle ? movie.name.toLowerCase().includes(needle) : true,
       ),
   );
-  return movies.slice(0, 20).map((movie) => ({
+  // Пустой запрос — шире список; при поиске — больше совпадений, как на лендинге.
+  return movies.slice(0, needle ? 40 : 120).map((movie) => ({
     id: String(movie.id),
     name: movie.name,
   }));

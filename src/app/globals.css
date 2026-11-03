@@ -503,6 +503,8 @@ select {
   position: absolute;
   inset: 0;
   display: block;
+  /* Картинка на весь hero — без этого она может перехватывать клики по CTA. */
+  pointer-events: none;
 }
 
 .theme-autumn .autumn-hero-banner::after {

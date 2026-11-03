@@ -30,7 +30,6 @@ function transport() {
     host,
     port,
     secure,
-    // Port 587: plain connect, then STARTTLS (Encryption = TLS in mail panels).
     requireTLS: !secure && port === 587,
     connectionTimeout: 8000,
     greetingTimeout: 8000,
@@ -51,35 +50,53 @@ async function staffRecipients(kind: StaffNotifyKind) {
   return listStaffNotifyEmails(kind);
 }
 
-async function sendMail(options: {
+export type OutboundAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+};
+
+export async function sendMail(options: {
   to: string | string[];
   subject: string;
   text: string;
   html: string;
   replyTo?: string;
+  inReplyTo?: string;
+  references?: string[];
+  messageId?: string;
+  attachments?: OutboundAttachment[];
 }) {
   const mailer = transport();
   if (!mailer) {
     logger.info("Email skipped: SMTP is not configured (set SMTP_HOST)");
-    return false;
+    return { ok: false as const, messageId: "" };
   }
   const from = fromAddress();
   if (!from) {
     logger.info("Email skipped: set SMTP_FROM (or SMTP_USER)");
-    return false;
+    return { ok: false as const, messageId: "" };
   }
   const to = Array.isArray(options.to) ? options.to.filter(Boolean) : [options.to];
-  if (!to.length) return false;
+  if (!to.length) return { ok: false as const, messageId: "" };
 
-  await mailer.sendMail({
+  const info = await mailer.sendMail({
     from,
     to,
     replyTo: options.replyTo,
     subject: options.subject,
     text: options.text,
     html: options.html,
+    inReplyTo: options.inReplyTo,
+    references: options.references?.join(" "),
+    messageId: options.messageId,
+    attachments: options.attachments?.map((item) => ({
+      filename: item.filename,
+      content: item.content,
+      contentType: item.contentType,
+    })),
   });
-  return true;
+  return { ok: true as const, messageId: String(info.messageId ?? options.messageId ?? "") };
 }
 
 function applicationNotifyKind(
@@ -168,5 +185,31 @@ export async function notifyNewApplication(application: Application) {
     }
   } catch (error) {
     logger.error("Failed to send application staff email", error);
+  }
+}
+
+export async function notifyManagerNewGuestMessage(options: {
+  to: string;
+  applicationId: string;
+  publicNumber: number;
+  guestName: string;
+  preview: string;
+}) {
+  const subject = `Новый ответ гостя — заявка KM-${options.publicNumber}`;
+  const url = `${(process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "")}/admin?id=${options.applicationId}`;
+  const text = [
+    `${options.guestName} ответил по заявке KM-${options.publicNumber}.`,
+    options.preview,
+    `Открыть: ${url}`,
+  ].join("\n\n");
+  try {
+    await sendMail({
+      to: options.to,
+      subject,
+      text,
+      html: `<p>${options.guestName} ответил по заявке KM-${options.publicNumber}.</p><p>${options.preview}</p><p><a href="${url}">Открыть заявку</a></p>`,
+    });
+  } catch (error) {
+    logger.error("Failed to notify manager about guest reply", error);
   }
 }

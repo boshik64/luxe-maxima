@@ -21,6 +21,11 @@ import {
   applicationInputSchema,
   flattenErrors,
 } from "@/lib/applications/schema";
+import { publicApplicationCode } from "@/lib/applications/dates";
+import {
+  isOutsideWorkingHours,
+  WORK_HOURS_NOTE,
+} from "@/lib/applications/hours";
 import { CUSTOM_OPTION_ID } from "@/lib/karo/types";
 import {
   PRODUCT_LIST,
@@ -97,6 +102,8 @@ export function ApplicationForm({
     "idle",
   );
   const [applicationId, setApplicationId] = useState("");
+  const [applicationCode, setApplicationCode] = useState("");
+  const [afterHours, setAfterHours] = useState(false);
   const [formError, setFormError] = useState("");
   const [captcha, setCaptcha] = useState<CaptchaSolution | null>(null);
   const [captchaKey, setCaptchaKey] = useState(0);
@@ -222,6 +229,7 @@ export function ApplicationForm({
       });
       const data = await parseResponseJson<{
         id?: string;
+        publicNumber?: number;
         error?: string;
         fields?: Record<string, string>;
       }>(response);
@@ -233,6 +241,10 @@ export function ApplicationForm({
         return;
       }
       setApplicationId(data.id ?? "");
+      setApplicationCode(
+        data.publicNumber ? publicApplicationCode(data.publicNumber) : "",
+      );
+      setAfterHours(isOutsideWorkingHours());
       sessionStorage.removeItem("luxe-maxima-idempotency");
       setStatus("success");
     } catch {
@@ -259,15 +271,38 @@ export function ApplicationForm({
 
   if (status === "success") {
     return (
-      <div className="rounded-3xl border border-line bg-card p-8 text-center" role="status">
+      <div className="relative rounded-3xl border border-line bg-card p-8 text-center" role="status">
+        {afterHours ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-3xl bg-black/70 p-6">
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="max-w-md rounded-3xl border border-line bg-card p-6 text-left"
+            >
+              <p className="font-[family-name:var(--font-display)] text-xl">
+                Заявку обработают в рабочее время
+              </p>
+              <p className="mt-3 text-sm text-muted">{WORK_HOURS_NOTE}</p>
+              <button
+                type="button"
+                className="mt-6 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white"
+                onClick={() => setAfterHours(false)}
+              >
+                Понял
+              </button>
+            </div>
+          </div>
+        ) : null}
         <p className="font-[family-name:var(--font-display)] text-2xl">
           Заявка отправлена
         </p>
         <p className="mt-3 text-muted">
           Обращение по услуге «{product?.title}» получено. Менеджер свяжется с вами.
         </p>
-        {applicationId ? (
-          <p className="mt-4 text-sm text-gold">Номер заявки: {applicationId}</p>
+        {applicationCode || applicationId ? (
+          <p className="mt-4 text-sm text-gold">
+            Номер заявки: {applicationCode || applicationId}
+          </p>
         ) : null}
         <button
           type="button"
@@ -275,6 +310,8 @@ export function ApplicationForm({
           onClick={() => {
             setStatus("idle");
             setApplicationId("");
+            setApplicationCode("");
+            setAfterHours(false);
             refreshCaptcha();
           }}
         >

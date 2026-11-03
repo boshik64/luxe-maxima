@@ -5,6 +5,7 @@ import { CardRowNextButton } from "@/components/form/PickCards";
 import { useDragScroll } from "@/hooks/useDragScroll";
 import { useClickLock } from "@/hooks/useClickLock";
 import {
+  CONSOLE_GAMING_LABEL,
   formatRubles,
   HALL_PRICE_WEEKDAY_LABEL,
   HALL_PRICE_WEEKEND_LABEL,
@@ -16,6 +17,8 @@ export type HallCardItem = {
   capacity: number;
   rentalPriceWeekday: number;
   rentalPriceWeekend: number;
+  priceOnRequest?: boolean;
+  consoleGaming?: boolean;
   formatName: string;
   cinemaName: string;
 };
@@ -122,6 +125,12 @@ function HallCardButton({
       <p className="line-clamp-2 min-h-[2.75rem] font-semibold leading-snug text-foreground">
         {hall.cinemaName} ({hall.name})
       </p>
+      {hall.consoleGaming ? (
+        <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs text-gold">
+          <JoystickIcon />
+          {CONSOLE_GAMING_LABEL}
+        </p>
+      ) : null}
       <div className="mt-3 grid flex-1 grid-cols-2 gap-2">
         <div className="flex min-h-[4.5rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
           <p className="text-[11px] text-gold">Тип зала</p>
@@ -138,12 +147,18 @@ function HallCardButton({
         <div className="col-span-2 flex min-h-[4.25rem] flex-col rounded-2xl bg-white/[0.04] px-3 py-2">
           <p className="text-[11px] text-gold">Стоимость аренды</p>
           <p className="mt-1 flex flex-wrap gap-x-4 text-sm font-semibold text-foreground">
-            <span>
-              {HALL_PRICE_WEEKDAY_LABEL}: {formatRubles(hall.rentalPriceWeekday)}
-            </span>
-            <span>
-              {HALL_PRICE_WEEKEND_LABEL}: {formatRubles(hall.rentalPriceWeekend)}
-            </span>
+            {hall.priceOnRequest ? (
+              <span>по запросу</span>
+            ) : (
+              <>
+                <span>
+                  {HALL_PRICE_WEEKDAY_LABEL}: {formatRubles(hall.rentalPriceWeekday)}
+                </span>
+                <span>
+                  {HALL_PRICE_WEEKEND_LABEL}: {formatRubles(hall.rentalPriceWeekend)}
+                </span>
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -158,5 +173,16 @@ function HallCardButton({
         <span aria-hidden="true">›</span>
       </span>
     </button>
+  );
+}
+
+function JoystickIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3" y="10" width="18" height="10" rx="3" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="8" cy="15" r="1.6" fill="currentColor" />
+      <path d="M15 13.5h3M16.5 12v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M12 10V6.5a2.5 2.5 0 1 1 5 0V10" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
   );
 }

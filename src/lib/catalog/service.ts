@@ -96,6 +96,8 @@ export async function listPublicHalls(cinemaId: string, formatId: string) {
       capacity: hall.capacity,
       rentalPriceWeekday: hall.rentalPriceWeekday,
       rentalPriceWeekend: hall.rentalPriceWeekend,
+      priceOnRequest: hall.priceOnRequest,
+      consoleGaming: hall.consoleGaming,
       formatName: hall.format.name,
       cinemaName: hall.cinema.name,
     }));
@@ -356,6 +358,8 @@ export async function createHall(data: {
   capacity: number;
   rentalPriceWeekday: number;
   rentalPriceWeekend: number;
+  priceOnRequest?: boolean;
+  consoleGaming?: boolean;
 }) {
   return prisma.hall.create({
     data: {
@@ -365,6 +369,8 @@ export async function createHall(data: {
       capacity: data.capacity,
       rentalPriceWeekday: data.rentalPriceWeekday,
       rentalPriceWeekend: data.rentalPriceWeekend,
+      priceOnRequest: data.priceOnRequest === true,
+      consoleGaming: data.consoleGaming === true,
     },
     include: { cinema: true, format: true },
   });
@@ -379,6 +385,8 @@ export async function updateHall(
     capacity?: number;
     rentalPriceWeekday?: number;
     rentalPriceWeekend?: number;
+    priceOnRequest?: boolean;
+    consoleGaming?: boolean;
     enabled?: boolean;
   },
 ) {
@@ -394,6 +402,12 @@ export async function updateHall(
         : {}),
       ...(data.rentalPriceWeekend !== undefined
         ? { rentalPriceWeekend: data.rentalPriceWeekend }
+        : {}),
+      ...(data.priceOnRequest !== undefined
+        ? { priceOnRequest: data.priceOnRequest }
+        : {}),
+      ...(data.consoleGaming !== undefined
+        ? { consoleGaming: data.consoleGaming }
         : {}),
       ...(data.enabled !== undefined ? { enabled: data.enabled } : {}),
     },

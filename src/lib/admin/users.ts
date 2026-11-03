@@ -27,6 +27,7 @@ const publicUser = {
   notifyKeys: true,
   notifyEvent: true,
   notifyFeedback: true,
+  emailSignature: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -83,6 +84,7 @@ export async function createUser(data: {
   notifyKeys?: boolean;
   notifyEvent?: boolean;
   notifyFeedback?: boolean;
+  emailSignature?: string;
 }) {
   const email = data.email.trim().toLowerCase();
   if (!email.includes("@")) {
@@ -104,6 +106,7 @@ export async function createUser(data: {
         notifyKeys: data.notifyKeys === true,
         notifyEvent: data.notifyEvent === true,
         notifyFeedback: data.notifyFeedback === true,
+        emailSignature: data.emailSignature?.trim() ?? "",
       },
       select: publicUser,
     });
@@ -128,6 +131,7 @@ export async function updateUser(
     notifyKeys?: boolean;
     notifyEvent?: boolean;
     notifyFeedback?: boolean;
+    emailSignature?: string;
   },
 ) {
   const current = await prisma.user.findUnique({ where: { id } });
@@ -157,6 +161,9 @@ export async function updateUser(
         ...(data.notifyFeedback !== undefined
           ? { notifyFeedback: data.notifyFeedback }
           : {}),
+        ...(data.emailSignature !== undefined
+          ? { emailSignature: data.emailSignature.trim() }
+          : {}),
       },
       select: publicUser,
     });
@@ -171,7 +178,10 @@ export async function updateUser(
   }
 }
 
-export async function updateOwnNotifyPrefs(id: string, prefs: NotifyPrefs) {
+export async function updateOwnNotifyPrefs(
+  id: string,
+  prefs: Partial<NotifyPrefs> & { emailSignature?: string },
+) {
   return prisma.user.update({
     where: { id },
     data: prefs,

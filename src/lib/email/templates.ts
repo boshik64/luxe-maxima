@@ -15,7 +15,10 @@ function productTitle(productId: Application["productId"]) {
 export function applicationDetailRows(application: Application) {
   const rows: Array<{ label: string; value: string }> = [
     { label: "Формат", value: productTitle(application.productId) },
-    { label: "Номер заявки", value: application.id },
+    {
+      label: "Номер заявки",
+      value: `KM-${application.publicNumber}`,
+    },
     { label: "Город", value: application.cityName },
     { label: "Кинотеатр", value: application.cinemaName },
   ];
@@ -111,7 +114,8 @@ export function applicationGuestEmail(application: Application) {
     bodyHtml: `
       ${detailsCard(rows)}
       <p style="margin:18px 0 0; font-family:Verdana,sans-serif; font-size:13px; color:#9f968a;">
-        Номер заявки: <strong style="color:#e8e6e3;">${escapeHtml(application.id)}</strong>
+        Номер заявки: <strong style="color:#e8e6e3;">KM-${application.publicNumber}</strong>.
+        Не меняйте тему письма, чтобы продолжить диалог.
       </p>
     `,
     footerNote: "Если вы не оставляли заявку, просто проигнорируйте это письмо.",
@@ -120,13 +124,14 @@ export function applicationGuestEmail(application: Application) {
   const text = [
     `Здравствуйте, ${application.contactName}!`,
     `Мы получили заявку на «${title}».`,
-    `Номер: ${application.id}`,
+    `Номер: KM-${application.publicNumber}`,
+    "Не меняйте тему письма, чтобы продолжить диалог.",
     ...rows.map((row) => `${row.label}: ${row.value}`),
     "Менеджер КАРО свяжется с вами.",
   ].join("\n");
 
   return {
-    subject: `Заявка принята — ${title}`,
+    subject: `[KM-${application.publicNumber}] Заявка принята — ${title}. Не меняйте тему письма, чтобы продолжить диалог.`,
     html,
     text,
   };
@@ -135,7 +140,7 @@ export function applicationGuestEmail(application: Application) {
 export function applicationStaffEmail(application: Application) {
   const title = productTitle(application.productId);
   const rows = applicationStaffDetailRows(application);
-  const cardUrl = `${appBaseUrl()}/admin/applications/${application.id}`;
+  const cardUrl = `${appBaseUrl()}/admin?id=${application.id}`;
   const html = renderEmailDocument({
     title: `Новая заявка — ${title}`,
     preheader: `${application.contactName}: ${title}, ${application.cityName}`,
@@ -154,7 +159,7 @@ export function applicationStaffEmail(application: Application) {
   ].join("\n");
 
   return {
-    subject: `Новая заявка — ${title}`,
+    subject: `[KM-${application.publicNumber}] Новая заявка — ${title}`,
     html,
     text,
   };

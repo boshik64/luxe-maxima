@@ -6,6 +6,12 @@ export function formatRubles(value: number) {
 export const HALL_PRICE_WEEKDAY_LABEL = "пн–чт";
 export const HALL_PRICE_WEEKEND_LABEL = "пт–вс";
 
-export function formatHallPrices(weekday: number, weekend: number) {
+export const HALL_HOLIDAY_PRICE_NOTE =
+  "Стоимость бронирования зала в предпраздничные и праздничные дни — по цене выходного дня.";
+
+export const CONSOLE_GAMING_LABEL = "Можно играть в приставку";
+
+export function formatHallPrices(weekday: number, weekend: number, onRequest = false) {
+  if (onRequest) return "по запросу";
   return `${HALL_PRICE_WEEKDAY_LABEL} ${formatRubles(weekday)} · ${HALL_PRICE_WEEKEND_LABEL} ${formatRubles(weekend)}`;
 }

@@ -2,20 +2,33 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { Application, ApplicationStatus } from "@prisma/client";
+import type { ApplicationStatus } from "@prisma/client";
 import { ApplicationModal } from "@/components/admin/ApplicationModal";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { PRODUCT_EMOJI } from "@/lib/admin/products";
 import { STATUS_ACCENT, STATUS_LABEL, STATUSES } from "@/lib/admin/status";
+import {
+  eventDateLabel,
+  formatCreatedShort,
+  publicApplicationCode,
+} from "@/lib/applications/dates";
+import type { ApplicationRecord } from "@/lib/applications/types";
 import { PRODUCTS, type StoredProductId } from "@/lib/products";
+
+type ManagerOption = { id: string; name: string };
 
 export function AdminDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [items, setItems] = useState<Application[]>([]);
+  const [items, setItems] = useState<ApplicationRecord[]>([]);
+  const [managers, setManagers] = useState<ManagerOption[]>([]);
   const [total, setTotal] = useState(0);
   const [product, setProduct] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [managerFilter, setManagerFilter] = useState("all");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [openId, setOpenId] = useState<string | null>(searchParams.get("id"));
@@ -26,19 +39,32 @@ export function AdminDashboard() {
   const load = useCallback(() => {
     const params = new URLSearchParams({ pageSize: "200" });
     if (product !== "all") params.set("productId", product);
+    if (statusFilter !== "all") params.set("status", statusFilter);
+    if (managerFilter !== "all") params.set("managerId", managerFilter);
+    if (createdFrom) params.set("createdFrom", createdFrom);
+    if (createdTo) params.set("createdTo", createdTo);
     return fetch(`/api/admin/applications?${params}`).then(async (response) => {
       if (response.status === 401) {
         router.push("/admin/login");
         return;
       }
       const data = (await response.json()) as {
-        items?: Application[];
+        items?: ApplicationRecord[];
         total?: number;
       };
       setItems(data.items ?? []);
       setTotal(data.total ?? 0);
     });
-  }, [product, router]);
+  }, [createdFrom, createdTo, managerFilter, product, router, statusFilter]);
+
+  useEffect(() => {
+    fetch("/api/admin/managers")
+      .then(async (response) => {
+        const data = (await response.json()) as { items?: ManagerOption[] };
+        setManagers(data.items ?? []);
+      })
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +91,13 @@ export function AdminDashboard() {
     router.replace("/admin", { scroll: false });
   }
 
-  async function save(id: string, patch: Partial<Application>) {
+  const replaceItem = useCallback((next: ApplicationRecord) => {
+    setItems((current) =>
+      current.map((item) => (item.id === next.id ? next : item)),
+    );
+  }, []);
+
+  async function save(id: string, patch: Partial<ApplicationRecord>) {
     setSaving(true);
     setError("");
     const response = await fetch(`/api/admin/applications/${id}`, {
@@ -74,7 +106,7 @@ export function AdminDashboard() {
       body: JSON.stringify(patch),
     });
     const data = (await response.json()) as {
-      item?: Application;
+      item?: ApplicationRecord;
       error?: string;
     };
     setSaving(false);
@@ -83,11 +115,7 @@ export function AdminDashboard() {
       await load();
       return false;
     }
-    if (data.item) {
-      setItems((current) =>
-        current.map((item) => (item.id === id ? data.item! : item)),
-      );
-    }
+    if (data.item) replaceItem(data.item);
     return true;
   }
 
@@ -106,11 +134,11 @@ export function AdminDashboard() {
   }));
 
   return (
-    <main className="mx-auto flex h-dvh w-full max-w-[1600px] flex-col overflow-hidden px-4 py-6">
+    <main className="mx-auto flex h-dvh w-full max-w-[1800px] flex-col overflow-hidden px-4 py-6">
       <div className="shrink-0">
         <AdminNav />
       </div>
-      <div className="mb-4 flex shrink-0 flex-wrap items-center justify-between gap-4">
+      <div className="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl">
             Заявки
@@ -120,19 +148,63 @@ export function AdminDashboard() {
             перетаскиванием. Всего: {total}
           </p>
         </div>
-        <CustomSelect
-          id="product-filter"
-          className="w-56"
-          value={product}
-          options={[
-            { value: "all", label: "Все продукты" },
-            ...Object.values(PRODUCTS).map((item) => ({
-              value: item.id,
-              label: `${PRODUCT_EMOJI[item.id]} ${item.title}`,
-            })),
-          ]}
-          onChange={setProduct}
-        />
+        <div className="flex flex-wrap items-end gap-3">
+          <CustomSelect
+            id="product-filter"
+            className="w-52"
+            value={product}
+            options={[
+              { value: "all", label: "Все продукты" },
+              ...Object.values(PRODUCTS).map((item) => ({
+                value: item.id,
+                label: `${PRODUCT_EMOJI[item.id]} ${item.title}`,
+              })),
+            ]}
+            onChange={setProduct}
+          />
+          <CustomSelect
+            id="status-filter"
+            className="w-48"
+            value={statusFilter}
+            options={[
+              { value: "all", label: "Все статусы" },
+              ...STATUSES.map((status) => ({
+                value: status,
+                label: STATUS_LABEL[status],
+              })),
+            ]}
+            onChange={setStatusFilter}
+          />
+          <CustomSelect
+            id="manager-filter"
+            className="w-52"
+            value={managerFilter}
+            options={[
+              { value: "all", label: "Все менеджеры" },
+              { value: "unassigned", label: "Без менеджера" },
+              ...managers.map((item) => ({ value: item.id, label: item.name })),
+            ]}
+            onChange={setManagerFilter}
+          />
+          <label className="text-xs text-muted">
+            С
+            <input
+              type="date"
+              className="mt-1 block rounded-full border border-line bg-card px-3 py-2 text-sm text-foreground"
+              value={createdFrom}
+              onChange={(event) => setCreatedFrom(event.target.value)}
+            />
+          </label>
+          <label className="text-xs text-muted">
+            По
+            <input
+              type="date"
+              className="mt-1 block rounded-full border border-line bg-card px-3 py-2 text-sm text-foreground"
+              value={createdTo}
+              onChange={(event) => setCreatedTo(event.target.value)}
+            />
+          </label>
+        </div>
       </div>
 
       {error ? (
@@ -143,7 +215,7 @@ export function AdminDashboard() {
         {columns.map((column) => (
           <section
             key={column.status}
-            className={`flex min-h-0 min-w-72 flex-1 flex-col overflow-hidden rounded-3xl border bg-card/60 p-3 transition ${
+            className={`flex min-h-0 min-w-64 flex-1 flex-col overflow-hidden rounded-3xl border bg-card/60 p-3 transition ${
               dragOver === column.status ? "border-gold" : "border-line"
             }`}
             onDragOver={(event) => {
@@ -202,24 +274,29 @@ export function AdminDashboard() {
                   }}
                   className="shrink-0 cursor-pointer rounded-2xl border border-line bg-background p-4 text-left transition hover:border-gold"
                 >
-                  <p className="text-xs text-gold">
+                  <p className="text-[11px] text-muted">
+                    Создана: {formatCreatedShort(item.createdAt)}
+                  </p>
+                  <p className="mt-1 text-xs text-gold">
                     <span aria-hidden="true">
                       {PRODUCT_EMOJI[item.productId as StoredProductId]}
                     </span>{" "}
-                    {PRODUCTS[item.productId as StoredProductId].title}
+                    {PRODUCTS[item.productId as StoredProductId].title} ·{" "}
+                    {publicApplicationCode(item.publicNumber)}
                   </p>
                   <p className="mt-1 font-medium">{item.contactName}</p>
                   <p className="mt-1 text-sm text-muted">
                     {item.cityName} · {item.cinemaName}
                   </p>
                   <p className="mt-2 text-xs text-muted">
-                    {item.guests ? `${item.guests} гостей · ` : ""}
-                    {new Date(item.createdAt).toLocaleString("ru-RU", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {item.guests ? `${item.guests} гостей` : ""}
+                    {item.guests && eventDateLabel(item) ? " · " : ""}
+                    {eventDateLabel(item)
+                      ? `мероприятие ${eventDateLabel(item)}`
+                      : ""}
+                  </p>
+                  <p className="mt-2 text-xs text-gold">
+                    {item.manager?.name ?? "Без менеджера"}
                   </p>
                 </article>
               ))}
@@ -241,6 +318,7 @@ export function AdminDashboard() {
           error={error}
           onClose={closeModal}
           onSave={(patch) => save(openItem.id, patch)}
+          onItem={replaceItem}
         />
       ) : null}
     </main>
