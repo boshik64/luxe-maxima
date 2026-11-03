@@ -182,7 +182,7 @@ select {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-radius: 0.85rem 1.15rem 0.75rem 1.05rem;
+  border-radius: 0.85rem;
   border: 2.5px solid var(--sticker-ink);
   color: var(--sticker-ink);
   background:
@@ -204,7 +204,6 @@ select {
   box-shadow:
     3px 3px 0 var(--sticker-ink),
     inset 0 0 0 1px rgba(255, 255, 255, 0.35);
-  transform: rotate(-1.5deg);
   animation: console-sticker-shimmer 4.5s ease-in-out infinite;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
