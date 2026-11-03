@@ -1,31 +1,18 @@
 import type { Metadata } from "next";
-import { Caveat, Manrope, Oswald, Unbounded } from "next/font/google";
+import "@fontsource/manrope/400.css";
+import "@fontsource/manrope/500.css";
+import "@fontsource/manrope/600.css";
+import "@fontsource/manrope/700.css";
+import "@fontsource/unbounded/400.css";
+import "@fontsource/unbounded/500.css";
+import "@fontsource/unbounded/600.css";
+import "@fontsource/unbounded/700.css";
+import "@fontsource/oswald/500.css";
+import "@fontsource/oswald/600.css";
+import "@fontsource/oswald/700.css";
+import "@fontsource/caveat/500.css";
+import "@fontsource/caveat/600.css";
 import "./globals.css";
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin", "cyrillic"],
-});
-
-const unbounded = Unbounded({
-  variable: "--font-unbounded",
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "500", "600", "700"],
-});
-
-// Акцидентный заголовочный шрифт сезонной темы.
-const oswald = Oswald({
-  variable: "--font-oswald",
-  subsets: ["latin", "cyrillic"],
-  weight: ["500", "600", "700"],
-});
-
-// Рукописный — только для коротких заметок на полях.
-const caveat = Caveat({
-  variable: "--font-caveat",
-  subsets: ["latin", "cyrillic"],
-  weight: ["500", "600"],
-});
 
 // NEXT_PUBLIC_SITE_THEME=classic возвращает прежнее оформление без правок кода.
 const themeClass =
@@ -53,7 +40,7 @@ export default function RootLayout({
     <html
       lang="ru"
       data-scroll-behavior="smooth"
-      className={`${manrope.variable} ${unbounded.variable} ${oswald.variable} ${caveat.variable} ${themeClass} h-full antialiased`}
+      className={`${themeClass} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}

@@ -8,6 +8,11 @@
   --card: #15161d;
   --primary: #e91a3b;
   --gold: #d4b37a;
+  /* Локальные @fontsource — без next/font/google (флаки CI на Turbopack) */
+  --font-manrope: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-unbounded: "Unbounded", ui-sans-serif, system-ui, sans-serif;
+  --font-oswald: "Oswald", ui-sans-serif, system-ui, sans-serif;
+  --font-caveat: "Caveat", ui-cursive, cursive;
 }
 
 @theme inline {
