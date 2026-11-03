@@ -25,7 +25,7 @@ export async function createApplication(input: ApplicationInput) {
     where: { idempotencyKey: input.idempotencyKey },
   });
   if (existing) {
-    return { id: existing.id, duplicate: true };
+    return { id: existing.id, publicNumber: existing.publicNumber, duplicate: true };
   }
 
   const duplicateWindow = new Date(Date.now() - 2 * 60 * 1000);
@@ -38,7 +38,7 @@ export async function createApplication(input: ApplicationInput) {
     },
   });
   if (recent) {
-    return { id: recent.id, duplicate: true };
+    return { id: recent.id, publicNumber: recent.publicNumber, duplicate: true };
   }
 
   const rental = input.productId === "keys" || input.productId === "event";
@@ -136,12 +136,17 @@ export async function createApplication(input: ApplicationInput) {
     logger.error("Email notification failed after save", error);
   });
 
-  return { id: application.id };
+  return { id: application.id, publicNumber: application.publicNumber };
 }
+
+const managerSelect = { select: { id: true, name: true, email: true } };
 
 export async function listApplications(params: {
   status?: string;
   productId?: string;
+  managerId?: string;
+  createdFrom?: string;
+  createdTo?: string;
   page?: number;
   pageSize?: number;
 }) {
@@ -160,6 +165,22 @@ export async function listApplications(params: {
   ) {
     where.productId = params.productId as ProductId;
   }
+  if (params.managerId === "unassigned") {
+    where.managerId = null;
+  } else if (params.managerId) {
+    where.managerId = params.managerId;
+  }
+  if (params.createdFrom || params.createdTo) {
+    where.createdAt = {};
+    if (params.createdFrom) {
+      const from = new Date(`${params.createdFrom}T00:00:00`);
+      if (!Number.isNaN(from.getTime())) where.createdAt.gte = from;
+    }
+    if (params.createdTo) {
+      const to = new Date(`${params.createdTo}T23:59:59.999`);
+      if (!Number.isNaN(to.getTime())) where.createdAt.lte = to;
+    }
+  }
 
   const [items, total] = await Promise.all([
     prisma.application.findMany({
@@ -167,6 +188,7 @@ export async function listApplications(params: {
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: { manager: managerSelect },
     }),
     prisma.application.count({ where }),
   ]);
@@ -175,14 +197,39 @@ export async function listApplications(params: {
 }
 
 export async function getApplication(id: string) {
-  return prisma.application.findUnique({ where: { id } });
+  return prisma.application.findUnique({
+    where: { id },
+    include: {
+      manager: managerSelect,
+      messages: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          author: { select: { id: true, name: true } },
+          attachments: true,
+        },
+      },
+    },
+  });
 }
 
 export async function updateApplication(
   id: string,
   data: Prisma.ApplicationUpdateInput,
 ) {
-  return prisma.application.update({ where: { id }, data });
+  return prisma.application.update({
+    where: { id },
+    data,
+    include: {
+      manager: managerSelect,
+      messages: {
+        orderBy: { createdAt: "asc" },
+        include: {
+          author: { select: { id: true, name: true } },
+          attachments: true,
+        },
+      },
+    },
+  });
 }
 
 export async function deleteApplication(id: string) {

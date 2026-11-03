@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
       password: typeof body.password === "string" ? body.password : "",
       role: parseRole(body.role),
       ...prefs,
+      emailSignature:
+        typeof body.emailSignature === "string" ? body.emailSignature : undefined,
     });
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {

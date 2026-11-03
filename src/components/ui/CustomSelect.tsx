@@ -15,6 +15,7 @@ export function CustomSelect({
   describedBy,
   onChange,
   className = "",
+  compact = false,
 }: {
   id: string;
   value: string;
@@ -25,6 +26,7 @@ export function CustomSelect({
   describedBy?: string;
   onChange: (value: string) => void;
   className?: string;
+  compact?: boolean;
 }) {
   const listId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -59,12 +61,16 @@ export function CustomSelect({
         aria-controls={listId}
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
-        className={`${inputClassName} flex items-center justify-between gap-3 text-left`}
+        className={`${
+          compact
+            ? "w-full rounded-xl border border-line bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-gold disabled:opacity-60"
+            : inputClassName
+        } flex items-center justify-between gap-2 text-left`}
         onClick={() => {
           if (!disabled) setOpen((current) => !current);
         }}
       >
-        <span className={selected ? "" : "text-muted"}>
+        <span className={`truncate ${selected ? "" : "text-muted"}`}>
           {selected?.label ?? placeholder}
         </span>
         <svg
@@ -85,10 +91,10 @@ export function CustomSelect({
           id={listId}
           role="listbox"
           aria-labelledby={id}
-          className="pretty-scroll absolute z-30 mt-2 max-h-56 w-full overflow-auto rounded-2xl border border-line bg-card py-1 shadow-xl"
+          className="pretty-scroll absolute z-40 mt-1 max-h-52 w-full overflow-auto rounded-xl border border-line bg-card py-1 shadow-xl"
         >
           {options.length === 0 ? (
-            <li className="px-4 py-2 text-sm text-muted">Нет вариантов</li>
+            <li className="px-3 py-2 text-sm text-muted">Нет вариантов</li>
           ) : (
             options.map((option) => {
               const active = option.value === value;
@@ -96,7 +102,7 @@ export function CustomSelect({
                 <li key={option.value} role="option" aria-selected={active}>
                   <button
                     type="button"
-                    className={`w-full px-4 py-2.5 text-left text-sm transition hover:bg-primary/10 ${
+                    className={`w-full px-3 py-2 text-left text-sm transition hover:bg-primary/10 ${
                       active ? "bg-primary/15 text-foreground" : ""
                     }`}
                     onClick={() => {

@@ -15,6 +15,7 @@ type UserItem = {
   notifyKeys: boolean;
   notifyEvent: boolean;
   notifyFeedback: boolean;
+  emailSignature: string;
 };
 
 function NotifyChecks({
@@ -26,7 +27,9 @@ function NotifyChecks({
   notifyKeys: boolean;
   notifyEvent: boolean;
   notifyFeedback: boolean;
-  onChange: (patch: Partial<Pick<UserItem, "notifyKeys" | "notifyEvent" | "notifyFeedback">>) => void;
+  onChange: (
+    patch: Partial<Pick<UserItem, "notifyKeys" | "notifyEvent" | "notifyFeedback">>,
+  ) => void;
 }) {
   return (
     <fieldset className="space-y-3 rounded-2xl border border-line bg-background/40 px-4 py-4">
@@ -58,6 +61,8 @@ function NotifyChecks({
 export function UserEditor({ id }: { id?: string }) {
   const router = useRouter();
   const isNew = !id;
+  const [sessionRole, setSessionRole] = useState<"ADMIN" | "OPERATOR" | "">("");
+  const [sessionId, setSessionId] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"ADMIN" | "OPERATOR">("OPERATOR");
@@ -65,47 +70,81 @@ export function UserEditor({ id }: { id?: string }) {
   const [notifyKeys, setNotifyKeys] = useState(false);
   const [notifyEvent, setNotifyEvent] = useState(false);
   const [notifyFeedback, setNotifyFeedback] = useState(false);
-  const [loading, setLoading] = useState(!isNew);
+  const [emailSignature, setEmailSignature] = useState("");
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  const load = useCallback(() => {
-    if (!id) return Promise.resolve();
-    return fetch(`/api/admin/users/${id}`).then(async (response) => {
-      if (response.status === 401) {
-        router.push("/admin/login");
-        return;
-      }
-      if (response.status === 403) {
+  const isAdmin = sessionRole === "ADMIN";
+  const isSelf = Boolean(id && sessionId && id === sessionId);
+  const canManageRole = isAdmin;
+  const canDelete = isAdmin && !isSelf && !isNew;
+
+  const load = useCallback(async () => {
+    const meRes = await fetch("/api/admin/me");
+    if (meRes.status === 401) {
+      router.push("/admin/login");
+      return;
+    }
+    const me = (await meRes.json()) as {
+      id?: string;
+      role?: "ADMIN" | "OPERATOR";
+    };
+    setSessionId(me.id ?? "");
+    setSessionRole(me.role ?? "");
+
+    if (isNew) {
+      if (me.role !== "ADMIN") {
         router.push("/admin");
         return;
       }
-      const data = (await response.json()) as { item?: UserItem; error?: string };
-      if (!response.ok || !data.item) {
-        setError(data.error ?? "Не найдено");
-        return;
-      }
-      setName(data.item.name);
-      setEmail(data.item.email);
-      setRole(data.item.role);
-      setNotifyKeys(data.item.notifyKeys === true);
-      setNotifyEvent(data.item.notifyEvent === true);
-      setNotifyFeedback(data.item.notifyFeedback === true);
-    });
-  }, [id, router]);
+      return;
+    }
+
+    if (!id) return;
+    if (me.role !== "ADMIN" && me.id !== id) {
+      router.push("/admin");
+      return;
+    }
+
+    const response = await fetch(`/api/admin/users/${id}`);
+    if (response.status === 401) {
+      router.push("/admin/login");
+      return;
+    }
+    if (response.status === 403) {
+      router.push("/admin");
+      return;
+    }
+    const data = (await response.json()) as { item?: UserItem; error?: string };
+    if (!response.ok || !data.item) {
+      setError(data.error ?? "Не найдено");
+      return;
+    }
+    setName(data.item.name);
+    setEmail(data.item.email);
+    setRole(data.item.role);
+    setNotifyKeys(data.item.notifyKeys === true);
+    setNotifyEvent(data.item.notifyEvent === true);
+    setNotifyFeedback(data.item.notifyFeedback === true);
+    setEmailSignature(data.item.emailSignature ?? "");
+  }, [id, isNew, router]);
 
   useEffect(() => {
     let cancelled = false;
-    load()
-      .catch(() => {
-        if (!cancelled) setError("Не удалось загрузить пользователя");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    const timer = window.setTimeout(() => {
+      load()
+        .catch(() => {
+          if (!cancelled) setError("Не удалось загрузить пользователя");
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 0);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [load]);
 
@@ -114,20 +153,23 @@ export function UserEditor({ id }: { id?: string }) {
     setSaving(true);
     setError("");
     setNotice("");
+    const body: Record<string, unknown> = {
+      name,
+      email,
+      password: password || undefined,
+      notifyKeys,
+      notifyEvent,
+      notifyFeedback,
+      emailSignature,
+    };
+    if (canManageRole) body.role = role;
+
     const response = await fetch(
       isNew ? "/api/admin/users" : `/api/admin/users/${id}`,
       {
         method: isNew ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          role,
-          password: password || undefined,
-          notifyKeys,
-          notifyEvent,
-          notifyFeedback,
-        }),
+        body: JSON.stringify(body),
       },
     );
     const data = (await response.json()) as { item?: UserItem; error?: string };
@@ -145,7 +187,7 @@ export function UserEditor({ id }: { id?: string }) {
   }
 
   async function onDelete() {
-    if (!id || !window.confirm("Удалить пользователя?")) return;
+    if (!id || !canDelete || !window.confirm("Удалить пользователя?")) return;
     setSaving(true);
     const response = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
     const data = (await response.json()) as { error?: string };
@@ -157,16 +199,28 @@ export function UserEditor({ id }: { id?: string }) {
     router.push("/admin/users");
   }
 
+  const title = isNew
+    ? "Новый пользователь"
+    : isSelf
+      ? "Мой профиль"
+      : name || "Пользователь";
+
   return (
     <AdminPage
-      title={isNew ? "Новый пользователь" : name || "Пользователь"}
+      title={title}
       description={
         isNew
-          ? "Создайте доступ в админку. Администратор управляет справочниками и пользователями, оператор — заявками и обратной связью."
-          : "Пароль меняется только если заполнить поле ниже."
+          ? "Создайте доступ в админку. Администратор управляет справочниками и пользователями, оператор — заявками."
+          : isSelf
+            ? "Подпись подставляется в письма гостю из чата заявки. Пароль меняется только если заполнить поле ниже."
+            : "Чужие карточки может менять только администратор. Пароль меняется только если заполнить поле ниже."
       }
     >
-      <CatalogBack href="/admin/users" label="← К списку пользователей" />
+      {isAdmin ? (
+        <CatalogBack href="/admin/users" label="← К списку пользователей" />
+      ) : (
+        <CatalogBack href="/admin" label="← К заявкам" />
+      )}
       {loading ? (
         <p className="text-sm text-muted">Загрузка…</p>
       ) : (
@@ -191,17 +245,25 @@ export function UserEditor({ id }: { id?: string }) {
               onChange={(event) => setEmail(event.target.value)}
             />
           </Field>
-          <Field id="user-role" label="Роль" required>
-            <CustomSelect
-              id="user-role"
-              value={role}
-              options={[
-                { value: "OPERATOR", label: "Оператор" },
-                { value: "ADMIN", label: "Администратор" },
-              ]}
-              onChange={(value) => setRole(value as "ADMIN" | "OPERATOR")}
-            />
-          </Field>
+          {canManageRole ? (
+            <Field id="user-role" label="Роль" required>
+              <CustomSelect
+                id="user-role"
+                value={role}
+                options={[
+                  { value: "OPERATOR", label: "Оператор" },
+                  { value: "ADMIN", label: "Администратор" },
+                ]}
+                onChange={(value) => setRole(value as "ADMIN" | "OPERATOR")}
+              />
+            </Field>
+          ) : (
+            <Field id="user-role-readonly" label="Роль">
+              <p className="min-h-12 rounded-2xl border border-line bg-background/60 px-4 py-3 text-sm">
+                {role === "ADMIN" ? "Администратор" : "Оператор"}
+              </p>
+            </Field>
+          )}
           <NotifyChecks
             notifyKeys={notifyKeys}
             notifyEvent={notifyEvent}
@@ -214,6 +276,22 @@ export function UserEditor({ id }: { id?: string }) {
               }
             }}
           />
+          <Field
+            id="user-signature"
+            label="Подпись в письмах гостю"
+          >
+            <textarea
+              id="user-signature"
+              className={`${inputClassName} min-h-28`}
+              value={emailSignature}
+              onChange={(event) => setEmailSignature(event.target.value)}
+              placeholder={"Иван Иванов\nМенеджер КАРО Event\n+7 …"}
+            />
+            <p className="mt-2 text-xs text-muted">
+              Добавляется в каждое письмо гостю из карточки заявки. Отправка идёт с
+              почты Event.
+            </p>
+          </Field>
           <Field
             id="user-password"
             label={isNew ? "Пароль" : "Новый пароль"}
@@ -238,7 +316,7 @@ export function UserEditor({ id }: { id?: string }) {
             >
               {saving ? "Сохраняем…" : isNew ? "Создать" : "Сохранить"}
             </button>
-            {isNew ? null : (
+            {canDelete ? (
               <button
                 type="button"
                 disabled={saving}
@@ -247,7 +325,7 @@ export function UserEditor({ id }: { id?: string }) {
               >
                 Удалить
               </button>
-            )}
+            ) : null}
           </div>
         </form>
       )}

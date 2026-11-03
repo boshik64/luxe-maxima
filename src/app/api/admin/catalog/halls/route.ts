@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
         "Стоимость пт–вс",
         0,
       ),
+      priceOnRequest: body.priceOnRequest === true,
+      consoleGaming: body.consoleGaming === true,
     });
     return NextResponse.json({ item }, { status: 201 });
   } catch (error) {

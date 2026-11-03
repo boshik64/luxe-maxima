@@ -10,6 +10,7 @@ import type { Application, Feedback } from "@prisma/client";
 
 const application = {
   id: "app-demo-id",
+  publicNumber: 1042,
   productId: "keys",
   source: "/",
   cityName: "Москва",
@@ -49,7 +50,7 @@ test("application guest email is branded html", () => {
   assert.match(mail.subject, /Заявка принята/);
   assert.match(mail.html, /#1C1D24/);
   assert.match(mail.html, /Анна Иванова/);
-  assert.match(mail.text, /Номер: app-demo-id/);
+  assert.match(mail.text, /Номер: KM-1042/);
 });
 
 test("application staff email includes admin link and escapes html", () => {
@@ -60,7 +61,7 @@ test("application staff email includes admin link and escapes html", () => {
     assert.match(mail.subject, /Новая заявка/);
     assert.match(
       mail.html,
-      /https:\/\/event\.karofilm\.ru\/admin\/applications\/app-demo-id/,
+      /https:\/\/event\.karofilm\.ru\/admin\?id=app-demo-id/,
     );
     assert.match(mail.html, /Открыть в админке/);
     assert.match(mail.html, /&lt;микрофон&gt;/);

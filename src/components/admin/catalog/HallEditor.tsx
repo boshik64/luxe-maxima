@@ -21,6 +21,8 @@ export function HallEditor({ id }: { id?: string }) {
   const [capacity, setCapacity] = useState("");
   const [rentalPriceWeekday, setRentalPriceWeekday] = useState("");
   const [rentalPriceWeekend, setRentalPriceWeekend] = useState("");
+  const [priceOnRequest, setPriceOnRequest] = useState(false);
+  const [consoleGaming, setConsoleGaming] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -75,6 +77,8 @@ export function HallEditor({ id }: { id?: string }) {
       setCapacity(String(item.capacity));
       setRentalPriceWeekday(String(item.rentalPriceWeekday));
       setRentalPriceWeekend(String(item.rentalPriceWeekend));
+      setPriceOnRequest(item.priceOnRequest === true);
+      setConsoleGaming(item.consoleGaming === true);
     });
   }, [id]);
 
@@ -104,6 +108,8 @@ export function HallEditor({ id }: { id?: string }) {
       capacity: Number(capacity),
       rentalPriceWeekday: Number(rentalPriceWeekday),
       rentalPriceWeekend: Number(rentalPriceWeekend),
+      priceOnRequest,
+      consoleGaming,
     };
     const response = await fetch(
       isNew ? "/api/admin/catalog/halls" : `/api/admin/catalog/halls/${id}`,
@@ -208,6 +214,22 @@ export function HallEditor({ id }: { id?: string }) {
               }
             />
           </Field>
+          <label className="flex items-center gap-3 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={priceOnRequest}
+              onChange={(event) => setPriceOnRequest(event.target.checked)}
+            />
+            Стоимость по запросу
+          </label>
+          <label className="flex items-center gap-3 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              checked={consoleGaming}
+              onChange={(event) => setConsoleGaming(event.target.checked)}
+            />
+            Можно играть в приставку
+          </label>
           <Field id="hall-price-weekend" label="Стоимость пт–вс, ₽" required>
             <input
               id="hall-price-weekend"

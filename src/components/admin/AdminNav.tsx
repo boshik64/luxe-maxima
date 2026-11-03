@@ -12,14 +12,14 @@ const links = [
   { href: "/admin/film-sales", label: "Механики продажи" },
   { href: "/admin/events", label: "Мероприятия" },
   { href: "/admin/banner", label: "Баннеры", hidden: !SHOW_BANNER_NAV },
-  { href: "/admin/feedback", label: "Обратная связь" },
+  { href: "/admin/feedback", label: "Обратная связь (скрыто)", adminOnly: true },
   { href: "/admin/users", label: "Пользователи", adminOnly: true },
 ];
 
 export function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const [role, setRole] = useState<string>("");
+  const [role, setRole] = useState<string | null>(null);
   const [feedbackNewCount, setFeedbackNewCount] = useState(0);
 
   useEffect(() => {
@@ -36,12 +36,17 @@ export function AdminNav() {
       .catch(() => undefined);
   }, [pathname]);
 
+  const isAdmin = role === "ADMIN";
+
   return (
     <div className="mb-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <nav className="flex flex-wrap gap-2" aria-label="Разделы админки">
           {links
-            .filter((link) => !link.hidden && (!link.adminOnly || role === "ADMIN"))
+            .filter(
+              (link) =>
+                !link.hidden && (!link.adminOnly || isAdmin),
+            )
             .map((link) => {
               const active =
                 link.href === "/admin"
@@ -66,6 +71,16 @@ export function AdminNav() {
                 </Link>
               );
             })}
+          <Link
+            href="/admin/profile"
+            className={`rounded-full px-4 py-2 text-sm ${
+              pathname.startsWith("/admin/profile")
+                ? "bg-primary text-white"
+                : "border border-line text-muted hover:text-foreground"
+            }`}
+          >
+            Мой профиль
+          </Link>
         </nav>
         <div className="flex flex-wrap items-center gap-2">
           <a

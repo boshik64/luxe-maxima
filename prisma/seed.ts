@@ -1,5 +1,6 @@
 import { PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { applyKeysOrderPrices } from "../src/lib/catalog/apply-keys-order";
 import { CAROUSEL_EVENT_SLIDES } from "../src/lib/carousel/defaults";
 
 const prisma = new PrismaClient();
@@ -223,6 +224,7 @@ async function main() {
   });
 
   await seedCatalog();
+  await applyKeysOrderPrices(prisma);
   await seedCarousel();
 }
 

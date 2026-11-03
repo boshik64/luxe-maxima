@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { PrismaClient } from "@prisma/client";
 
-const SCHEMA_STAMP = "film-sale-mechanic-v1";
+const SCHEMA_STAMP = "application-chat-v1";
 const nodeRequire = createRequire(`${process.cwd()}/package.json`);
 
 const globalForPrisma = globalThis as unknown as {
@@ -20,7 +20,8 @@ function hasDelegate(
     | "carouselSlide"
     | "carouselSettings"
     | "eventPromo"
-    | "filmSaleMechanic",
+    | "filmSaleMechanic"
+    | "applicationMessage",
 ) {
   const delegate = (
     client as unknown as Record<string, { findMany?: unknown; findFirst?: unknown }>
@@ -50,7 +51,9 @@ function isCurrentPrisma(client: PrismaClient) {
     hasDelegate(client, "carouselSettings") &&
     hasDelegate(client, "eventPromo") &&
     hasDelegate(client, "filmSaleMechanic") &&
-    modelHasField(client, "HallFormat", "showcasePublished")
+    hasDelegate(client, "applicationMessage") &&
+    modelHasField(client, "HallFormat", "showcasePublished") &&
+    modelHasField(client, "Application", "publicNumber")
   );
 }
 

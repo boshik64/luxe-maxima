@@ -14,6 +14,8 @@ enum Role {
 
 enum ApplicationStatus {
   NEW
+  WAITING_REPLY
+  ANSWERED
   IN_PROGRESS
   CLOSED
   REJECTED
@@ -26,16 +28,19 @@ enum ProductId {
 }
 
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  name           String
-  passwordHash   String
-  role           Role     @default(OPERATOR)
-  notifyKeys     Boolean  @default(false)
-  notifyEvent    Boolean  @default(false)
-  notifyFeedback Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String        @id @default(uuid())
+  email           String        @unique
+  name            String
+  passwordHash    String
+  role            Role          @default(OPERATOR)
+  notifyKeys      Boolean       @default(false)
+  notifyEvent     Boolean       @default(false)
+  notifyFeedback  Boolean       @default(false)
+  emailSignature  String        @default("")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  applications    Application[] @relation("ApplicationManager")
+  messages        ApplicationMessage[]
 }
 
 model HallFormat {
@@ -80,6 +85,8 @@ model Hall {
   capacity             Int
   rentalPriceWeekday   Int
   rentalPriceWeekend   Int
+  priceOnRequest       Boolean       @default(false)
+  consoleGaming        Boolean       @default(false)
   enabled              Boolean       @default(true)
   cinemaId             String
   cinema               RentalCinema  @relation(fields: [cinemaId], references: [id], onDelete: Cascade)
@@ -91,10 +98,18 @@ model Hall {
   @@index([cinemaId, formatId])
 }
 
+enum MessageDirection {
+  OUTBOUND
+  INBOUND
+}
+
 model Application {
   id              String             @id @default(uuid())
+  publicNumber    Int                @unique @default(autoincrement())
   productId       ProductId
   status          ApplicationStatus  @default(NEW)
+  managerId       String?
+  manager         User?              @relation("ApplicationManager", fields: [managerId], references: [id], onDelete: SetNull)
   source          String
   cityId          String?
   cityName        String
@@ -134,9 +149,41 @@ model Application {
   idempotencyKey  String             @unique
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
+  messages        ApplicationMessage[]
 
   @@index([status, createdAt])
   @@index([productId, createdAt])
+  @@index([managerId, createdAt])
+}
+
+model ApplicationMessage {
+  id             String            @id @default(uuid())
+  applicationId  String
+  application    Application       @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  direction      MessageDirection
+  authorId       String?
+  author         User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  body           String
+  html           String            @default("")
+  emailSubject   String            @default("")
+  emailMessageId String?
+  inReplyTo      String?
+  createdAt      DateTime          @default(now())
+  attachments    ApplicationAttachment[]
+
+  @@index([applicationId, createdAt])
+  @@index([emailMessageId])
+}
+
+model ApplicationAttachment {
+  id         String              @id @default(uuid())
+  messageId  String
+  message    ApplicationMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileName   String
+  mimeType   String
+  size       Int
+  storageKey String
+  createdAt  DateTime            @default(now())
 }
 
 model Feedback {

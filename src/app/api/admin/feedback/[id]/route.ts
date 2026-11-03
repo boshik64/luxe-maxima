@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FeedbackStatus } from "@prisma/client";
-import { requireSession } from "@/lib/admin/auth";
+import { requireRole } from "@/lib/admin/auth";
 import { getFeedback, updateFeedback } from "@/lib/feedback/service";
 import { logger } from "@/lib/logger";
 
@@ -9,7 +9,7 @@ export async function GET(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireRole(["ADMIN"]);
     const { id } = await context.params;
     const item = await getFeedback(id);
     if (!item) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
@@ -28,7 +28,7 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    await requireSession();
+    await requireRole(["ADMIN"]);
     const { id } = await context.params;
     const body = (await request.json()) as Record<string, unknown>;
     const status =

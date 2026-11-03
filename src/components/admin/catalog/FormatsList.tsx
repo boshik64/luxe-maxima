@@ -1,8 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import {
+  CatalogFilters,
+  matchesPublishFilter,
+  PUBLISH_FILTER_OPTIONS,
+} from "@/components/admin/catalog/CatalogFilters";
 import { CatalogShell } from "@/components/admin/catalog/CatalogShell";
 import { PublishStatusButton } from "@/components/admin/catalog/PublishStatusButton";
 import {
@@ -12,11 +17,19 @@ import {
 } from "@/components/admin/catalog/CatalogTable";
 import { FORMAT_SHOWCASE_MAX, type FormatItem } from "@/lib/catalog/admin-types";
 
+const SHOWCASE_OPTIONS = [
+  { value: "all", label: "Все" },
+  { value: "yes", label: "На главной" },
+  { value: "no", label: "Не на главной" },
+];
+
 export function FormatsList() {
   const router = useRouter();
   const [items, setItems] = useState<FormatItem[]>([]);
   const [error, setError] = useState("");
   const [pendingId, setPendingId] = useState("");
+  const [publishFilter, setPublishFilter] = useState("all");
+  const [showcaseFilter, setShowcaseFilter] = useState("all");
 
   const load = useCallback(() => {
     return fetch("/api/admin/catalog/formats").then(async (response) => {
@@ -48,6 +61,19 @@ export function FormatsList() {
     };
   }, [load]);
 
+  const filtered = useMemo(
+    () =>
+      items.filter((item) => {
+        if (!matchesPublishFilter(item.enabled !== false, publishFilter)) {
+          return false;
+        }
+        if (showcaseFilter === "yes" && !item.showcasePublished) return false;
+        if (showcaseFilter === "no" && item.showcasePublished) return false;
+        return true;
+      }),
+    [items, publishFilter, showcaseFilter],
+  );
+
   async function togglePublished(item: FormatItem) {
     setPendingId(item.id);
     setError("");
@@ -65,7 +91,9 @@ export function FormatsList() {
       if (data.item) {
         setItems((current) =>
           current.map((row) =>
-            row.id === item.id ? { ...row, ...data.item, enabled: data.item!.enabled } : row,
+            row.id === item.id
+              ? { ...row, ...data.item, enabled: data.item!.enabled }
+              : row,
           ),
         );
       }
@@ -90,19 +118,39 @@ export function FormatsList() {
       }
     >
       {error ? <p className="mb-4 text-sm text-primary">{error}</p> : null}
+      <CatalogFilters
+        fields={[
+          {
+            id: "format-publish-filter",
+            label: "Публикация",
+            value: publishFilter,
+            options: PUBLISH_FILTER_OPTIONS,
+            onChange: setPublishFilter,
+          },
+          {
+            id: "format-showcase-filter",
+            label: "На главной",
+            value: showcaseFilter,
+            options: SHOWCASE_OPTIONS,
+            onChange: setShowcaseFilter,
+          },
+        ]}
+      />
       <CatalogTable
         columns={["Название", "Преимущества", "Залов", "Публикация", "На главной", ""]}
       >
-        {items.length === 0 ? (
+        {filtered.length === 0 ? (
           <tr>
             <td colSpan={6} className="px-5 py-12 text-center text-sm text-muted">
               {error
                 ? "Список недоступен."
-                : "Пока нет форматов. Добавьте первую запись."}
+                : items.length === 0
+                  ? "Пока нет форматов. Добавьте первую запись."
+                  : "Нет записей по выбранным фильтрам."}
             </td>
           </tr>
         ) : (
-          items.map((item) => (
+          filtered.map((item) => (
             <tr key={item.id} className={catalogRowClass}>
               <td className="px-5 py-4 font-medium">
                 <CatalogRowLink href={`/admin/catalogs/formats/${item.id}`}>

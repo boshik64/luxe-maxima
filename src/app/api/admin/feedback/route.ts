@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireSession } from "@/lib/admin/auth";
+import { requireRole } from "@/lib/admin/auth";
 import { listFeedback } from "@/lib/feedback/service";
 
 export async function GET(request: NextRequest) {
   try {
-    await requireSession();
+    await requireRole(["ADMIN"]);
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
