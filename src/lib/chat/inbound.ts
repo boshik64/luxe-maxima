@@ -1,6 +1,7 @@
 import { simpleParser } from "mailparser";
 import { ImapFlow } from "imapflow";
 import { parsePublicNumber } from "@/lib/applications/dates";
+import { extractLatestReplyFromParts } from "@/lib/chat/extract-reply";
 import {
   ewsConfigured,
   findUnreadInboxItems,
@@ -57,19 +58,19 @@ async function ingestParsedMime(source: Buffer) {
     });
   }
 
+  const text = extractLatestReplyFromParts({
+    text: parsed.text,
+    html: typeof parsed.html === "string" ? parsed.html : null,
+  });
+
   await ingestInboundMessage({
     publicNumber: parsePublicNumber(`${subject} ${parsed.text ?? ""}`),
     inReplyTo: inReplyTo || null,
     messageId: messageId || null,
     fromEmail: from,
     subject,
-    text:
-      parsed.text?.trim() ||
-      (typeof parsed.html === "string"
-        ? parsed.html.replace(/<[^>]+>/g, " ")
-        : "") ||
-      "",
-    html: typeof parsed.html === "string" ? parsed.html : "",
+    text,
+    html: "",
     files,
   });
   return { imported: true, skipOwn: false as const };
