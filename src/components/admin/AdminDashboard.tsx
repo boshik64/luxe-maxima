@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ApplicationStatus } from "@prisma/client";
 import { ApplicationModal } from "@/components/admin/ApplicationModal";
+import { CreateApplicationModal } from "@/components/admin/CreateApplicationModal";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { PRODUCT_EMOJI } from "@/lib/admin/products";
@@ -32,6 +33,7 @@ export function AdminDashboard() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [openId, setOpenId] = useState<string | null>(searchParams.get("id"));
+  const [creating, setCreating] = useState(false);
   const [dragOver, setDragOver] = useState<ApplicationStatus | null>(null);
   const draggingId = useRef<string | null>(null);
   const dragged = useRef(false);
@@ -52,7 +54,19 @@ export function AdminDashboard() {
         items?: ApplicationRecord[];
         total?: number;
       };
-      setItems(data.items ?? []);
+      const incoming = data.items ?? [];
+      setItems((previous) => {
+        const kept = new Map(
+          previous
+            .filter((item) => Array.isArray(item.messages))
+            .map((item) => [item.id, item.messages!] as const),
+        );
+        return incoming.map((item) => {
+          if (Array.isArray(item.messages)) return item;
+          const messages = kept.get(item.id);
+          return messages ? { ...item, messages } : item;
+        });
+      });
       setTotal(data.total ?? 0);
     });
   }, [createdFrom, createdTo, managerFilter, product, router, statusFilter]);
@@ -93,7 +107,14 @@ export function AdminDashboard() {
 
   const replaceItem = useCallback((next: ApplicationRecord) => {
     setItems((current) =>
-      current.map((item) => (item.id === next.id ? next : item)),
+      current.map((item) => {
+        if (item.id !== next.id) return item;
+        if (Array.isArray(next.messages)) return next;
+        return {
+          ...next,
+          messages: item.messages,
+        };
+      }),
     );
   }, []);
 
@@ -149,6 +170,13 @@ export function AdminDashboard() {
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
+          <button
+            type="button"
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+            onClick={() => setCreating(true)}
+          >
+            Создать заявку
+          </button>
           <CustomSelect
             id="product-filter"
             className="w-52"
@@ -309,6 +337,18 @@ export function AdminDashboard() {
           </section>
         ))}
       </div>
+
+      {creating ? (
+        <CreateApplicationModal
+          onClose={() => setCreating(false)}
+          onCreated={(item) => {
+            setCreating(false);
+            setItems((current) => [item, ...current.filter((entry) => entry.id !== item.id)]);
+            setTotal((value) => value + 1);
+            openModal(item.id);
+          }}
+        />
+      ) : null}
 
       {openItem ? (
         <ApplicationModal

@@ -16,6 +16,7 @@
   "dependencies": {
     "@prisma/client": "6.19.3",
     "bcryptjs": "^3.0.3",
+    "httpntlm": "^1.8.14",
     "imapflow": "^2.10.0",
     "jose": "^6.2.8",
     "mailparser": "^3.14.1",

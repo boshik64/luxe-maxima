@@ -126,9 +126,9 @@ function HallCardButton({
         {hall.cinemaName} ({hall.name})
       </p>
       {hall.consoleGaming ? (
-        <p className="mt-2 inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs text-gold">
-          <JoystickIcon />
-          {CONSOLE_GAMING_LABEL}
+        <p className="console-gaming-sticker mt-3 inline-flex max-w-full items-center gap-2.5 px-3.5 py-2 text-[13px] font-bold tracking-wide uppercase">
+          <GamepadIcon />
+          <span className="console-gaming-sticker__label">{CONSOLE_GAMING_LABEL}</span>
         </p>
       ) : null}
       <div className="mt-3 grid flex-1 grid-cols-2 gap-2">
@@ -176,13 +176,65 @@ function HallCardButton({
   );
 }
 
-function JoystickIcon() {
+function GamepadIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3" y="10" width="18" height="10" rx="3" stroke="currentColor" strokeWidth="1.8" />
-      <circle cx="8" cy="15" r="1.6" fill="currentColor" />
-      <path d="M15 13.5h3M16.5 12v3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      <path d="M12 10V6.5a2.5 2.5 0 1 1 5 0V10" stroke="currentColor" strokeWidth="1.8" />
+    <svg
+      className="console-gaming-sticker__icon shrink-0"
+      width="28"
+      height="20"
+      viewBox="0 0 56 40"
+      fill="none"
+      aria-hidden="true"
+    >
+      {/* DualSense / PS silhouette */}
+      <path
+        d="M14.5 8.5c2.2-3.2 5.4-5 9.2-5h8.6c3.8 0 7 1.8 9.2 5l1.4 2.1c.6.9 1.5 1.5 2.5 1.7l4.6.9c2.6.5 4.5 2.7 4.5 5.4v3.2c0 3.8-2.6 7.1-6.3 7.9l-3.1.7c-1.4.3-2.6 1.2-3.3 2.5-.9 1.7-2.6 2.8-4.6 2.8H18.8c-2 0-3.7-1.1-4.6-2.8-.7-1.3-1.9-2.2-3.3-2.5l-3.1-.7C4.1 28.9 1.5 25.6 1.5 21.8v-3.2c0-2.7 1.9-4.9 4.5-5.4l4.6-.9c1-.2 1.9-.8 2.5-1.7l1.4-2.1Z"
+        fill="currentColor"
+        stroke="#1a1208"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      {/* Touchpad */}
+      <rect
+        x="21.5"
+        y="11.5"
+        width="13"
+        height="7"
+        rx="1.6"
+        fill="#1a1208"
+        opacity="0.85"
+      />
+      {/* D-pad */}
+      <path
+        d="M12.2 19.2h2.4v2.4h2.4v2.4h-2.4v2.4h-2.4v-2.4H9.8v-2.4h2.4v-2.4Z"
+        fill="#1a1208"
+      />
+      {/* PS face buttons: △ ○ ✕ □ */}
+      <path
+        d="M40.2 16.6 42 13.4l1.8 3.2H40.2Z"
+        fill="#1a1208"
+      />
+      <circle cx="45.6" cy="20.2" r="1.55" stroke="#1a1208" strokeWidth="1.4" fill="none" />
+      <path
+        d="M40.4 26.6 42.2 24.8M42.2 26.6 40.4 24.8"
+        stroke="#1a1208"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <rect
+        x="35.3"
+        y="18.5"
+        width="3.1"
+        height="3.1"
+        rx="0.4"
+        transform="rotate(45 36.85 20.05)"
+        stroke="#1a1208"
+        strokeWidth="1.3"
+        fill="none"
+      />
+      {/* Analog sticks */}
+      <circle cx="20.2" cy="27.2" r="2.35" fill="#1a1208" />
+      <circle cx="35.8" cy="27.2" r="2.35" fill="#1a1208" />
     </svg>
   );
 }

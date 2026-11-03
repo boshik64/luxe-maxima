@@ -6,9 +6,15 @@ export function Header() {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-4">
-        <Link href="/" className="text-foreground" aria-label="На главную">
+        <a
+          href={KARO_SITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground"
+          aria-label="Сайт КАРО"
+        >
           <Logo />
-        </Link>
+        </a>
         <nav aria-label="Основная навигация" className="flex items-center gap-4">
           <a
             href={KARO_SITE_URL}

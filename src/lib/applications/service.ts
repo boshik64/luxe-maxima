@@ -20,7 +20,10 @@ function catalogId(field?: { id?: string } | null) {
   return field.id;
 }
 
-export async function createApplication(input: ApplicationInput) {
+export async function createApplication(
+  input: ApplicationInput,
+  options?: { managerId?: string; skipRecentDuplicate?: boolean },
+) {
   const existing = await prisma.application.findUnique({
     where: { idempotencyKey: input.idempotencyKey },
   });
@@ -28,17 +31,19 @@ export async function createApplication(input: ApplicationInput) {
     return { id: existing.id, publicNumber: existing.publicNumber, duplicate: true };
   }
 
-  const duplicateWindow = new Date(Date.now() - 2 * 60 * 1000);
-  const recent = await prisma.application.findFirst({
-    where: {
-      email: input.email,
-      phone: input.phone,
-      productId: input.productId,
-      createdAt: { gte: duplicateWindow },
-    },
-  });
-  if (recent) {
-    return { id: recent.id, publicNumber: recent.publicNumber, duplicate: true };
+  if (!options?.skipRecentDuplicate) {
+    const duplicateWindow = new Date(Date.now() - 2 * 60 * 1000);
+    const recent = await prisma.application.findFirst({
+      where: {
+        email: input.email,
+        phone: input.phone,
+        productId: input.productId,
+        createdAt: { gte: duplicateWindow },
+      },
+    });
+    if (recent) {
+      return { id: recent.id, publicNumber: recent.publicNumber, duplicate: true };
+    }
   }
 
   const rental = input.productId === "keys" || input.productId === "event";
@@ -129,6 +134,9 @@ export async function createApplication(input: ApplicationInput) {
       utmContent: input.utm?.content || null,
       utmTerm: input.utm?.term || null,
       idempotencyKey: input.idempotencyKey,
+      ...(options?.managerId
+        ? { manager: { connect: { id: options.managerId } } }
+        : {}),
     },
   });
 
