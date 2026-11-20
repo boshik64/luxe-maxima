@@ -175,12 +175,18 @@ export function ApplicationModal({
   const dialogRef = useRef<HTMLDivElement>(null);
   const dataEpochRef = useRef(0);
   const editingRef = useRef(false);
+  const currentRef = useRef(item);
+  const onItemRef = useRef(onItem);
+  const onCloseRef = useRef(onClose);
   const [current, setCurrent] = useState(item);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(() => draftFromItem(item));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [localSaving, setLocalSaving] = useState(false);
   editingRef.current = editing;
+  currentRef.current = current;
+  onItemRef.current = onItem;
+  onCloseRef.current = onClose;
 
   const [catalogCinemas, setCatalogCinemas] = useState<CatalogCinema[]>([]);
   const [catalogHalls, setCatalogHalls] = useState<CatalogHall[]>([]);
@@ -226,22 +232,21 @@ export function ApplicationModal({
     document.body.style.overflow = "hidden";
     dialogRef.current?.focus();
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        if (editing) {
-          setEditing(false);
-          setDraft(draftFromItem(current));
-          setFieldErrors({});
-          return;
-        }
-        onClose();
+      if (event.key !== "Escape") return;
+      if (editingRef.current) {
+        setEditing(false);
+        setDraft(draftFromItem(currentRef.current));
+        setFieldErrors({});
+        return;
       }
+      onCloseRef.current();
     }
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey);
     };
-  }, [onClose, editing, current]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -258,7 +263,7 @@ export function ApplicationModal({
           ? data.item!.messages
           : prev.messages,
       }));
-      onItem(data.item);
+      onItemRef.current(data.item);
     }
     void refresh();
     const timer = window.setInterval(() => void refresh(), 20000);
@@ -266,7 +271,7 @@ export function ApplicationModal({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [item.id, onItem]);
+  }, [item.id]);
 
   async function persist(patch: Partial<ApplicationRecord>) {
     dataEpochRef.current += 1;
