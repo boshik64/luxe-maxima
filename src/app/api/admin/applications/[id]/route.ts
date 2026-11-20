@@ -26,7 +26,8 @@ export async function GET(
   }
 
   const { id } = await context.params;
-  await pollInboundMailbox().catch(() => undefined);
+  // Не блокируем карточку опросом ящика — cron / messages подтянут почту сами.
+  void pollInboundMailbox().catch(() => undefined);
   const item = await getApplication(id);
   if (!item) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
   return NextResponse.json({ item });
@@ -60,7 +61,11 @@ export async function PATCH(
   const existing = await getApplication(id);
   if (!existing) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
 
-  if (parsed.data.email) {
+  // Проверяем ящик только если email реально меняют — иначе каждое «Сохранить» ждёт DNS/SMTP.
+  if (
+    parsed.data.email &&
+    parsed.data.email.trim().toLowerCase() !== existing.email.trim().toLowerCase()
+  ) {
     const mailboxError = await checkMailbox(parsed.data.email);
     if (mailboxError) {
       return NextResponse.json(

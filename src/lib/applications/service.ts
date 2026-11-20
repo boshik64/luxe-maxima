@@ -291,18 +291,12 @@ export async function updateApplication(
   id: string,
   data: Prisma.ApplicationUpdateInput,
 ) {
+  // Без messages: клиент сохраняет уже загруженную переписку, PATCH отвечает быстрее.
   return prisma.application.update({
     where: { id },
     data,
     include: {
       manager: managerSelect,
-      messages: {
-        orderBy: { createdAt: "asc" },
-        include: {
-          author: { select: { id: true, name: true } },
-          attachments: true,
-        },
-      },
     },
   });
 }

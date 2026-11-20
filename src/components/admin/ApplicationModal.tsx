@@ -171,11 +171,14 @@ export function ApplicationModal({
 }) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const dataEpochRef = useRef(0);
+  const editingRef = useRef(false);
   const [current, setCurrent] = useState(item);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(() => draftFromItem(item));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [localSaving, setLocalSaving] = useState(false);
+  editingRef.current = editing;
 
   const [catalogCinemas, setCatalogCinemas] = useState<CatalogCinema[]>([]);
   const [catalogHalls, setCatalogHalls] = useState<CatalogHall[]>([]);
@@ -239,15 +242,21 @@ export function ApplicationModal({
   }, [onClose, editing, current]);
 
   useEffect(() => {
-    if (editing) return;
     let cancelled = false;
     async function refresh() {
+      if (editingRef.current) return;
+      const epoch = dataEpochRef.current;
       const response = await fetch(`/api/admin/applications/${item.id}`);
       const data = (await response.json()) as { item?: ApplicationRecord };
-      if (!cancelled && data.item) {
-        setCurrent(data.item);
-        onItem(data.item);
-      }
+      // Игнорируем устаревший ответ, если пока ждали успел сохраниться paid/статус/черновик.
+      if (cancelled || epoch !== dataEpochRef.current || !data.item) return;
+      setCurrent((prev) => ({
+        ...data.item!,
+        messages: Array.isArray(data.item!.messages)
+          ? data.item!.messages
+          : prev.messages,
+      }));
+      onItem(data.item);
     }
     void refresh();
     const timer = window.setInterval(() => void refresh(), 20000);
@@ -255,7 +264,15 @@ export function ApplicationModal({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [item.id, onItem, editing]);
+  }, [item.id, onItem]);
+
+  async function persist(patch: Partial<ApplicationRecord>) {
+    dataEpochRef.current += 1;
+    setCurrent((prev) => ({ ...prev, ...patch }));
+    const ok = await onSave(patch);
+    if (ok === false) dataEpochRef.current += 1;
+    return ok;
+  }
 
   useEffect(() => {
     if (!editing) return;
@@ -643,7 +660,7 @@ export function ApplicationModal({
     }
 
     setLocalSaving(true);
-    const ok = await onSave(patch);
+    const ok = await persist(patch);
     setLocalSaving(false);
     if (ok === false) return;
     setEditing(false);
@@ -750,7 +767,7 @@ export function ApplicationModal({
                     label,
                   }))}
                   onChange={(value) =>
-                    onSave({ status: value as ApplicationStatus })
+                    void persist({ status: value as ApplicationStatus })
                   }
                 />
               </div>
@@ -772,17 +789,32 @@ export function ApplicationModal({
                       label: entry.name,
                     })),
                   ]}
-                  onChange={(value) =>
-                    onSave({ managerId: value || null })
-                  }
+                  onChange={(value) => {
+                    const managerId = value || null;
+                    const manager =
+                      managers.find((entry) => entry.id === value) ?? null;
+                    void persist({
+                      managerId,
+                      manager: manager
+                        ? {
+                            id: manager.id,
+                            name: manager.name,
+                            email: "",
+                          }
+                        : null,
+                    });
+                  }}
                 />
               </div>
               <label className="flex items-center gap-2 rounded-xl border border-line bg-background/60 px-3 py-2 text-sm sm:col-span-2">
                 <input
                   type="checkbox"
-                  className="size-4 accent-emerald-600"
+                  className="size-4 accent-[#22c55e]"
                   checked={current.paid === true}
-                  onChange={(event) => onSave({ paid: event.target.checked })}
+                  disabled={busy}
+                  onChange={(event) =>
+                    void persist({ paid: event.target.checked })
+                  }
                 />
                 <span>Оплачено</span>
               </label>
@@ -1131,7 +1163,7 @@ export function ApplicationModal({
                 }}
                 onBlur={(event) => {
                   if (!editing) {
-                    onSave({ adminComment: event.target.value });
+                    void persist({ adminComment: event.target.value });
                   }
                 }}
               />
