@@ -107,6 +107,20 @@
   line-height: 1.2;
   pointer-events: none;
 }
+.admin-card-paid-sticker-inline {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #16a34a;
+  padding: 0.15rem 0.5rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ecfdf5;
+  line-height: 1.2;
+  vertical-align: middle;
+}
 
 html {
   scroll-behavior: smooth;

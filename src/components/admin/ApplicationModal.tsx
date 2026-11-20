@@ -773,7 +773,7 @@ export function ApplicationModal({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-5 lg:grid-cols-2">
+        <div className="mt-4 grid gap-5">
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
@@ -840,6 +840,33 @@ export function ApplicationModal({
                 />
                 <span>Оплачено</span>
               </label>
+              <div className="space-y-1 sm:col-span-2">
+                <label
+                  htmlFor="adminComment"
+                  className="block text-xs font-medium text-muted"
+                >
+                  Комментарий администратора
+                </label>
+                <textarea
+                  id="adminComment"
+                  className="min-h-20 w-full break-words rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none focus:border-gold [overflow-wrap:anywhere]"
+                  value={editing ? draft.adminComment : (current.adminComment ?? "")}
+                  onChange={(event) => {
+                    if (editing) setField("adminComment", event.target.value);
+                    else {
+                      setCurrent((prev) => ({
+                        ...prev,
+                        adminComment: event.target.value,
+                      }));
+                    }
+                  }}
+                  onBlur={(event) => {
+                    if (!editing) {
+                      void persist({ adminComment: event.target.value });
+                    }
+                  }}
+                />
+              </div>
               {editing ? (
                 <>
                   <GuestField
@@ -1168,28 +1195,6 @@ export function ApplicationModal({
               multiline
               onChange={(value) => setField("comment", value)}
             />
-
-            <div className="space-y-1">
-              <label
-                htmlFor="adminComment"
-                className="block text-xs font-medium text-muted"
-              >
-                Комментарий администратора
-              </label>
-              <textarea
-                id="adminComment"
-                className="min-h-20 w-full rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none focus:border-gold"
-                value={editing ? draft.adminComment : (current.adminComment ?? "")}
-                onChange={(event) => {
-                  if (editing) setField("adminComment", event.target.value);
-                }}
-                onBlur={(event) => {
-                  if (!editing) {
-                    void persist({ adminComment: event.target.value });
-                  }
-                }}
-              />
-            </div>
           </div>
 
           <ApplicationChat

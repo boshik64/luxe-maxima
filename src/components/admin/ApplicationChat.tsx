@@ -67,7 +67,7 @@ export function ApplicationChat({
   }
 
   return (
-    <div className="flex h-[min(32rem,70vh)] max-h-[70vh] flex-col overflow-hidden rounded-3xl border border-line bg-background/50 lg:sticky lg:top-4">
+    <div className="flex h-[min(32rem,70vh)] max-h-[70vh] flex-col overflow-hidden rounded-3xl border border-line bg-background/50">
       <div className="shrink-0 border-b border-line px-4 py-3">
         <p className="text-sm font-semibold">Переписка с гостем</p>
         <p className="mt-1 text-xs text-muted">
@@ -86,7 +86,7 @@ export function ApplicationChat({
             return (
               <div
                 key={message.id}
-                className={`max-w-[90%] rounded-2xl px-3 py-2 text-sm ${
+                className={`max-w-[90%] min-w-0 rounded-2xl px-3 py-2 text-sm ${
                   mine ? "ml-auto bg-primary/20" : "mr-auto bg-card"
                 }`}
               >
@@ -104,7 +104,9 @@ export function ApplicationChat({
                     minute: "2-digit",
                   })}
                 </p>
-                <p className="mt-1 whitespace-pre-wrap">{message.body}</p>
+                <p className="mt-1 break-words whitespace-pre-wrap [overflow-wrap:anywhere]">
+                  {message.body}
+                </p>
                 {message.attachments.length ? (
                   <ul className="mt-2 space-y-1">
                     {message.attachments.map((file) => (
@@ -127,7 +129,7 @@ export function ApplicationChat({
       <div className="shrink-0 space-y-2 border-t border-line p-3">
         {error ? <p className="text-sm text-primary">{error}</p> : null}
         <textarea
-          className="min-h-24 w-full rounded-2xl border border-line bg-card px-3 py-2 text-sm outline-none"
+          className="min-h-24 w-full resize-y break-words rounded-2xl border border-line bg-card px-3 py-2 text-sm outline-none [overflow-wrap:anywhere]"
           placeholder="Сообщение гостю…"
           value={body}
           onChange={(event) => setBody(event.target.value)}

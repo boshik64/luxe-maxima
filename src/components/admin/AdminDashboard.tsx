@@ -40,6 +40,9 @@ type ManagerOption = { id: string; name: string };
 type BoardKind = "main" | "archive";
 type ViewMode = "kanban" | "list";
 
+const filterControlClass =
+  "rounded-2xl border border-line bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-gold";
+
 function isUrgentCard(item: ApplicationRecord) {
   return item.status === "IN_PROGRESS" && isWithinHours(item, 72);
 }
@@ -139,13 +142,18 @@ function ApplicationCard({
         className={`grid cursor-pointer grid-cols-1 items-center gap-2 rounded-2xl border px-4 py-3 text-left transition sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] ${cardToneClass(item)}`}
       >
         <div className="min-w-0">
-          <p className="tone-accent text-xs text-gold">
-            <span aria-hidden="true">
-              {PRODUCT_EMOJI[item.productId as StoredProductId]}
-            </span>{" "}
-            {PRODUCTS[item.productId as StoredProductId].title} ·{" "}
-            {publicApplicationCode(item.publicNumber)}
-            {item.paid ? " · Оплачено" : ""}
+          <p className="tone-accent flex flex-wrap items-center gap-2 text-xs text-gold">
+            <span>
+              <span aria-hidden="true">
+                {PRODUCT_EMOJI[item.productId as StoredProductId]}
+              </span>{" "}
+              {PRODUCTS[item.productId as StoredProductId].title} ·{" "}
+              {publicApplicationCode(item.publicNumber)}
+              {item.paid && !urgent ? " · Оплачено" : ""}
+            </span>
+            {urgent && item.paid ? (
+              <span className="admin-card-paid-sticker-inline">Оплачено</span>
+            ) : null}
           </p>
           <p className="mt-0.5 truncate font-medium">{guestFullName(item)}</p>
         </div>
@@ -245,6 +253,9 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
   const [openId, setOpenId] = useState<string | null>(searchParams.get("id"));
   const [creating, setCreating] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
+  const [collapsedStatuses, setCollapsedStatuses] = useState<
+    Partial<Record<ApplicationStatus, boolean>>
+  >({});
   const [dragOver, setDragOver] = useState<ApplicationStatus | null>(null);
   const draggingId = useRef<string | null>(null);
   const dragged = useRef(false);
@@ -429,6 +440,13 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
     items: items.filter((item) => item.status === status),
   }));
 
+  function toggleStatusCollapsed(status: ApplicationStatus) {
+    setCollapsedStatuses((current) => ({
+      ...current,
+      [status]: !current[status],
+    }));
+  }
+
   function bindDrag(item: ApplicationRecord) {
     return {
       onDragStart: (event: DragEvent) => {
@@ -459,115 +477,106 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
       <div className="shrink-0">
         <AdminNav />
       </div>
-      <div className="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-[family-name:var(--font-display)] text-3xl">
-            {board === "archive" ? "Архив" : "Заявки"}
-          </h1>
-          <p className="mt-2 text-sm text-muted">
-            {board === "archive"
-              ? "Выполненные и неактуальные заявки. Через 7 дней попадают сюда автоматически. Всего: "
-              : "Канбан по статусам. Карточка открывается в окне, статус можно сменить перетаскиванием. Всего: "}
-            {total}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-end gap-3">
-          {board === "main" ? (
-            <button
-              type="button"
-              className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-              onClick={() => setCreating(true)}
-            >
-              Создать заявку
-            </button>
-          ) : null}
-          <label className="text-xs text-muted">
-            Поиск
-            <input
-              type="search"
-              className="mt-1 block w-56 rounded-full border border-line bg-card px-3 py-2 text-sm text-foreground"
-              placeholder="Имя, зал, комментарий…"
-              value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
-            />
-          </label>
-          <CustomSelect
-            id="product-filter"
-            className="w-52"
-            value={product}
-            options={[
-              { value: "all", label: "Все продукты" },
-              ...Object.values(PRODUCTS).map((item) => ({
-                value: item.id,
-                label: `${PRODUCT_EMOJI[item.id]} ${item.title}`,
-              })),
-            ]}
-            onChange={setProduct}
-          />
-          <CustomSelect
-            id="status-filter"
-            className="w-48"
-            value={statusFilter}
-            options={[
-              { value: "all", label: "Все статусы" },
-              ...(board === "archive" ? ARCHIVE_BOARD_STATUSES : STATUSES).map(
-                (status) => ({
-                  value: status,
-                  label: statusLabelForBoard(board, status),
-                }),
-              ),
-            ]}
-            onChange={setStatusFilter}
-          />
-          <CustomSelect
-            id="paid-filter"
-            className="w-44"
-            value={paidFilter}
-            options={[
-              { value: "all", label: "Оплата: все" },
-              { value: "paid", label: "Оплачено" },
-              { value: "unpaid", label: "Не оплачено" },
-            ]}
-            onChange={setPaidFilter}
-          />
-          <CustomSelect
-            id="manager-filter"
-            className="w-52"
-            value={managerFilter}
-            options={[
-              { value: "all", label: "Все менеджеры" },
-              { value: "unassigned", label: "Без менеджера" },
-              ...managers.map((item) => ({ value: item.id, label: item.name })),
-            ]}
-            onChange={setManagerFilter}
-          />
-          <label className="text-xs text-muted">
-            С
-            <input
-              type="date"
-              className="mt-1 block rounded-full border border-line bg-card px-3 py-2 text-sm text-foreground"
-              value={createdFrom}
-              onChange={(event) => setCreatedFrom(event.target.value)}
-            />
-          </label>
-          <label className="text-xs text-muted">
-            По
-            <input
-              type="date"
-              className="mt-1 block rounded-full border border-line bg-card px-3 py-2 text-sm text-foreground"
-              value={createdTo}
-              onChange={(event) => setCreatedTo(event.target.value)}
-            />
-          </label>
-        </div>
+      <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-3">
+        <h1 className="flex items-baseline gap-3 font-[family-name:var(--font-display)] text-3xl">
+          {board === "archive" ? "Архив" : "Заявки"}
+          <span className="text-base font-normal text-muted">{total}</span>
+        </h1>
+        {board === "main" ? (
+          <button
+            type="button"
+            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+            onClick={() => setCreating(true)}
+          >
+            Создать заявку
+          </button>
+        ) : null}
       </div>
 
-      <div className="mb-3 flex shrink-0 items-center justify-end">
-        <ViewModeToggle value={viewMode} onChange={changeViewMode} />
+      <div className="mb-2 flex shrink-0 flex-wrap items-center gap-3">
+        <input
+          type="search"
+          aria-label="Поиск"
+          className={`${filterControlClass} w-56`}
+          placeholder="Имя, зал, комментарий…"
+          value={searchInput}
+          onChange={(event) => setSearchInput(event.target.value)}
+        />
+        <CustomSelect
+          id="product-filter"
+          className="w-52"
+          value={product}
+          options={[
+            { value: "all", label: "Все продукты" },
+            ...Object.values(PRODUCTS).map((item) => ({
+              value: item.id,
+              label: `${PRODUCT_EMOJI[item.id]} ${item.title}`,
+            })),
+          ]}
+          onChange={setProduct}
+        />
+        <CustomSelect
+          id="status-filter"
+          className="w-48"
+          value={statusFilter}
+          options={[
+            { value: "all", label: "Все статусы" },
+            ...(board === "archive" ? ARCHIVE_BOARD_STATUSES : STATUSES).map(
+              (status) => ({
+                value: status,
+                label: statusLabelForBoard(board, status),
+              }),
+            ),
+          ]}
+          onChange={setStatusFilter}
+        />
+        <CustomSelect
+          id="paid-filter"
+          className="w-44"
+          value={paidFilter}
+          options={[
+            { value: "all", label: "Оплата: все" },
+            { value: "paid", label: "Оплачено" },
+            { value: "unpaid", label: "Не оплачено" },
+          ]}
+          onChange={setPaidFilter}
+        />
+        <CustomSelect
+          id="manager-filter"
+          className="w-52"
+          value={managerFilter}
+          options={[
+            { value: "all", label: "Все менеджеры" },
+            { value: "unassigned", label: "Без менеджера" },
+            ...managers.map((item) => ({ value: item.id, label: item.name })),
+          ]}
+          onChange={setManagerFilter}
+        />
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <span>С</span>
+          <input
+            type="date"
+            className={filterControlClass}
+            value={createdFrom}
+            onChange={(event) => setCreatedFrom(event.target.value)}
+          />
+        </label>
+        <label className="flex items-center gap-2 text-sm text-muted">
+          <span>По</span>
+          <input
+            type="date"
+            className={filterControlClass}
+            value={createdTo}
+            onChange={(event) => setCreatedTo(event.target.value)}
+          />
+        </label>
+        <div className="ml-auto">
+          <ViewModeToggle value={viewMode} onChange={changeViewMode} />
+        </div>
       </div>
 
       {error ? (
-        <p className="mb-3 shrink-0 text-sm text-primary">{error}</p>
+        <p className="mb-2 shrink-0 text-sm text-primary">{error}</p>
       ) : null}
 
       {viewMode === "kanban" ? (
@@ -632,23 +641,70 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
           ))}
         </div>
       ) : (
-        <div className="pretty-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
+        <div className="pretty-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
           {items.length === 0 ? (
             <p className="rounded-3xl border border-line bg-card/60 px-4 py-12 text-center text-sm text-muted">
               Нет заявок по текущим фильтрам
             </p>
           ) : (
-            items.map((item) => {
-              const drag = bindDrag(item);
+            columns.map((column) => {
+              const collapsed = collapsedStatuses[column.status] === true;
               return (
-                <ApplicationCard
-                  key={item.id}
-                  item={item}
-                  layout="list"
-                  board={board}
-                  draggable={false}
-                  {...drag}
-                />
+                <section
+                  key={column.status}
+                  className="overflow-hidden rounded-3xl border border-line bg-card/60"
+                >
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-background/40"
+                    aria-expanded={!collapsed}
+                    onClick={() => toggleStatusCollapsed(column.status)}
+                  >
+                    <span className="flex items-center gap-2 text-sm font-semibold">
+                      <svg
+                        className={`h-4 w-4 text-muted transition ${
+                          collapsed ? "" : "rotate-90"
+                        }`}
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                      >
+                        <path d="M7.3 4.7a1 1 0 0 1 1.4 0l5 5a1 1 0 0 1 0 1.4l-5 5a1 1 0 1 1-1.4-1.4L11.58 10 7.3 6.1a1 1 0 0 1 0-1.4Z" />
+                      </svg>
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ background: STATUS_ACCENT[column.status] }}
+                      />
+                      {statusLabelForBoard(board, column.status)}
+                    </span>
+                    <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted">
+                      {column.items.length}
+                    </span>
+                  </button>
+                  {!collapsed ? (
+                    <div className="space-y-2 border-t border-line px-3 py-3">
+                      {column.items.length === 0 ? (
+                        <p className="px-1 py-4 text-center text-sm text-muted">
+                          Нет заявок
+                        </p>
+                      ) : (
+                        column.items.map((item) => {
+                          const drag = bindDrag(item);
+                          return (
+                            <ApplicationCard
+                              key={item.id}
+                              item={item}
+                              layout="list"
+                              board={board}
+                              draggable={false}
+                              {...drag}
+                            />
+                          );
+                        })
+                      )}
+                    </div>
+                  ) : null}
+                </section>
               );
             })
           )}
