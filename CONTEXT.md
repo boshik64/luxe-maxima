@@ -70,7 +70,7 @@
 
 Роли: `ADMIN` \| `OPERATOR`. Уведомления по продуктам — галочки `notifyKeys` / `notifyEvent` (`notifyFeedback` в UI скрыт вместе с разделом ОС).
 
-Статусы заявок: `NEW` → `WAITING_REPLY` / `ANSWERED` / `IN_PROGRESS` → `CLOSED` \| `REJECTED`.
+Статусы заявок: `NEW` («Новые заявки») → `WAITING_REPLY` / `ANSWERED` / `IN_PROGRESS` → `CLOSED` \| `REJECTED` («Не актуально»). У заявки есть флаг `paid` (оплачено) и автоархив просроченных из «Ждем ответа» (`autoRejectedOverdue`).
 
 ---
 

@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
     status: searchParams.get("status") ?? undefined,
     productId: searchParams.get("productId") ?? undefined,
     managerId: searchParams.get("managerId") ?? undefined,
+    paid: searchParams.get("paid") ?? undefined,
+    q: searchParams.get("q") ?? undefined,
     createdFrom: searchParams.get("createdFrom") ?? undefined,
     createdTo: searchParams.get("createdTo") ?? undefined,
     page: Number(searchParams.get("page") ?? 1),

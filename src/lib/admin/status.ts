@@ -10,7 +10,7 @@ export const STATUSES: ApplicationStatus[] = [
 ];
 
 export const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  NEW: "Новая",
+  NEW: "Новые заявки",
   WAITING_REPLY: "Ждем ответа",
   ANSWERED: "Отвечено",
   IN_PROGRESS: "В работе",

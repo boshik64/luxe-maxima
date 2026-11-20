@@ -5,6 +5,7 @@ import { escapeHtml, renderEmailDocument } from "@/lib/email/layout";
 import { PRODUCTS } from "@/lib/products";
 import { publicApplicationCode } from "@/lib/applications/dates";
 import { logger } from "@/lib/logger";
+import { MAX_CHAT_ATTACHMENTS } from "@/lib/chat/limits";
 import {
   asChatUpload,
   readChatAttachment,
@@ -52,6 +53,12 @@ export async function sendGuestReply(options: {
     throw Object.assign(new Error("Напишите сообщение или прикрепите файл"), {
       status: 400,
     });
+  }
+  if (options.files.length > MAX_CHAT_ATTACHMENTS) {
+    throw Object.assign(
+      new Error(`Не больше ${MAX_CHAT_ATTACHMENTS} вложений`),
+      { status: 400 },
+    );
   }
 
   const savedFiles = [];
@@ -204,9 +211,16 @@ export async function ingestInboundMessage(options: {
     },
   });
 
+  // Автоархив из «Ждем ответа» после прошедшего мероприятия:
+  // ответ гостя возвращает карточку обратно в «Ждем ответа».
+  const restoreWaiting =
+    application.status === "REJECTED" && application.autoRejectedOverdue;
+
   const next = await prisma.application.update({
     where: { id: application.id },
-    data: { status: "ANSWERED" },
+    data: {
+      status: restoreWaiting ? "WAITING_REPLY" : "ANSWERED",
+    },
     include: { manager: true },
   });
 

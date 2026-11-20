@@ -18,10 +18,26 @@ import {
   contentChoiceLabel,
   guestFullName,
 } from "@/lib/applications/display";
+import { isWithinHours } from "@/lib/applications/event-time";
 import type { ApplicationRecord } from "@/lib/applications/types";
 import { PRODUCTS, type StoredProductId } from "@/lib/products";
 
 type ManagerOption = { id: string; name: string };
+
+function cardToneClass(item: ApplicationRecord) {
+  const urgent =
+    item.status === "IN_PROGRESS" && isWithinHours(item, 72);
+  if (urgent) {
+    return "border-red-500/80 bg-red-950 text-red-50 hover:border-red-400 [&_.tone-muted]:text-red-200/80 [&_.tone-accent]:text-red-200";
+  }
+  if (item.paid) {
+    if (item.status === "IN_PROGRESS") {
+      return "border-emerald-500/70 bg-emerald-950/80 text-emerald-50 shadow-[inset_-6px_0_0_0_#22c55e] hover:border-emerald-400 [&_.tone-muted]:text-emerald-200/80 [&_.tone-accent]:text-emerald-200";
+    }
+    return "border-emerald-500/70 bg-emerald-950/80 text-emerald-50 hover:border-emerald-400 [&_.tone-muted]:text-emerald-200/80 [&_.tone-accent]:text-emerald-200";
+  }
+  return "border-line bg-background hover:border-gold";
+}
 
 export function AdminDashboard() {
   const router = useRouter();
@@ -31,7 +47,10 @@ export function AdminDashboard() {
   const [total, setTotal] = useState(0);
   const [product, setProduct] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [paidFilter, setPaidFilter] = useState("all");
   const [managerFilter, setManagerFilter] = useState("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
   const [error, setError] = useState("");
@@ -42,11 +61,20 @@ export function AdminDashboard() {
   const draggingId = useRef<string | null>(null);
   const dragged = useRef(false);
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
   const load = useCallback(() => {
     const params = new URLSearchParams({ pageSize: "200" });
     if (product !== "all") params.set("productId", product);
     if (statusFilter !== "all") params.set("status", statusFilter);
+    if (paidFilter !== "all") params.set("paid", paidFilter);
     if (managerFilter !== "all") params.set("managerId", managerFilter);
+    if (searchQuery) params.set("q", searchQuery);
     if (createdFrom) params.set("createdFrom", createdFrom);
     if (createdTo) params.set("createdTo", createdTo);
     return fetch(`/api/admin/applications?${params}`).then(async (response) => {
@@ -73,7 +101,16 @@ export function AdminDashboard() {
       });
       setTotal(data.total ?? 0);
     });
-  }, [createdFrom, createdTo, managerFilter, product, router, statusFilter]);
+  }, [
+    createdFrom,
+    createdTo,
+    managerFilter,
+    paidFilter,
+    product,
+    router,
+    searchQuery,
+    statusFilter,
+  ]);
 
   useEffect(() => {
     fetch("/api/admin/managers")
@@ -181,6 +218,16 @@ export function AdminDashboard() {
           >
             Создать заявку
           </button>
+          <label className="text-xs text-muted">
+            Поиск
+            <input
+              type="search"
+              className="mt-1 block w-56 rounded-full border border-line bg-card px-3 py-2 text-sm text-foreground"
+              placeholder="Имя, зал, комментарий…"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+            />
+          </label>
           <CustomSelect
             id="product-filter"
             className="w-52"
@@ -206,6 +253,17 @@ export function AdminDashboard() {
               })),
             ]}
             onChange={setStatusFilter}
+          />
+          <CustomSelect
+            id="paid-filter"
+            className="w-44"
+            value={paidFilter}
+            options={[
+              { value: "all", label: "Оплата: все" },
+              { value: "paid", label: "Оплачено" },
+              { value: "unpaid", label: "Не оплачено" },
+            ]}
+            onChange={setPaidFilter}
           />
           <CustomSelect
             id="manager-filter"
@@ -304,12 +362,13 @@ export function AdminDashboard() {
                     }
                     openModal(item.id);
                   }}
-                  className="shrink-0 cursor-pointer rounded-2xl border border-line bg-background p-4 text-left transition hover:border-gold"
+                  className={`shrink-0 cursor-pointer rounded-2xl border p-4 text-left transition ${cardToneClass(item)}`}
                 >
-                  <p className="text-[11px] text-muted">
+                  <p className="tone-muted text-[11px] text-muted">
                     Создана: {formatCreatedShort(item.createdAt)}
+                    {item.paid ? " · Оплачено" : ""}
                   </p>
-                  <p className="mt-1 text-xs text-gold">
+                  <p className="tone-accent mt-1 text-xs text-gold">
                     <span aria-hidden="true">
                       {PRODUCT_EMOJI[item.productId as StoredProductId]}
                     </span>{" "}
@@ -317,22 +376,22 @@ export function AdminDashboard() {
                     {publicApplicationCode(item.publicNumber)}
                   </p>
                   <p className="mt-1 font-medium">{guestFullName(item)}</p>
-                  <p className="mt-1 text-sm text-muted">
+                  <p className="tone-muted mt-1 text-sm text-muted">
                     {item.cityName} · {item.cinemaName}
                   </p>
                   {contentChoiceLabel(item) ? (
-                    <p className="mt-1 text-sm text-muted">
+                    <p className="tone-muted mt-1 text-sm text-muted">
                       {contentChoiceLabel(item)}
                     </p>
                   ) : null}
-                  <p className="mt-2 text-xs text-muted">
+                  <p className="tone-muted mt-2 text-xs text-muted">
                     {item.guests ? `${item.guests} гостей` : ""}
                     {item.guests && eventDateLabel(item) ? " · " : ""}
                     {eventDateLabel(item)
                       ? `мероприятие ${eventDateLabel(item)}`
                       : ""}
                   </p>
-                  <p className="mt-2 text-xs text-gold">
+                  <p className="tone-accent mt-2 text-xs text-gold">
                     {item.manager?.name ?? "Без менеджера"}
                   </p>
                 </article>
@@ -363,6 +422,7 @@ export function AdminDashboard() {
         <ApplicationModal
           key={openItem.id}
           item={openItem}
+          managers={managers}
           saving={saving}
           error={error}
           onClose={closeModal}

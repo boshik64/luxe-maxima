@@ -11,6 +11,7 @@ import {
   getApplication,
   updateApplication,
 } from "@/lib/applications/service";
+import { prisma } from "@/lib/db";
 import { checkMailbox } from "@/lib/email/mailbox";
 import { pollInboundMailbox } from "@/lib/chat/inbound";
 
@@ -69,8 +70,26 @@ export async function PATCH(
     }
   }
 
-  const data: Prisma.ApplicationUpdateInput = { ...parsed.data };
-  if (parsed.data.status === "NEW") {
+  const { managerId, ...fields } = parsed.data;
+  const data: Prisma.ApplicationUpdateInput = { ...fields };
+
+  if (managerId !== undefined) {
+    if (managerId) {
+      const manager = await prisma.user.findUnique({
+        where: { id: managerId },
+        select: { id: true },
+      });
+      if (!manager) {
+        return NextResponse.json(
+          { error: "Менеджер не найден", fields: { managerId: "Менеджер не найден" } },
+          { status: 422 },
+        );
+      }
+      data.manager = { connect: { id: managerId } };
+    } else {
+      data.manager = { disconnect: true };
+    }
+  } else if (parsed.data.status === "NEW") {
     data.manager = { disconnect: true };
   } else if (
     parsed.data.status &&

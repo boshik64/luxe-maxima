@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { archiveOverdueWaitingApplications } from "@/lib/applications/archive-overdue";
 import { pollInboundMailbox } from "@/lib/chat/inbound";
 
 export async function GET(request: NextRequest) {
@@ -7,6 +8,9 @@ export async function GET(request: NextRequest) {
   if (secret && token !== secret) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const archived = await archiveOverdueWaitingApplications().catch(() => ({
+    archived: 0,
+  }));
   const result = await pollInboundMailbox();
-  return NextResponse.json(result);
+  return NextResponse.json({ ...result, ...archived });
 }

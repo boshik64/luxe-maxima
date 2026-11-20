@@ -65,6 +65,13 @@ export const applicationAdminPatchSchema = z.object({
   watchCustom: optionalText(200).optional().nullable(),
   wantRepertoireFilm: z.boolean().optional(),
   wantCustomContent: z.boolean().optional(),
+  paid: z.boolean().optional(),
+  managerId: z
+    .string()
+    .trim()
+    .uuid("Некорректный менеджер")
+    .optional()
+    .nullable(),
 });
 
 export type ApplicationAdminPatch = z.infer<typeof applicationAdminPatchSchema>;

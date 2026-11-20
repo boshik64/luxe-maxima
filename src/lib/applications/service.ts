@@ -1,4 +1,5 @@
 import { ApplicationStatus, Prisma, ProductId } from "@prisma/client";
+import { archiveOverdueWaitingApplications } from "@/lib/applications/archive-overdue";
 import { contentChoiceLabel } from "@/lib/applications/display";
 import { ApplicationValidationError } from "@/lib/applications/errors";
 import type { ApplicationInput } from "@/lib/applications/schema";
@@ -165,15 +166,56 @@ export async function createApplication(
 
 const managerSelect = { select: { id: true, name: true, email: true } };
 
+function searchWhere(query: string): Prisma.ApplicationWhereInput {
+  const q = query.trim();
+  if (!q) return {};
+  const modes = [{ contains: q, mode: "insensitive" as const }];
+  const or: Prisma.ApplicationWhereInput[] = [
+    { contactName: modes[0] },
+    { contactLastName: modes[0] },
+    { phone: modes[0] },
+    { email: modes[0] },
+    { cityName: modes[0] },
+    { cinemaName: modes[0] },
+    { hallName: modes[0] },
+    { hallFormatName: modes[0] },
+    { filmName: modes[0] },
+    { watchCustom: modes[0] },
+    { sessionLabel: modes[0] },
+    { sessionCustom: modes[0] },
+    { rentalDate: modes[0] },
+    { rentalTime: modes[0] },
+    { rentalStart: modes[0] },
+    { rentalEnd: modes[0] },
+    { rentalDuration: modes[0] },
+    { ticketType: modes[0] },
+    { comment: modes[0] },
+    { adminComment: modes[0] },
+    { source: modes[0] },
+    { manager: { name: modes[0] } },
+  ];
+  const publicMatch = q.match(/^(?:KM-)?(\d+)$/i);
+  if (publicMatch) {
+    or.push({ publicNumber: Number(publicMatch[1]) });
+  }
+  return { OR: or };
+}
+
 export async function listApplications(params: {
   status?: string;
   productId?: string;
   managerId?: string;
+  paid?: string;
+  q?: string;
   createdFrom?: string;
   createdTo?: string;
   page?: number;
   pageSize?: number;
 }) {
+  await archiveOverdueWaitingApplications().catch((error) => {
+    logger.error("Failed to archive overdue waiting applications", error);
+  });
+
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(200, Math.max(10, params.pageSize ?? 20));
   const where: Prisma.ApplicationWhereInput = {};
@@ -194,6 +236,11 @@ export async function listApplications(params: {
   } else if (params.managerId) {
     where.managerId = params.managerId;
   }
+  if (params.paid === "paid") {
+    where.paid = true;
+  } else if (params.paid === "unpaid") {
+    where.paid = false;
+  }
   if (params.createdFrom || params.createdTo) {
     where.createdAt = {};
     if (params.createdFrom) {
@@ -204,6 +251,10 @@ export async function listApplications(params: {
       const to = new Date(`${params.createdTo}T23:59:59.999`);
       if (!Number.isNaN(to.getTime())) where.createdAt.lte = to;
     }
+  }
+  const search = searchWhere(params.q ?? "");
+  if (search.OR) {
+    where.AND = [...(Array.isArray(where.AND) ? where.AND : []), search];
   }
 
   const [items, total] = await Promise.all([

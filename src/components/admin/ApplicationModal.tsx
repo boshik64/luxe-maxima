@@ -133,8 +133,11 @@ function optionWithCurrent(options: SelectOption[], value: string, label: string
   return [{ value, label: label || value }, ...options];
 }
 
+type ManagerOption = { id: string; name: string };
+
 export function ApplicationModal({
   item,
+  managers,
   saving,
   error,
   onClose,
@@ -142,6 +145,7 @@ export function ApplicationModal({
   onItem,
 }: {
   item: ApplicationRecord;
+  managers: ManagerOption[];
   saving: boolean;
   error: string;
   onClose: () => void;
@@ -732,6 +736,38 @@ export function ApplicationModal({
                   }
                 />
               </div>
+              <div className="space-y-1">
+                <label
+                  htmlFor="manager"
+                  className="block text-xs font-medium text-muted"
+                >
+                  Менеджер
+                </label>
+                <CustomSelect
+                  id="manager"
+                  compact
+                  value={current.managerId ?? ""}
+                  options={[
+                    { value: "", label: "Без менеджера" },
+                    ...managers.map((entry) => ({
+                      value: entry.id,
+                      label: entry.name,
+                    })),
+                  ]}
+                  onChange={(value) =>
+                    onSave({ managerId: value || null })
+                  }
+                />
+              </div>
+              <label className="flex items-center gap-2 rounded-xl border border-line bg-background/60 px-3 py-2 text-sm sm:col-span-2">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-emerald-600"
+                  checked={current.paid === true}
+                  onChange={(event) => onSave({ paid: event.target.checked })}
+                />
+                <span>Оплачено</span>
+              </label>
               {editing ? (
                 <>
                   <GuestField

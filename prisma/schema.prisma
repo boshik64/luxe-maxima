@@ -143,6 +143,9 @@ model Application {
   email           String
   comment         String?
   adminComment    String?
+  paid            Boolean            @default(false)
+  /** Автоперенос из «Ждем ответа» после прошедшего мероприятия; не повторять. */
+  autoRejectedOverdue Boolean        @default(false)
   consent         Boolean
   utmSource       String?
   utmMedium       String?

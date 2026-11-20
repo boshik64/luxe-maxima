@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ApplicationRecord } from "@/lib/applications/types";
 import { publicApplicationCode } from "@/lib/applications/dates";
+import { MAX_CHAT_ATTACHMENTS } from "@/lib/chat/limits";
 
 export function ApplicationChat({
   item,
@@ -16,6 +17,7 @@ export function ApplicationChat({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messages = item.messages ?? [];
   const code = publicApplicationCode(item.publicNumber);
 
@@ -23,8 +25,23 @@ export function ApplicationChat({
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
   }, [messages.length]);
 
+  function onPickFiles(list: FileList | null) {
+    const next = Array.from(list ?? []);
+    if (next.length > MAX_CHAT_ATTACHMENTS) {
+      setError(`Не больше ${MAX_CHAT_ATTACHMENTS} вложений`);
+      setFiles(next.slice(0, MAX_CHAT_ATTACHMENTS));
+      return;
+    }
+    setError("");
+    setFiles(next);
+  }
+
   async function send() {
     if (sending) return;
+    if (files.length > MAX_CHAT_ATTACHMENTS) {
+      setError(`Не больше ${MAX_CHAT_ATTACHMENTS} вложений`);
+      return;
+    }
     setSending(true);
     setError("");
     const form = new FormData();
@@ -45,6 +62,7 @@ export function ApplicationChat({
     }
     setBody("");
     setFiles([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     if (data.item) onUpdated(data.item);
   }
 
@@ -117,14 +135,15 @@ export function ApplicationChat({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <label className="text-xs text-muted">
             <input
+              ref={fileInputRef}
               type="file"
               multiple
               className="mr-2 text-xs"
-              onChange={(event) =>
-                setFiles(Array.from(event.target.files ?? []))
-              }
+              onChange={(event) => onPickFiles(event.target.files)}
             />
-            {files.length ? `${files.length} файл.` : "Вложения"}
+            {files.length
+              ? `${files.length} из ${MAX_CHAT_ATTACHMENTS}`
+              : `Вложения (до ${MAX_CHAT_ATTACHMENTS})`}
           </label>
           <button
             type="button"
