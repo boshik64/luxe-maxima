@@ -52,7 +52,7 @@ test("application guest email is branded html", () => {
   const mail = applicationGuestEmail(application);
   assert.match(mail.subject, /Заявка принята/);
   assert.match(mail.html, /#1C1D24/);
-  assert.match(mail.html, /Анна Иванова/);
+  assert.match(mail.html, /Иванова Анна/);
   assert.match(mail.text, /Номер: KM-1042/);
 });
 
