@@ -1,4 +1,5 @@
 import { ApplicationStatus, Prisma, ProductId } from "@prisma/client";
+import { contentChoiceLabel } from "@/lib/applications/display";
 import { ApplicationValidationError } from "@/lib/applications/errors";
 import type { ApplicationInput } from "@/lib/applications/schema";
 import { getEnabledHall } from "@/lib/catalog/service";
@@ -74,12 +75,24 @@ export async function createApplication(
     cinemaId = hall.cinema.id;
   }
 
+  const wantRepertoireFilm =
+    input.productId === "keys" ? input.wantRepertoireFilm === true : false;
+  const wantCustomContent =
+    input.productId === "keys" ? input.wantCustomContent === true : false;
   const watchCustom =
-    input.productId === "keys" ? input.watchCustom?.trim() || null : null;
-  const filmId = watchCustom ? null : catalogId(input.film);
-  const filmName = watchCustom
-    ? watchCustom
-    : catalogName(input.film) || null;
+    input.productId === "keys"
+      ? wantCustomContent
+        ? "Свой контент"
+        : null
+      : null;
+  const filmId =
+    input.productId === "keys"
+      ? null
+      : catalogId(input.film);
+  const filmName =
+    input.productId === "keys"
+      ? contentChoiceLabel({ wantRepertoireFilm, wantCustomContent }) || null
+      : catalogName(input.film) || null;
 
   const application = await prisma.application.create({
     data: {
@@ -99,6 +112,8 @@ export async function createApplication(
       filmId,
       filmName,
       watchCustom,
+      wantRepertoireFilm,
+      wantCustomContent,
       sessionId: catalogId(input.session),
       sessionLabel:
         input.session?.id === CUSTOM_OPTION_ID
@@ -124,6 +139,7 @@ export async function createApplication(
       guests: input.guests ? Number(input.guests) : null,
       ticketType: input.ticketType?.trim() || null,
       contactName: input.contactName,
+      contactLastName: input.contactLastName,
       phone: input.phone,
       email: input.email,
       comment: input.comment || null,

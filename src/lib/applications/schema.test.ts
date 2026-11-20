@@ -4,6 +4,7 @@ import { applicationInputSchema } from "./schema";
 
 const base = {
   contactName: "Иван",
+  contactLastName: "Иванов",
   phone: "+79001234567",
   email: "ivan@example.com",
   consent: true as const,
@@ -14,38 +15,46 @@ const base = {
   cinema: { id: "cinema-1", name: "7 Атриум", custom: "" },
 };
 
-test("accepts keys application with hall catalog and repertoire film", () => {
+test("accepts keys application with repertoire checkbox", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "keys",
-    hallFormat: { id: "fmt-1", name: "IMAX", custom: "" },
     hall: { id: "hall-1", name: "IMAX", custom: "" },
-    film: { id: "16395", name: "Электрический поцелуй", custom: "" },
+    wantRepertoireFilm: true,
     rentalStart: "2026-09-01T18:00",
   });
   assert.equal(parsed.success, true);
 });
 
-test("accepts keys application with custom watch content", () => {
+test("accepts keys application with custom content checkbox", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "keys",
-    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
     hall: { id: "hall-1", name: "Зал 1", custom: "" },
-    watchCustom: "Корпоративный ролик",
+    wantCustomContent: true,
     rentalStart: "2026-09-01T18:00",
   });
   assert.equal(parsed.success, true);
 });
 
-test("rejects keys application with both film and watchCustom", () => {
+test("accepts keys application with both content checkboxes", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "keys",
-    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
     hall: { id: "hall-1", name: "Зал 1", custom: "" },
-    film: { id: "1", name: "Фильм", custom: "" },
-    watchCustom: "Свой контент",
+    wantRepertoireFilm: true,
+    wantCustomContent: true,
+    rentalStart: "2026-09-01T18:00",
+  });
+  assert.equal(parsed.success, true);
+});
+
+test("rejects keys application without content choice", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    productId: "keys",
+    hall: { id: "hall-1", name: "Зал 1", custom: "" },
+    rentalStart: "2026-09-01T18:00",
   });
   assert.equal(parsed.success, false);
 });
@@ -54,9 +63,8 @@ test("rejects keys application without session date and time", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "keys",
-    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
     hall: { id: "hall-1", name: "Зал 1", custom: "" },
-    watchCustom: "Корпоративный ролик",
+    wantCustomContent: true,
   });
   assert.equal(parsed.success, false);
 });
@@ -66,9 +74,9 @@ test("rejects keys application with custom cinema", () => {
     ...base,
     productId: "keys",
     cinema: { id: "__custom__", name: "", custom: "Мой кинотеатр" },
-    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
     hall: { id: "hall-1", name: "Зал 1", custom: "" },
-    watchCustom: "Фильм",
+    wantCustomContent: true,
+    rentalStart: "2026-09-01T18:00",
   });
   assert.equal(parsed.success, false);
 });
@@ -96,11 +104,10 @@ test("rejects group application without ticket type", () => {
   assert.equal(parsed.success, false);
 });
 
-test("event requires hall cascade and rental datetime", () => {
+test("event requires hall and rental datetime without format", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "event",
-    hallFormat: { id: "fmt-1", name: "Премиум", custom: "" },
     hall: { id: "hall-1", name: "Зал Премиум", custom: "" },
     rentalStart: "2026-09-01T18:00",
   });
@@ -111,7 +118,6 @@ test("event rejects missing rental datetime", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "event",
-    hallFormat: { id: "fmt-1", name: "Премиум", custom: "" },
     hall: { id: "hall-1", name: "Зал Премиум", custom: "" },
   });
   assert.equal(parsed.success, false);
@@ -121,9 +127,8 @@ test("rejects invalid phone", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "keys",
-    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
     hall: { id: "hall-1", name: "Зал 1", custom: "" },
-    watchCustom: "Фильм",
+    wantCustomContent: true,
     rentalStart: "2026-09-01T18:00",
     phone: "89001234567",
   });
@@ -134,11 +139,21 @@ test("honeypot website must be empty", () => {
   const parsed = applicationInputSchema.safeParse({
     ...base,
     productId: "keys",
-    hallFormat: { id: "fmt-1", name: "Стандарт", custom: "" },
     hall: { id: "hall-1", name: "Зал 1", custom: "" },
-    watchCustom: "Фильм",
+    wantCustomContent: true,
     rentalStart: "2026-09-01T18:00",
     website: "https://spam.test",
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("rejects missing last name", () => {
+  const parsed = applicationInputSchema.safeParse({
+    ...base,
+    contactLastName: "",
+    productId: "event",
+    hall: { id: "hall-1", name: "Зал 1", custom: "" },
+    rentalStart: "2026-09-01T18:00",
   });
   assert.equal(parsed.success, false);
 });

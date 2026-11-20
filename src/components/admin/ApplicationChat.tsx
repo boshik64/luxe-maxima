@@ -73,7 +73,12 @@ export function ApplicationChat({
                 }`}
               >
                 <p className="text-[11px] text-muted">
-                  {mine ? message.author?.name || "Менеджер" : item.contactName} ·{" "}
+                  {mine
+                    ? message.author?.name || "Менеджер"
+                    : [item.contactLastName, item.contactName]
+                        .filter(Boolean)
+                        .join(" ")}{" "}
+                  ·{" "}
                   {new Date(message.createdAt).toLocaleString("ru-RU", {
                     day: "2-digit",
                     month: "2-digit",

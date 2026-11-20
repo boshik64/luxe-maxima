@@ -13,9 +13,15 @@ import {
   formatCreatedAt,
   publicApplicationCode,
 } from "@/lib/applications/dates";
+import {
+  contentChoiceLabel,
+  guestFullName,
+} from "@/lib/applications/display";
 import type { ApplicationRecord } from "@/lib/applications/types";
+import { ContentFields } from "@/components/form/ContentFields";
 import { PRODUCTS, TICKET_TYPES } from "@/lib/products";
 import {
+  validateContactLastName,
   validateContactName,
   validateEmailFormat,
   validateGuests,
@@ -45,6 +51,7 @@ type CatalogHall = {
 
 type GuestDraft = {
   contactName: string;
+  contactLastName: string;
   phone: string;
   email: string;
   cityId: string;
@@ -60,6 +67,8 @@ type GuestDraft = {
   filmId: string;
   filmName: string;
   watchCustom: string;
+  wantRepertoireFilm: boolean;
+  wantCustomContent: boolean;
   sessionId: string;
   sessionLabel: string;
   guests: string;
@@ -87,6 +96,7 @@ function draftFromItem(item: ApplicationRecord): GuestDraft {
 
   return {
     contactName: item.contactName,
+    contactLastName: item.contactLastName ?? "",
     phone: item.phone,
     email: item.email,
     cityId: item.cityId ?? "",
@@ -102,6 +112,8 @@ function draftFromItem(item: ApplicationRecord): GuestDraft {
     filmId: item.filmId ?? "",
     filmName: item.filmName ?? "",
     watchCustom: item.watchCustom ?? "",
+    wantRepertoireFilm: item.wantRepertoireFilm === true,
+    wantCustomContent: item.wantCustomContent === true,
     sessionId: item.sessionId ?? "",
     sessionLabel: item.sessionLabel || item.sessionCustom || "",
     guests: item.guests != null ? String(item.guests) : "",
@@ -526,6 +538,8 @@ export function ApplicationModal({
     const nextErrors: Record<string, string> = {};
     const nameError = validateContactName(draft.contactName);
     if (nameError) nextErrors.contactName = nameError;
+    const lastNameError = validateContactLastName(draft.contactLastName);
+    if (lastNameError) nextErrors.contactLastName = lastNameError;
     const phoneError = validateRuPhone(draft.phone);
     if (phoneError) nextErrors.phone = phoneError;
     const emailError = validateEmailFormat(draft.email);
@@ -534,13 +548,30 @@ export function ApplicationModal({
       const guestsError = validateGuests(draft.guests);
       if (guestsError) nextErrors.guests = guestsError;
     }
+    if (
+      current.productId === "keys" &&
+      !draft.wantRepertoireFilm &&
+      !draft.wantCustomContent
+    ) {
+      nextErrors.content =
+        "Выберите хотя бы один вариант: фильм из репертуара или свой контент";
+    }
     if (Object.keys(nextErrors).length) {
       setFieldErrors(nextErrors);
       return;
     }
 
+    const keysContent = current.productId === "keys";
+    const contentLabel = keysContent
+      ? contentChoiceLabel({
+          wantRepertoireFilm: draft.wantRepertoireFilm,
+          wantCustomContent: draft.wantCustomContent,
+        })
+      : "";
+
     const patch: Partial<ApplicationRecord> = {
       contactName: draft.contactName.trim(),
+      contactLastName: draft.contactLastName.trim(),
       phone: draft.phone,
       email: draft.email.trim().toLowerCase(),
       cityId: draft.cityId || null,
@@ -554,9 +585,23 @@ export function ApplicationModal({
       hallRentalPriceWeekday: draft.hallRentalPriceWeekday,
       hallRentalPriceWeekend: draft.hallRentalPriceWeekend,
       hallRentalPrice: draft.hallRentalPriceWeekday,
-      filmId: draft.watchCustom ? null : draft.filmId || null,
-      filmName: draft.watchCustom ? draft.watchCustom.trim() : draft.filmName.trim(),
-      watchCustom: draft.watchCustom.trim() || null,
+      filmId: keysContent
+        ? null
+        : draft.watchCustom
+          ? null
+          : draft.filmId || null,
+      filmName: keysContent
+        ? contentLabel
+        : draft.watchCustom
+          ? draft.watchCustom.trim()
+          : draft.filmName.trim(),
+      watchCustom: keysContent
+        ? draft.wantCustomContent
+          ? "Свой контент"
+          : null
+        : draft.watchCustom.trim() || null,
+      wantRepertoireFilm: keysContent ? draft.wantRepertoireFilm : false,
+      wantCustomContent: keysContent ? draft.wantCustomContent : false,
       sessionId: draft.sessionId || null,
       sessionLabel: draft.sessionLabel.trim(),
       sessionCustom: draft.sessionLabel.trim(),
@@ -687,14 +732,33 @@ export function ApplicationModal({
                   }
                 />
               </div>
-              <GuestField
-                id="contactName"
-                label="Контактное лицо"
-                editing={editing}
-                value={editing ? draft.contactName : current.contactName}
-                error={fieldErrors.contactName}
-                onChange={(value) => setField("contactName", value)}
-              />
+              {editing ? (
+                <>
+                  <GuestField
+                    id="contactName"
+                    label="Имя"
+                    editing
+                    value={draft.contactName}
+                    error={fieldErrors.contactName}
+                    onChange={(value) => setField("contactName", value)}
+                  />
+                  <GuestField
+                    id="contactLastName"
+                    label="Фамилия"
+                    editing
+                    value={draft.contactLastName}
+                    error={fieldErrors.contactLastName}
+                    onChange={(value) => setField("contactLastName", value)}
+                  />
+                </>
+              ) : (
+                <GuestField
+                  id="contactName"
+                  label="Гость"
+                  editing={false}
+                  value={guestFullName(current)}
+                />
+              )}
               <GuestField
                 id="phone"
                 label="Телефон"
@@ -778,16 +842,43 @@ export function ApplicationModal({
                 />
               ) : null}
 
-              {current.productId !== "event" ? (
+              {current.productId === "keys" ? (
+                editing ? (
+                  <div className="sm:col-span-2">
+                    <ContentFields
+                      wantRepertoireFilm={draft.wantRepertoireFilm}
+                      wantCustomContent={draft.wantCustomContent}
+                      errors={fieldErrors}
+                      onWantRepertoireFilmChange={(value) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          wantRepertoireFilm: value,
+                        }))
+                      }
+                      onWantCustomContentChange={(value) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          wantCustomContent: value,
+                        }))
+                      }
+                    />
+                  </div>
+                ) : (
+                  <GuestField
+                    id="filmName"
+                    label="Фильм / контент"
+                    editing={false}
+                    value={contentChoiceLabel(current)}
+                  />
+                )
+              ) : current.productId !== "event" ? (
                 editing ? (
                   <AdminFilmPicker
-                    label={
-                      current.productId === "keys" ? "Фильм / контент" : "Фильм"
-                    }
+                    label="Фильм"
                     filmId={draft.filmId}
                     filmName={draft.filmName}
                     watchCustom={draft.watchCustom}
-                    allowCustom={current.productId === "keys"}
+                    allowCustom={false}
                     endpoint={filmEndpoint}
                     onSelectFilm={(film) => {
                       setDraft((prev) => ({
@@ -816,9 +907,7 @@ export function ApplicationModal({
                 ) : (
                   <GuestField
                     id="filmName"
-                    label={
-                      current.productId === "keys" ? "Фильм / контент" : "Фильм"
-                    }
+                    label="Фильм"
                     editing={false}
                     value={current.watchCustom || current.filmName || ""}
                   />

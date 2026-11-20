@@ -9,7 +9,7 @@ export const EVENT_PROMO_MAX_OCCASION_BODY = 500;
 export const EVENT_PROMO_MAX_PRESENTATION = 160;
 
 export const EVENT_PRESENTATION_HREF =
-  "https://static.karofilm.ru/v3k/uploads/filemanager/%D0%9C%D0%B5%D1%80%D0%BE%D0%BF%D1%80%D0%B8%D1%8F%D1%82%D0%B8%D1%8F%20%20%D0%B2%20%D0%9A%D0%90%D0%A0%D0%9E%202023.pdf?_t=1681227349";
+  "https://static.karofilm.ru/v3k/uploads/filemanager/EVENT_KARO_2026.pdf?_t=1795164009";
 
 export type EventOccasion = {
   title: string;

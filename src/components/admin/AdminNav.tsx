@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 const SHOW_BANNER_NAV = false; // true — снова показать пункт «Баннеры»
+const SHOW_FEEDBACK_NAV = false; // true — снова показать пункт «Контакты» (бывш. обратная связь)
 
 const links = [
   { href: "/admin", label: "Заявки" },
@@ -12,7 +13,16 @@ const links = [
   { href: "/admin/film-sales", label: "Механики продажи" },
   { href: "/admin/events", label: "Мероприятия" },
   { href: "/admin/banner", label: "Баннеры", hidden: !SHOW_BANNER_NAV },
-  { href: "/admin/feedback", label: "Обратная связь" },
+  {
+    href: "/admin/feedback",
+    label: "Контакты",
+    hidden: !SHOW_FEEDBACK_NAV,
+  },
+  {
+    href: "/admin/contact-mailto",
+    label: "Шаблон письма",
+    adminOnly: true,
+  },
   { href: "/admin/users", label: "Пользователи", adminOnly: true },
 ];
 

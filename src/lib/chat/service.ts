@@ -72,7 +72,7 @@ export async function sendGuestReply(options: {
     title: `Ответ по заявке ${code}`,
     preheader: fullText.slice(0, 120),
     heading: `Заявка ${code}`,
-    introHtml: `<p style="margin:0 0 10px;">Здравствуйте, ${escapeHtml(options.application.contactName)}!</p>
+    introHtml: `<p style="margin:0 0 10px;">Здравствуйте, ${escapeHtml([options.application.contactLastName, options.application.contactName].filter(Boolean).join(" "))}!</p>
       <p style="margin:0; white-space:pre-wrap;">${escapeHtml(fullText)}</p>
       <p style="margin:16px 0 0; font-size:12px; color:#9f968a;">${escapeHtml(KEEP_SUBJECT)}</p>`,
     bodyHtml: "",

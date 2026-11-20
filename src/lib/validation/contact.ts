@@ -46,7 +46,14 @@ export const emailFormatSchema = z
 
 export function validateContactName(value: string) {
   const trimmed = value.trim();
-  if (!trimmed) return "Укажите контактное лицо";
+  if (!trimmed) return "Укажите имя";
+  if (trimmed.length > 200) return "Слишком длинное значение";
+  return null;
+}
+
+export function validateContactLastName(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "Укажите фамилию";
   if (trimmed.length > 200) return "Слишком длинное значение";
   return null;
 }

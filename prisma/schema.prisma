@@ -125,6 +125,8 @@ model Application {
   filmId          String?
   filmName        String?
   watchCustom     String?
+  wantRepertoireFilm Boolean           @default(false)
+  wantCustomContent  Boolean           @default(false)
   sessionId       String?
   sessionLabel    String?
   sessionCustom   String?
@@ -136,6 +138,7 @@ model Application {
   guests          Int?
   ticketType      String?
   contactName     String
+  contactLastName String               @default("")
   phone           String
   email           String
   comment         String?
@@ -254,6 +257,14 @@ model EventPromo {
   presentationHref   String
   enabled            Boolean  @default(true)
   updatedAt          DateTime @updatedAt
+}
+
+/// Тема и тело mailto на странице «Контакты».
+model ContactMailto {
+  id        String   @id @default("default")
+  subject   String
+  body      String
+  updatedAt DateTime @updatedAt
 }
 
 /// Механика продажи KARO (`sale_id` у фильма). Включённые показываются в формах лендинга.

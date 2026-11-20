@@ -28,7 +28,7 @@ export function Header() {
             href="/feedback"
             className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
           >
-            Обратная связь
+            Контакты
           </Link>
         </nav>
       </div>

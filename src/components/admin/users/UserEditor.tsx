@@ -18,6 +18,8 @@ type UserItem = {
   emailSignature: string;
 };
 
+const SHOW_FEEDBACK_NOTIFY = false; // вместе с разделом «Контакты» в админ-навигации
+
 function NotifyChecks({
   notifyKeys,
   notifyEvent,
@@ -31,19 +33,23 @@ function NotifyChecks({
     patch: Partial<Pick<UserItem, "notifyKeys" | "notifyEvent" | "notifyFeedback">>,
   ) => void;
 }) {
+  const options: Array<
+    ["notifyKeys" | "notifyEvent" | "notifyFeedback", string, boolean]
+  > = [
+    ["notifyKeys", "Ключи от зала", notifyKeys],
+    ["notifyEvent", "Мероприятие в КАРО", notifyEvent],
+  ];
+  if (SHOW_FEEDBACK_NOTIFY) {
+    options.push(["notifyFeedback", "Контакты", notifyFeedback]);
+  }
+
   return (
     <fieldset className="space-y-3 rounded-2xl border border-line bg-background/40 px-4 py-4">
       <legend className="px-1 text-sm font-medium">Получать письма по</legend>
       <p className="text-xs text-muted">
         Письма уходят на email этой учётной записи, если галочка включена.
       </p>
-      {(
-        [
-          ["notifyKeys", "Ключи от зала", notifyKeys],
-          ["notifyEvent", "Мероприятие в КАРО", notifyEvent],
-          ["notifyFeedback", "Обратная связь", notifyFeedback],
-        ] as const
-      ).map(([key, label, checked]) => (
+      {options.map(([key, label, checked]) => (
         <label key={key} className="flex items-center gap-3 text-sm">
           <input
             type="checkbox"

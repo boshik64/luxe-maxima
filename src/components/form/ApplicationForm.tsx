@@ -79,12 +79,14 @@ export function ApplicationForm({
 }) {
   const product = productId ? PRODUCTS[productId] : null;
   const [contactName, setContactName] = useState("");
+  const [contactLastName, setContactLastName] = useState("");
   const [phone, setPhone] = useState("+7");
   const [email, setEmail] = useState("");
   const [guests, setGuests] = useState("");
   const [rentalStart, setRentalStart] = useState("");
   const [comment, setComment] = useState("");
-  const [watchCustom, setWatchCustom] = useState("");
+  const [wantRepertoireFilm, setWantRepertoireFilm] = useState(false);
+  const [wantCustomContent, setWantCustomContent] = useState(false);
   const [ticketType, setTicketType] = useState("");
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
@@ -126,7 +128,8 @@ export function ApplicationForm({
     setErrors({});
     setStatus("idle");
     setFormError("");
-    setWatchCustom("");
+    setWantRepertoireFilm(false);
+    setWantCustomContent(false);
     setTicketType("");
     setRentalStart("");
     setGuests("");
@@ -146,6 +149,7 @@ export function ApplicationForm({
       productId: productId ?? "keys",
       source,
       contactName,
+      contactLastName,
       phone: digitsToPhone(phone),
       email,
       guests,
@@ -158,7 +162,8 @@ export function ApplicationForm({
             : "",
       rentalTime: productId === "keys" || productId === "event" ? rentalStart.slice(11, 16) : "",
       comment,
-      watchCustom,
+      wantRepertoireFilm,
+      wantCustomContent,
       ticketType,
       city: schedule.city,
       cinema: schedule.cinema,
@@ -173,12 +178,14 @@ export function ApplicationForm({
       productId,
       source,
       contactName,
+      contactLastName,
       phone,
       email,
       guests,
       rentalStart,
       comment,
-      watchCustom,
+      wantRepertoireFilm,
+      wantCustomContent,
       ticketType,
       schedule,
       consent,
@@ -257,8 +264,7 @@ export function ApplicationForm({
 
   const guestsFilled = Number(guests) >= 1;
   const hallFilled = cascadeReady(schedule.hall);
-  const contentFilled =
-    cascadeReady(schedule.film) || Boolean(watchCustom.trim());
+  const contentFilled = wantRepertoireFilm || wantCustomContent;
   const dateFilled = Boolean(rentalStart);
   const rentalReady = Boolean(productId === "keys" || productId === "event");
   const detailsReady =
@@ -401,18 +407,11 @@ export function ApplicationForm({
 
       <FormStep show={Boolean(productId === "keys" && hallFilled)}>
         <ContentFields
-          film={schedule.film}
-          watchCustom={watchCustom}
+          wantRepertoireFilm={wantRepertoireFilm}
+          wantCustomContent={wantCustomContent}
           errors={errors}
-          onFilmChange={(value) =>
-            setSchedule((current) => ({ ...current, film: value }))
-          }
-          onWatchCustomChange={(value) => {
-            setWatchCustom(value);
-            if (value.trim()) {
-              setSchedule((current) => ({ ...current, film: emptyCascade }));
-            }
-          }}
+          onWantRepertoireFilmChange={setWantRepertoireFilm}
+          onWantCustomContentChange={setWantCustomContent}
         />
       </FormStep>
 
@@ -444,14 +443,29 @@ export function ApplicationForm({
           Остались только контактные данные — менеджер свяжется с вами по ним.
         </p>
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field id="contactName" label="Контактное лицо" required error={errors.contactName}>
+          <Field id="contactName" label="Имя" required error={errors.contactName}>
             <input
               id="contactName"
               className={inputClassName}
-              autoComplete="name"
+              autoComplete="given-name"
               value={contactName}
               onChange={(event) => setContactName(event.target.value)}
               aria-invalid={Boolean(errors.contactName)}
+            />
+          </Field>
+          <Field
+            id="contactLastName"
+            label="Фамилия"
+            required
+            error={errors.contactLastName}
+          >
+            <input
+              id="contactLastName"
+              className={inputClassName}
+              autoComplete="family-name"
+              value={contactLastName}
+              onChange={(event) => setContactLastName(event.target.value)}
+              aria-invalid={Boolean(errors.contactLastName)}
             />
           </Field>
           <Field id="phone" label="Телефон" required error={errors.phone}>

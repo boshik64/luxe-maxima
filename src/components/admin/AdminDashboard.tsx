@@ -14,6 +14,10 @@ import {
   formatCreatedShort,
   publicApplicationCode,
 } from "@/lib/applications/dates";
+import {
+  contentChoiceLabel,
+  guestFullName,
+} from "@/lib/applications/display";
 import type { ApplicationRecord } from "@/lib/applications/types";
 import { PRODUCTS, type StoredProductId } from "@/lib/products";
 
@@ -312,10 +316,15 @@ export function AdminDashboard() {
                     {PRODUCTS[item.productId as StoredProductId].title} ·{" "}
                     {publicApplicationCode(item.publicNumber)}
                   </p>
-                  <p className="mt-1 font-medium">{item.contactName}</p>
+                  <p className="mt-1 font-medium">{guestFullName(item)}</p>
                   <p className="mt-1 text-sm text-muted">
                     {item.cityName} · {item.cinemaName}
                   </p>
+                  {contentChoiceLabel(item) ? (
+                    <p className="mt-1 text-sm text-muted">
+                      {contentChoiceLabel(item)}
+                    </p>
+                  ) : null}
                   <p className="mt-2 text-xs text-muted">
                     {item.guests ? `${item.guests} гостей` : ""}
                     {item.guests && eventDateLabel(item) ? " · " : ""}
