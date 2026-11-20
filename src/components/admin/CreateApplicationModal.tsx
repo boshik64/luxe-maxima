@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { AdminFilmPicker } from "@/components/admin/AdminFilmPicker";
 import { GuestField } from "@/components/admin/GuestField";
+import { ContentFields } from "@/components/form/ContentFields";
 import { DatePicker, DateTimePicker } from "@/components/form/DatePicker";
 import { CustomSelect, type SelectOption } from "@/components/ui/CustomSelect";
 import { PRODUCT_EMOJI } from "@/lib/admin/products";
@@ -32,6 +33,7 @@ type CatalogHall = {
 type Draft = {
   productId: ProductId;
   contactName: string;
+  contactLastName: string;
   phone: string;
   email: string;
   cityId: string;
@@ -46,6 +48,8 @@ type Draft = {
   filmId: string;
   filmName: string;
   watchCustom: string;
+  wantRepertoireFilm: boolean;
+  wantCustomContent: boolean;
   sessionId: string;
   sessionLabel: string;
   guests: string;
@@ -59,6 +63,7 @@ type Draft = {
 const emptyDraft = (productId: ProductId = "keys"): Draft => ({
   productId,
   contactName: "",
+  contactLastName: "",
   phone: "+7",
   email: "",
   cityId: "",
@@ -73,6 +78,8 @@ const emptyDraft = (productId: ProductId = "keys"): Draft => ({
   filmId: "",
   filmName: "",
   watchCustom: "",
+  wantRepertoireFilm: false,
+  wantCustomContent: false,
   sessionId: "",
   sessionLabel: "",
   guests: "",
@@ -381,20 +388,26 @@ export function CreateApplicationModal({
   }
 
   const buildPayload = useCallback(() => {
-    const film = draft.watchCustom
+    const isKeys = draft.productId === "keys";
+    const film = isKeys
       ? catalogField("", "", "")
-      : catalogField(draft.filmId, draft.filmName);
+      : draft.watchCustom
+        ? catalogField("", "", "")
+        : catalogField(draft.filmId, draft.filmName);
 
     return {
       productId: draft.productId,
       source: "admin",
       contactName: draft.contactName.trim(),
+      contactLastName: draft.contactLastName.trim(),
       phone: draft.phone,
       email: draft.email.trim().toLowerCase(),
       guests: draft.guests,
       ticketType: draft.ticketType,
       comment: draft.comment.trim(),
-      watchCustom: draft.watchCustom.trim(),
+      watchCustom: isKeys ? "" : draft.watchCustom.trim(),
+      wantRepertoireFilm: isKeys ? draft.wantRepertoireFilm : false,
+      wantCustomContent: isKeys ? draft.wantCustomContent : false,
       rentalDate: draft.rentalDate.trim(),
       rentalStart: draft.rentalStart.trim(),
       city: catalogField(draft.cityId, draft.cityName),
@@ -516,11 +529,19 @@ export function CreateApplicationModal({
 
           <GuestField
             id="create-contactName"
-            label="Контактное лицо"
+            label="Имя"
             editing
             value={draft.contactName}
             error={fieldErrors.contactName}
             onChange={(value) => setField("contactName", value)}
+          />
+          <GuestField
+            id="create-contactLastName"
+            label="Фамилия"
+            editing
+            value={draft.contactLastName}
+            error={fieldErrors.contactLastName}
+            onChange={(value) => setField("contactLastName", value)}
           />
           <GuestField
             id="create-phone"
@@ -584,14 +605,28 @@ export function CreateApplicationModal({
             />
           ) : null}
 
-          {draft.productId !== "event" ? (
+          {draft.productId === "keys" ? (
+            <div className="sm:col-span-2">
+              <ContentFields
+                wantRepertoireFilm={draft.wantRepertoireFilm}
+                wantCustomContent={draft.wantCustomContent}
+                errors={fieldErrors}
+                onWantRepertoireFilmChange={(value) =>
+                  setDraft((prev) => ({ ...prev, wantRepertoireFilm: value }))
+                }
+                onWantCustomContentChange={(value) =>
+                  setDraft((prev) => ({ ...prev, wantCustomContent: value }))
+                }
+              />
+            </div>
+          ) : draft.productId !== "event" ? (
             <div className="sm:col-span-2">
               <AdminFilmPicker
-                label={draft.productId === "keys" ? "Фильм / контент" : "Фильм"}
+                label="Фильм"
                 filmId={draft.filmId}
                 filmName={draft.filmName}
                 watchCustom={draft.watchCustom}
-                allowCustom={draft.productId === "keys"}
+                allowCustom={false}
                 endpoint={filmEndpoint}
                 onSelectFilm={(film) => {
                   setDraft((prev) => ({

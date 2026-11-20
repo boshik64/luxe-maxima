@@ -6,14 +6,14 @@ export async function GET(request: NextRequest) {
   try {
     const cinemaId = request.nextUrl.searchParams.get("cinemaId")?.trim() ?? "";
     const formatId = request.nextUrl.searchParams.get("formatId")?.trim() ?? "";
-    if (!cinemaId || !formatId) {
+    if (!cinemaId) {
       return NextResponse.json(
-        { error: "Укажите кинотеатр и формат зала" },
+        { error: "Укажите кинотеатр" },
         { status: 400 },
       );
     }
 
-    const items = await listPublicHalls(cinemaId, formatId);
+    const items = await listPublicHalls(cinemaId, formatId || undefined);
     return NextResponse.json({ items });
   } catch (error) {
     return catalogErrorResponse(error);

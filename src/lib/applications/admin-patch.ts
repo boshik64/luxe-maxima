@@ -21,7 +21,13 @@ export const applicationAdminPatchSchema = z.object({
   contactName: z
     .string()
     .trim()
-    .min(1, "Укажите контактное лицо")
+    .min(1, "Укажите имя")
+    .max(200, "Слишком длинное значение")
+    .optional(),
+  contactLastName: z
+    .string()
+    .trim()
+    .min(1, "Укажите фамилию")
     .max(200, "Слишком длинное значение")
     .optional(),
   phone: ruPhoneInputSchema.optional(),
@@ -57,6 +63,16 @@ export const applicationAdminPatchSchema = z.object({
   ticketType: optionalText(80).optional(),
   adminComment: optionalText(4000).optional(),
   watchCustom: optionalText(200).optional().nullable(),
+  wantRepertoireFilm: z.boolean().optional(),
+  wantCustomContent: z.boolean().optional(),
+  paid: z.boolean().optional(),
+  archived: z.boolean().optional(),
+  managerId: z
+    .string()
+    .trim()
+    .uuid("Некорректный менеджер")
+    .optional()
+    .nullable(),
 });
 
 export type ApplicationAdminPatch = z.infer<typeof applicationAdminPatchSchema>;

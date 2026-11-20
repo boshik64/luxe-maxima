@@ -1,4 +1,8 @@
 import type { Application, Feedback } from "@prisma/client";
+import {
+  contentChoiceLabel,
+  guestFullName,
+} from "@/lib/applications/display";
 import { PRODUCTS } from "@/lib/products";
 import {
   appBaseUrl,
@@ -44,8 +48,11 @@ export function applicationDetailRows(application: Application) {
       value: `${application.hallRentalPrice} ₽`,
     });
   }
-  if (application.filmName) {
-    rows.push({ label: "Фильм / контент", value: application.filmName });
+  {
+    const content = contentChoiceLabel(application);
+    if (content) {
+      rows.push({ label: "Фильм / контент", value: content });
+    }
   }
   if (application.sessionLabel || application.sessionCustom) {
     rows.push({
@@ -77,7 +84,7 @@ export function applicationDetailRows(application: Application) {
 export function applicationStaffDetailRows(application: Application) {
   return [
     ...applicationDetailRows(application),
-    { label: "Контакт", value: application.contactName },
+    { label: "Гость", value: guestFullName(application) },
     { label: "Телефон", value: application.phone },
     { label: "Email", value: application.email },
     ...(application.comment
@@ -103,12 +110,13 @@ function detailsCard(rows: Array<{ label: string; value: string }>) {
 export function applicationGuestEmail(application: Application) {
   const title = productTitle(application.productId);
   const rows = applicationDetailRows(application);
+  const guest = guestFullName(application);
   const html = renderEmailDocument({
     title: `Заявка принята — ${title}`,
     preheader: `Мы получили вашу заявку «${title}». Менеджер свяжется с вами.`,
     heading: "Заявка принята",
     introHtml: `
-      <p style="margin:0 0 10px;">Здравствуйте, ${escapeHtml(application.contactName)}!</p>
+      <p style="margin:0 0 10px;">Здравствуйте, ${escapeHtml(guest)}!</p>
       <p style="margin:0;">Мы получили заявку на «${escapeHtml(title)}». Менеджер КАРО свяжется с вами по телефону или email, чтобы уточнить детали.</p>
     `,
     bodyHtml: `
@@ -122,7 +130,7 @@ export function applicationGuestEmail(application: Application) {
   });
 
   const text = [
-    `Здравствуйте, ${application.contactName}!`,
+    `Здравствуйте, ${guest}!`,
     `Мы получили заявку на «${title}».`,
     `Номер: KM-${application.publicNumber}`,
     "Не меняйте тему письма, чтобы продолжить диалог.",
@@ -141,9 +149,10 @@ export function applicationStaffEmail(application: Application) {
   const title = productTitle(application.productId);
   const rows = applicationStaffDetailRows(application);
   const cardUrl = `${appBaseUrl()}/admin?id=${application.id}`;
+  const guest = guestFullName(application);
   const html = renderEmailDocument({
     title: `Новая заявка — ${title}`,
-    preheader: `${application.contactName}: ${title}, ${application.cityName}`,
+    preheader: `${guest}: ${title}, ${application.cityName}`,
     heading: "Новая заявка",
     introHtml: `<p style="margin:0;">На сайте оставили заявку «${escapeHtml(title)}».</p>`,
     bodyHtml: `
@@ -215,7 +224,7 @@ export function feedbackStaffEmail(item: Feedback) {
     ...(item.phone ? [{ label: "Телефон", value: item.phone }] : []),
   ];
   const html = renderEmailDocument({
-    title: `Обратная связь — ${item.name}`,
+    title: `Контакты — ${item.name}`,
     preheader: item.message.slice(0, 120),
     heading: "Новое обращение",
     introHtml: `<p style="margin:0;">С формы обратной связи пришло сообщение.</p>`,
@@ -251,7 +260,7 @@ export function feedbackStaffEmail(item: Feedback) {
     .join("\n");
 
   return {
-    subject: `Обратная связь — ${item.name}`,
+    subject: `Контакты — ${item.name}`,
     html,
     text,
   };

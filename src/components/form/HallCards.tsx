@@ -53,7 +53,7 @@ export function HallCards({
   if (!halls.length) {
     return (
       <p className="text-sm text-muted">
-        Для этого формата пока нет опубликованных залов.
+        В этом кинотеатре пока нет опубликованных залов.
       </p>
     );
   }

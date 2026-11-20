@@ -11,8 +11,8 @@ import {
   getApplication,
   updateApplication,
 } from "@/lib/applications/service";
+import { prisma } from "@/lib/db";
 import { checkMailbox } from "@/lib/email/mailbox";
-import { pollInboundMailbox } from "@/lib/chat/inbound";
 
 export async function GET(
   _request: NextRequest,
@@ -25,7 +25,8 @@ export async function GET(
   }
 
   const { id } = await context.params;
-  await pollInboundMailbox().catch(() => undefined);
+  // Почту не трогаем здесь: иначе каждый refresh карточки/чата долбит EWS.
+  // Входящие — cron и GET .../messages.
   const item = await getApplication(id);
   if (!item) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
   return NextResponse.json({ item });
@@ -59,7 +60,11 @@ export async function PATCH(
   const existing = await getApplication(id);
   if (!existing) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
 
-  if (parsed.data.email) {
+  // Проверяем ящик только если email реально меняют — иначе каждое «Сохранить» ждёт DNS/SMTP.
+  if (
+    parsed.data.email &&
+    parsed.data.email.trim().toLowerCase() !== existing.email.trim().toLowerCase()
+  ) {
     const mailboxError = await checkMailbox(parsed.data.email);
     if (mailboxError) {
       return NextResponse.json(
@@ -69,8 +74,51 @@ export async function PATCH(
     }
   }
 
-  const data: Prisma.ApplicationUpdateInput = { ...parsed.data };
-  if (parsed.data.status === "NEW") {
+  const { managerId, archived, ...fields } = parsed.data;
+  const data: Prisma.ApplicationUpdateInput = { ...fields };
+
+  if (parsed.data.status && parsed.data.status !== existing.status) {
+    data.statusEnteredAt = new Date();
+    // Возврат в активный статус снимает с доски «Архив».
+    if (
+      parsed.data.status !== "CLOSED" &&
+      parsed.data.status !== "REJECTED"
+    ) {
+      data.archived = false;
+    }
+  }
+
+  if (archived === true) {
+    data.archived = true;
+    if (
+      existing.status !== "CLOSED" &&
+      existing.status !== "REJECTED" &&
+      !parsed.data.status
+    ) {
+      data.status = "REJECTED";
+      data.statusEnteredAt = new Date();
+    }
+  } else if (archived === false) {
+    data.archived = false;
+  }
+
+  if (managerId !== undefined) {
+    if (managerId) {
+      const manager = await prisma.user.findUnique({
+        where: { id: managerId },
+        select: { id: true },
+      });
+      if (!manager) {
+        return NextResponse.json(
+          { error: "Менеджер не найден", fields: { managerId: "Менеджер не найден" } },
+          { status: 422 },
+        );
+      }
+      data.manager = { connect: { id: managerId } };
+    } else {
+      data.manager = { disconnect: true };
+    }
+  } else if (parsed.data.status === "NEW") {
     data.manager = { disconnect: true };
   } else if (
     parsed.data.status &&
@@ -80,8 +128,16 @@ export async function PATCH(
     data.manager = { connect: { id: session.sub } };
   }
 
-  const updated = await updateApplication(id, data);
-  return NextResponse.json({ item: updated });
+  try {
+    const updated = await updateApplication(id, data);
+    return NextResponse.json({ item: updated });
+  } catch (error) {
+    console.error("Application PATCH failed", error);
+    return NextResponse.json(
+      { error: "Не удалось сохранить заявку" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function DELETE(

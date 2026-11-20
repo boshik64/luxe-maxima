@@ -9,13 +9,30 @@ export const STATUSES: ApplicationStatus[] = [
   "REJECTED",
 ];
 
+/** Колонки основной доски. */
+export const MAIN_BOARD_STATUSES: ApplicationStatus[] = [...STATUSES];
+
+/** Колонки доски «Архив». */
+export const ARCHIVE_BOARD_STATUSES = [
+  "CLOSED",
+  "REJECTED",
+] as const satisfies readonly ApplicationStatus[];
+
+export type ArchiveBoardStatus = (typeof ARCHIVE_BOARD_STATUSES)[number];
+
 export const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  NEW: "Новая",
+  NEW: "Новые заявки",
   WAITING_REPLY: "Ждем ответа",
   ANSWERED: "Отвечено",
   IN_PROGRESS: "В работе",
   CLOSED: "Выполнена",
   REJECTED: "Не актуально",
+};
+
+/** Подписи колонок на доске архива. */
+export const ARCHIVE_STATUS_LABEL: Record<ArchiveBoardStatus, string> = {
+  CLOSED: "Выполнены",
+  REJECTED: "Архив",
 };
 
 export const STATUS_ACCENT: Record<ApplicationStatus, string> = {
@@ -34,3 +51,5 @@ export const ASSIGNING_STATUSES: ApplicationStatus[] = [
   "CLOSED",
   "REJECTED",
 ];
+
+export const BOARD_ARCHIVE_AFTER_DAYS = 7;

@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { PrismaClient } from "@prisma/client";
 
-const SCHEMA_STAMP = "application-chat-v1";
+const SCHEMA_STAMP = "application-archive-board-v1";
 const nodeRequire = createRequire(`${process.cwd()}/package.json`);
 
 const globalForPrisma = globalThis as unknown as {
@@ -53,7 +53,12 @@ function isCurrentPrisma(client: PrismaClient) {
     hasDelegate(client, "filmSaleMechanic") &&
     hasDelegate(client, "applicationMessage") &&
     modelHasField(client, "HallFormat", "showcasePublished") &&
-    modelHasField(client, "Application", "publicNumber")
+    modelHasField(client, "Application", "publicNumber") &&
+    modelHasField(client, "Application", "paid") &&
+    modelHasField(client, "Application", "autoRejectedOverdue") &&
+    modelHasField(client, "Application", "archived") &&
+    modelHasField(client, "Application", "statusEnteredAt") &&
+    modelHasField(client, "Application", "contactLastName")
   );
 }
 

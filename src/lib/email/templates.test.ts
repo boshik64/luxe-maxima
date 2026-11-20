@@ -31,7 +31,10 @@ const application = {
   rentalEnd: null,
   guests: 25,
   ticketType: null,
-  contactName: "Анна Иванова",
+  contactName: "Анна",
+  contactLastName: "Иванова",
+  wantRepertoireFilm: false,
+  wantCustomContent: true,
   phone: "+7 (999) 123-45-67",
   email: "anna@example.com",
   comment: "Нужен <микрофон>",
@@ -49,7 +52,7 @@ test("application guest email is branded html", () => {
   const mail = applicationGuestEmail(application);
   assert.match(mail.subject, /Заявка принята/);
   assert.match(mail.html, /#1C1D24/);
-  assert.match(mail.html, /Анна Иванова/);
+  assert.match(mail.html, /Иванова Анна/);
   assert.match(mail.text, /Номер: KM-1042/);
 });
 

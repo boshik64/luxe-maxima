@@ -65,6 +65,63 @@
   color-scheme: dark;
 }
 
+/* Канбан: оплачено / срочно — без зависимости от палитры Tailwind */
+.admin-card-paid {
+  background: color-mix(in srgb, #16a34a 24%, var(--background));
+  border-color: #22c55e;
+  color: #ecfdf5;
+}
+.admin-card-paid .tone-muted {
+  color: color-mix(in srgb, #bbf7d0 75%, transparent);
+}
+.admin-card-paid .tone-accent {
+  color: #bbf7d0;
+}
+.admin-card-paid-progress {
+  box-shadow: inset -6px 0 0 0 #22c55e;
+}
+.admin-card-urgent {
+  background: color-mix(in srgb, #dc2626 30%, var(--background));
+  border-color: #ef4444;
+  color: #fef2f2;
+}
+.admin-card-urgent .tone-muted {
+  color: color-mix(in srgb, #fecaca 80%, transparent);
+}
+.admin-card-urgent .tone-accent {
+  color: #fecaca;
+}
+.admin-card-paid-sticker {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1;
+  border-radius: 999px;
+  background: #16a34a;
+  padding: 0.2rem 0.55rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ecfdf5;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.admin-card-paid-sticker-inline {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: #16a34a;
+  padding: 0.15rem 0.5rem;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #ecfdf5;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
 html {
   scroll-behavior: smooth;
 }

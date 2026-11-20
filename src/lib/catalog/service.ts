@@ -76,11 +76,14 @@ export async function listPublicFormats(cinemaId: string) {
     }));
 }
 
-export async function listPublicHalls(cinemaId: string, formatId: string) {
+export async function listPublicHalls(cinemaId: string, formatId?: string) {
   const halls = await prisma.hall.findMany({
-    where: { cinemaId, formatId },
+    where: {
+      cinemaId,
+      ...(formatId ? { formatId } : {}),
+    },
     include: { cinema: true, format: true },
-    orderBy: { name: "asc" },
+    orderBy: [{ rentalPriceWeekday: "asc" }, { name: "asc" }],
   });
 
   return halls
@@ -90,6 +93,13 @@ export async function listPublicHalls(cinemaId: string, formatId: string) {
         isPublished(hall.cinema.enabled) &&
         isPublished(hall.format.enabled),
     )
+    .sort((a, b) => {
+      // «по запросу» — в конце; иначе по будничной цене по возрастанию
+      const priceA = a.priceOnRequest ? Number.POSITIVE_INFINITY : a.rentalPriceWeekday;
+      const priceB = b.priceOnRequest ? Number.POSITIVE_INFINITY : b.rentalPriceWeekday;
+      if (priceA !== priceB) return priceA - priceB;
+      return a.name.localeCompare(b.name, "ru");
+    })
     .map((hall) => ({
       id: hall.id,
       name: hall.name,

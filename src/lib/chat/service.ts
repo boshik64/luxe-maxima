@@ -5,6 +5,7 @@ import { escapeHtml, renderEmailDocument } from "@/lib/email/layout";
 import { PRODUCTS } from "@/lib/products";
 import { publicApplicationCode } from "@/lib/applications/dates";
 import { logger } from "@/lib/logger";
+import { MAX_CHAT_ATTACHMENTS } from "@/lib/chat/limits";
 import {
   asChatUpload,
   readChatAttachment,
@@ -53,6 +54,12 @@ export async function sendGuestReply(options: {
       status: 400,
     });
   }
+  if (options.files.length > MAX_CHAT_ATTACHMENTS) {
+    throw Object.assign(
+      new Error(`Не больше ${MAX_CHAT_ATTACHMENTS} вложений`),
+      { status: 400 },
+    );
+  }
 
   const savedFiles = [];
   for (const file of options.files) {
@@ -72,7 +79,7 @@ export async function sendGuestReply(options: {
     title: `Ответ по заявке ${code}`,
     preheader: fullText.slice(0, 120),
     heading: `Заявка ${code}`,
-    introHtml: `<p style="margin:0 0 10px;">Здравствуйте, ${escapeHtml(options.application.contactName)}!</p>
+    introHtml: `<p style="margin:0 0 10px;">Здравствуйте, ${escapeHtml([options.application.contactLastName, options.application.contactName].filter(Boolean).join(" "))}!</p>
       <p style="margin:0; white-space:pre-wrap;">${escapeHtml(fullText)}</p>
       <p style="margin:16px 0 0; font-size:12px; color:#9f968a;">${escapeHtml(KEEP_SUBJECT)}</p>`,
     bodyHtml: "",
@@ -123,11 +130,15 @@ export async function sendGuestReply(options: {
     options.application.status === "ANSWERED"
       ? "WAITING_REPLY"
       : options.application.status;
+  const statusChanged = nextStatus !== options.application.status;
 
   const updated = await prisma.application.update({
     where: { id: options.application.id },
     data: {
       status: nextStatus,
+      ...(statusChanged
+        ? { statusEnteredAt: new Date(), archived: false }
+        : {}),
       managerId: options.application.managerId ?? options.authorId,
     },
     include: applicationInclude(),
@@ -204,9 +215,19 @@ export async function ingestInboundMessage(options: {
     },
   });
 
+  // Автоархив из «Ждем ответа» после прошедшего мероприятия:
+  // ответ гостя возвращает карточку обратно в «Ждем ответа».
+  const restoreWaiting =
+    application.status === "REJECTED" && application.autoRejectedOverdue;
+
+  const nextStatus = restoreWaiting ? "WAITING_REPLY" : "ANSWERED";
   const next = await prisma.application.update({
     where: { id: application.id },
-    data: { status: "ANSWERED" },
+    data: {
+      status: nextStatus,
+      statusEnteredAt: new Date(),
+      archived: false,
+    },
     include: { manager: true },
   });
 

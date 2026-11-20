@@ -1,4 +1,7 @@
 import { ApplicationStatus, Prisma, ProductId } from "@prisma/client";
+import { archiveOverdueWaitingApplications } from "@/lib/applications/archive-overdue";
+import { moveStaleTerminalToArchiveBoard } from "@/lib/applications/board-archive";
+import { contentChoiceLabel } from "@/lib/applications/display";
 import { ApplicationValidationError } from "@/lib/applications/errors";
 import type { ApplicationInput } from "@/lib/applications/schema";
 import { getEnabledHall } from "@/lib/catalog/service";
@@ -74,12 +77,24 @@ export async function createApplication(
     cinemaId = hall.cinema.id;
   }
 
+  const wantRepertoireFilm =
+    input.productId === "keys" ? input.wantRepertoireFilm === true : false;
+  const wantCustomContent =
+    input.productId === "keys" ? input.wantCustomContent === true : false;
   const watchCustom =
-    input.productId === "keys" ? input.watchCustom?.trim() || null : null;
-  const filmId = watchCustom ? null : catalogId(input.film);
-  const filmName = watchCustom
-    ? watchCustom
-    : catalogName(input.film) || null;
+    input.productId === "keys"
+      ? wantCustomContent
+        ? "Свой контент"
+        : null
+      : null;
+  const filmId =
+    input.productId === "keys"
+      ? null
+      : catalogId(input.film);
+  const filmName =
+    input.productId === "keys"
+      ? contentChoiceLabel({ wantRepertoireFilm, wantCustomContent }) || null
+      : catalogName(input.film) || null;
 
   const application = await prisma.application.create({
     data: {
@@ -99,6 +114,8 @@ export async function createApplication(
       filmId,
       filmName,
       watchCustom,
+      wantRepertoireFilm,
+      wantCustomContent,
       sessionId: catalogId(input.session),
       sessionLabel:
         input.session?.id === CUSTOM_OPTION_ID
@@ -124,6 +141,7 @@ export async function createApplication(
       guests: input.guests ? Number(input.guests) : null,
       ticketType: input.ticketType?.trim() || null,
       contactName: input.contactName,
+      contactLastName: input.contactLastName,
       phone: input.phone,
       email: input.email,
       comment: input.comment || null,
@@ -149,18 +167,69 @@ export async function createApplication(
 
 const managerSelect = { select: { id: true, name: true, email: true } };
 
+function searchWhere(query: string): Prisma.ApplicationWhereInput {
+  const q = query.trim();
+  if (!q) return {};
+  const modes = [{ contains: q, mode: "insensitive" as const }];
+  const or: Prisma.ApplicationWhereInput[] = [
+    { contactName: modes[0] },
+    { contactLastName: modes[0] },
+    { phone: modes[0] },
+    { email: modes[0] },
+    { cityName: modes[0] },
+    { cinemaName: modes[0] },
+    { hallName: modes[0] },
+    { hallFormatName: modes[0] },
+    { filmName: modes[0] },
+    { watchCustom: modes[0] },
+    { sessionLabel: modes[0] },
+    { sessionCustom: modes[0] },
+    { rentalDate: modes[0] },
+    { rentalTime: modes[0] },
+    { rentalStart: modes[0] },
+    { rentalEnd: modes[0] },
+    { rentalDuration: modes[0] },
+    { ticketType: modes[0] },
+    { comment: modes[0] },
+    { adminComment: modes[0] },
+    { source: modes[0] },
+    { manager: { name: modes[0] } },
+  ];
+  const publicMatch = q.match(/^(?:KM-)?(\d+)$/i);
+  if (publicMatch) {
+    or.push({ publicNumber: Number(publicMatch[1]) });
+  }
+  return { OR: or };
+}
+
 export async function listApplications(params: {
   status?: string;
   productId?: string;
   managerId?: string;
+  paid?: string;
+  q?: string;
+  board?: string;
   createdFrom?: string;
   createdTo?: string;
   page?: number;
   pageSize?: number;
 }) {
+  await archiveOverdueWaitingApplications().catch((error) => {
+    logger.error("Failed to archive overdue waiting applications", error);
+  });
+  await moveStaleTerminalToArchiveBoard().catch((error) => {
+    logger.error("Failed to move stale terminals to archive board", error);
+  });
+
   const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.min(200, Math.max(10, params.pageSize ?? 20));
+  const pageSize = Math.min(500, Math.max(10, params.pageSize ?? 20));
   const where: Prisma.ApplicationWhereInput = {};
+  if (params.board === "archive") {
+    where.archived = true;
+    where.status = { in: ["CLOSED", "REJECTED"] };
+  } else {
+    where.archived = false;
+  }
   if (
     params.status &&
     (Object.values(ApplicationStatus) as string[]).includes(params.status)
@@ -178,6 +247,11 @@ export async function listApplications(params: {
   } else if (params.managerId) {
     where.managerId = params.managerId;
   }
+  if (params.paid === "paid") {
+    where.paid = true;
+  } else if (params.paid === "unpaid") {
+    where.paid = false;
+  }
   if (params.createdFrom || params.createdTo) {
     where.createdAt = {};
     if (params.createdFrom) {
@@ -188,6 +262,10 @@ export async function listApplications(params: {
       const to = new Date(`${params.createdTo}T23:59:59.999`);
       if (!Number.isNaN(to.getTime())) where.createdAt.lte = to;
     }
+  }
+  const search = searchWhere(params.q ?? "");
+  if (search.OR) {
+    where.AND = [...(Array.isArray(where.AND) ? where.AND : []), search];
   }
 
   const [items, total] = await Promise.all([
@@ -224,18 +302,12 @@ export async function updateApplication(
   id: string,
   data: Prisma.ApplicationUpdateInput,
 ) {
+  // Без messages: клиент сохраняет уже загруженную переписку, PATCH отвечает быстрее.
   return prisma.application.update({
     where: { id },
     data,
     include: {
       manager: managerSelect,
-      messages: {
-        orderBy: { createdAt: "asc" },
-        include: {
-          author: { select: { id: true, name: true } },
-          attachments: true,
-        },
-      },
     },
   });
 }

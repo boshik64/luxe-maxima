@@ -16,19 +16,11 @@ export function Header() {
           <Logo />
         </a>
         <nav aria-label="Основная навигация" className="flex items-center gap-4">
-          <a
-            href={KARO_SITE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden text-sm text-gold transition hover:text-foreground xl:inline"
-          >
-            Вернуться на сайт КАРО
-          </a>
           <Link
             href="/feedback"
             className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
           >
-            Обратная связь
+            Контакты
           </Link>
         </nav>
       </div>

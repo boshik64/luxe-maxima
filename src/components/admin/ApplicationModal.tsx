@@ -1,11 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ApplicationStatus } from "@prisma/client";
 import { AdminFilmPicker } from "@/components/admin/AdminFilmPicker";
 import { ApplicationChat } from "@/components/admin/ApplicationChat";
 import { GuestField } from "@/components/admin/GuestField";
 import { CustomSelect, type SelectOption } from "@/components/ui/CustomSelect";
+import { DatePicker, DateTimePicker, formatIsoDateTime } from "@/components/form/DatePicker";
+import { ContentFields } from "@/components/form/ContentFields";
 import { PRODUCT_EMOJI } from "@/lib/admin/products";
 import { STATUS_LABEL } from "@/lib/admin/status";
 import {
@@ -13,9 +23,14 @@ import {
   formatCreatedAt,
   publicApplicationCode,
 } from "@/lib/applications/dates";
+import {
+  contentChoiceLabel,
+  guestFullName,
+} from "@/lib/applications/display";
 import type { ApplicationRecord } from "@/lib/applications/types";
 import { PRODUCTS, TICKET_TYPES } from "@/lib/products";
 import {
+  validateContactLastName,
   validateContactName,
   validateEmailFormat,
   validateGuests,
@@ -45,6 +60,7 @@ type CatalogHall = {
 
 type GuestDraft = {
   contactName: string;
+  contactLastName: string;
   phone: string;
   email: string;
   cityId: string;
@@ -60,6 +76,8 @@ type GuestDraft = {
   filmId: string;
   filmName: string;
   watchCustom: string;
+  wantRepertoireFilm: boolean;
+  wantCustomContent: boolean;
   sessionId: string;
   sessionLabel: string;
   guests: string;
@@ -77,6 +95,15 @@ const TICKET_OPTIONS = TICKET_TYPES.map((item) => ({
   label: item.label,
 }));
 
+function normalizeDateTimeValue(raw?: string | null) {
+  const value = raw?.trim() ?? "";
+  if (!value) return "";
+  if (value.includes("T")) return value.slice(0, 16);
+  const spaced = value.match(/^(\d{4}-\d{2}-\d{2})[ ](\d{2}:\d{2})/);
+  if (spaced) return `${spaced[1]}T${spaced[2]}`;
+  return value;
+}
+
 function draftFromItem(item: ApplicationRecord): GuestDraft {
   const rentalDuration =
     item.rentalStart && item.rentalEnd
@@ -85,8 +112,14 @@ function draftFromItem(item: ApplicationRecord): GuestDraft {
           .filter(Boolean)
           .join(" ") || "";
 
+  const fromParts =
+    item.rentalDate && /^\d{4}-\d{2}-\d{2}$/.test(item.rentalDate)
+      ? `${item.rentalDate}T${(item.rentalTime || "00:00").slice(0, 5)}`
+      : "";
+
   return {
     contactName: item.contactName,
+    contactLastName: item.contactLastName ?? "",
     phone: item.phone,
     email: item.email,
     cityId: item.cityId ?? "",
@@ -102,12 +135,14 @@ function draftFromItem(item: ApplicationRecord): GuestDraft {
     filmId: item.filmId ?? "",
     filmName: item.filmName ?? "",
     watchCustom: item.watchCustom ?? "",
+    wantRepertoireFilm: item.wantRepertoireFilm === true,
+    wantCustomContent: item.wantCustomContent === true,
     sessionId: item.sessionId ?? "",
     sessionLabel: item.sessionLabel || item.sessionCustom || "",
     guests: item.guests != null ? String(item.guests) : "",
     ticketType: item.ticketType ?? "",
     rentalDate: item.rentalDate ?? "",
-    rentalStart: item.rentalStart ?? "",
+    rentalStart: normalizeDateTimeValue(item.rentalStart) || fromParts,
     rentalEnd: item.rentalEnd ?? "",
     rentalDuration,
     comment: item.comment ?? "",
@@ -121,8 +156,12 @@ function optionWithCurrent(options: SelectOption[], value: string, label: string
   return [{ value, label: label || value }, ...options];
 }
 
+type ManagerOption = { id: string; name: string };
+
 export function ApplicationModal({
   item,
+  managers,
+  board = "main",
   saving,
   error,
   onClose,
@@ -130,6 +169,8 @@ export function ApplicationModal({
   onItem,
 }: {
   item: ApplicationRecord;
+  managers: ManagerOption[];
+  board?: "main" | "archive";
   saving: boolean;
   error: string;
   onClose: () => void;
@@ -140,6 +181,7 @@ export function ApplicationModal({
 }) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const dataEpochRef = useRef(0);
   const [current, setCurrent] = useState(item);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(() => draftFromItem(item));
@@ -185,46 +227,68 @@ export function ApplicationModal({
     }
   }
 
+  const handleEscape = useEffectEvent(() => {
+    if (editing) {
+      setEditing(false);
+      setDraft(draftFromItem(current));
+      setFieldErrors({});
+      return;
+    }
+    onClose();
+  });
+
+  const refreshApplication = useEffectEvent(async (cancelled: () => boolean) => {
+    if (editing) return;
+    const epoch = dataEpochRef.current;
+    const response = await fetch(`/api/admin/applications/${item.id}`);
+    const data = (await response.json()) as { item?: ApplicationRecord };
+    // Игнорируем устаревший ответ, если пока ждали успел сохраниться paid/статус/черновик.
+    if (cancelled() || epoch !== dataEpochRef.current || !data.item) return;
+    setCurrent((prev) => ({
+      ...data.item!,
+      messages: Array.isArray(data.item!.messages)
+        ? data.item!.messages
+        : prev.messages,
+    }));
+    onItem(data.item);
+  });
+
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     dialogRef.current?.focus();
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        if (editing) {
-          setEditing(false);
-          setDraft(draftFromItem(current));
-          setFieldErrors({});
-          return;
-        }
-        onClose();
-      }
+      if (event.key !== "Escape") return;
+      handleEscape();
     }
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = previous;
       window.removeEventListener("keydown", onKey);
     };
-  }, [onClose, editing, current]);
+  }, []);
 
   useEffect(() => {
-    if (editing) return;
     let cancelled = false;
-    async function refresh() {
-      const response = await fetch(`/api/admin/applications/${item.id}`);
-      const data = (await response.json()) as { item?: ApplicationRecord };
-      if (!cancelled && data.item) {
-        setCurrent(data.item);
-        onItem(data.item);
-      }
-    }
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 20000);
+    const isCancelled = () => cancelled;
+    void refreshApplication(isCancelled);
+    const timer = window.setInterval(
+      () => void refreshApplication(isCancelled),
+      20000,
+    );
     return () => {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [item.id, onItem, editing]);
+  }, [item.id]);
+
+  async function persist(patch: Partial<ApplicationRecord>) {
+    dataEpochRef.current += 1;
+    setCurrent((prev) => ({ ...prev, ...patch }));
+    const ok = await onSave(patch);
+    if (ok === false) dataEpochRef.current += 1;
+    return ok;
+  }
 
   useEffect(() => {
     if (!editing) return;
@@ -526,6 +590,8 @@ export function ApplicationModal({
     const nextErrors: Record<string, string> = {};
     const nameError = validateContactName(draft.contactName);
     if (nameError) nextErrors.contactName = nameError;
+    const lastNameError = validateContactLastName(draft.contactLastName);
+    if (lastNameError) nextErrors.contactLastName = lastNameError;
     const phoneError = validateRuPhone(draft.phone);
     if (phoneError) nextErrors.phone = phoneError;
     const emailError = validateEmailFormat(draft.email);
@@ -534,13 +600,30 @@ export function ApplicationModal({
       const guestsError = validateGuests(draft.guests);
       if (guestsError) nextErrors.guests = guestsError;
     }
+    if (
+      current.productId === "keys" &&
+      !draft.wantRepertoireFilm &&
+      !draft.wantCustomContent
+    ) {
+      nextErrors.content =
+        "Выберите хотя бы один вариант: фильм из репертуара или свой контент";
+    }
     if (Object.keys(nextErrors).length) {
       setFieldErrors(nextErrors);
       return;
     }
 
+    const keysContent = current.productId === "keys";
+    const contentLabel = keysContent
+      ? contentChoiceLabel({
+          wantRepertoireFilm: draft.wantRepertoireFilm,
+          wantCustomContent: draft.wantCustomContent,
+        })
+      : "";
+
     const patch: Partial<ApplicationRecord> = {
       contactName: draft.contactName.trim(),
+      contactLastName: draft.contactLastName.trim(),
       phone: draft.phone,
       email: draft.email.trim().toLowerCase(),
       cityId: draft.cityId || null,
@@ -554,9 +637,23 @@ export function ApplicationModal({
       hallRentalPriceWeekday: draft.hallRentalPriceWeekday,
       hallRentalPriceWeekend: draft.hallRentalPriceWeekend,
       hallRentalPrice: draft.hallRentalPriceWeekday,
-      filmId: draft.watchCustom ? null : draft.filmId || null,
-      filmName: draft.watchCustom ? draft.watchCustom.trim() : draft.filmName.trim(),
-      watchCustom: draft.watchCustom.trim() || null,
+      filmId: keysContent
+        ? null
+        : draft.watchCustom
+          ? null
+          : draft.filmId || null,
+      filmName: keysContent
+        ? contentLabel
+        : draft.watchCustom
+          ? draft.watchCustom.trim()
+          : draft.filmName.trim(),
+      watchCustom: keysContent
+        ? draft.wantCustomContent
+          ? "Свой контент"
+          : null
+        : draft.watchCustom.trim() || null,
+      wantRepertoireFilm: keysContent ? draft.wantRepertoireFilm : false,
+      wantCustomContent: keysContent ? draft.wantCustomContent : false,
       sessionId: draft.sessionId || null,
       sessionLabel: draft.sessionLabel.trim(),
       sessionCustom: draft.sessionLabel.trim(),
@@ -568,15 +665,18 @@ export function ApplicationModal({
     if (draft.guests) patch.guests = Number(draft.guests);
     if (current.productId === "group") {
       patch.rentalDate = draft.rentalDate.trim();
-    } else if (current.productId === "event" || current.rentalStart) {
-      patch.rentalStart = draft.rentalStart.trim();
+    } else if (isRental) {
+      const start = draft.rentalStart.trim();
+      patch.rentalStart = start;
+      patch.rentalDate = start.slice(0, 10) || "";
+      patch.rentalTime = start.slice(11, 16) || "";
       if (draft.rentalEnd) patch.rentalEnd = draft.rentalEnd.trim();
     } else if (draft.rentalDuration) {
       patch.rentalDuration = draft.rentalDuration.trim();
     }
 
     setLocalSaving(true);
-    const ok = await onSave(patch);
+    const ok = await persist(patch);
     setLocalSaving(false);
     if (ok === false) return;
     setEditing(false);
@@ -657,6 +757,26 @@ export function ApplicationModal({
                 Изменить данные
               </button>
             )}
+            {board === "main" && !current.archived ? (
+              <button
+                type="button"
+                disabled={busy}
+                className="rounded-full border border-line px-3 py-1 text-sm disabled:opacity-60"
+                onClick={() => void persist({ archived: true })}
+              >
+                В архив
+              </button>
+            ) : null}
+            {board === "archive" && current.archived ? (
+              <button
+                type="button"
+                disabled={busy}
+                className="rounded-full border border-line px-3 py-1 text-sm disabled:opacity-60"
+                onClick={() => void persist({ archived: false })}
+              >
+                На доску заявок
+              </button>
+            ) : null}
             <button
               type="button"
               className="rounded-full border border-line px-3 py-1 text-sm"
@@ -667,7 +787,7 @@ export function ApplicationModal({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-5 lg:grid-cols-2">
+        <div className="mt-4 grid gap-5">
           <div className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
@@ -683,18 +803,111 @@ export function ApplicationModal({
                     label,
                   }))}
                   onChange={(value) =>
-                    onSave({ status: value as ApplicationStatus })
+                    void persist({ status: value as ApplicationStatus })
                   }
                 />
               </div>
-              <GuestField
-                id="contactName"
-                label="Контактное лицо"
-                editing={editing}
-                value={editing ? draft.contactName : current.contactName}
-                error={fieldErrors.contactName}
-                onChange={(value) => setField("contactName", value)}
-              />
+              <div className="space-y-1">
+                <label
+                  htmlFor="manager"
+                  className="block text-xs font-medium text-muted"
+                >
+                  Менеджер
+                </label>
+                <CustomSelect
+                  id="manager"
+                  compact
+                  value={current.managerId ?? ""}
+                  options={[
+                    { value: "", label: "Без менеджера" },
+                    ...managers.map((entry) => ({
+                      value: entry.id,
+                      label: entry.name,
+                    })),
+                  ]}
+                  onChange={(value) => {
+                    const managerId = value || null;
+                    const manager =
+                      managers.find((entry) => entry.id === value) ?? null;
+                    void persist({
+                      managerId,
+                      manager: manager
+                        ? {
+                            id: manager.id,
+                            name: manager.name,
+                            email: "",
+                          }
+                        : null,
+                    });
+                  }}
+                />
+              </div>
+              <label className="flex items-center gap-2 rounded-xl border border-line bg-background/60 px-3 py-2 text-sm sm:col-span-2">
+                <input
+                  type="checkbox"
+                  className="size-4 accent-[#22c55e]"
+                  checked={current.paid === true}
+                  disabled={busy}
+                  onChange={(event) =>
+                    void persist({ paid: event.target.checked })
+                  }
+                />
+                <span>Оплачено</span>
+              </label>
+              <div className="space-y-1 sm:col-span-2">
+                <label
+                  htmlFor="adminComment"
+                  className="block text-xs font-medium text-muted"
+                >
+                  Комментарий администратора
+                </label>
+                <textarea
+                  id="adminComment"
+                  className="min-h-20 w-full break-words rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none focus:border-gold [overflow-wrap:anywhere]"
+                  value={editing ? draft.adminComment : (current.adminComment ?? "")}
+                  onChange={(event) => {
+                    if (editing) setField("adminComment", event.target.value);
+                    else {
+                      setCurrent((prev) => ({
+                        ...prev,
+                        adminComment: event.target.value,
+                      }));
+                    }
+                  }}
+                  onBlur={(event) => {
+                    if (!editing) {
+                      void persist({ adminComment: event.target.value });
+                    }
+                  }}
+                />
+              </div>
+              {editing ? (
+                <>
+                  <GuestField
+                    id="contactName"
+                    label="Имя"
+                    editing
+                    value={draft.contactName}
+                    error={fieldErrors.contactName}
+                    onChange={(value) => setField("contactName", value)}
+                  />
+                  <GuestField
+                    id="contactLastName"
+                    label="Фамилия"
+                    editing
+                    value={draft.contactLastName}
+                    error={fieldErrors.contactLastName}
+                    onChange={(value) => setField("contactLastName", value)}
+                  />
+                </>
+              ) : (
+                <GuestField
+                  id="contactName"
+                  label="Гость"
+                  editing={false}
+                  value={guestFullName(current)}
+                />
+              )}
               <GuestField
                 id="phone"
                 label="Телефон"
@@ -778,16 +991,43 @@ export function ApplicationModal({
                 />
               ) : null}
 
-              {current.productId !== "event" ? (
+              {current.productId === "keys" ? (
+                editing ? (
+                  <div className="sm:col-span-2">
+                    <ContentFields
+                      wantRepertoireFilm={draft.wantRepertoireFilm}
+                      wantCustomContent={draft.wantCustomContent}
+                      errors={fieldErrors}
+                      onWantRepertoireFilmChange={(value) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          wantRepertoireFilm: value,
+                        }))
+                      }
+                      onWantCustomContentChange={(value) =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          wantCustomContent: value,
+                        }))
+                      }
+                    />
+                  </div>
+                ) : (
+                  <GuestField
+                    id="filmName"
+                    label="Фильм / контент"
+                    editing={false}
+                    value={contentChoiceLabel(current)}
+                  />
+                )
+              ) : current.productId !== "event" ? (
                 editing ? (
                   <AdminFilmPicker
-                    label={
-                      current.productId === "keys" ? "Фильм / контент" : "Фильм"
-                    }
+                    label="Фильм"
                     filmId={draft.filmId}
                     filmName={draft.filmName}
                     watchCustom={draft.watchCustom}
-                    allowCustom={current.productId === "keys"}
+                    allowCustom={false}
                     endpoint={filmEndpoint}
                     onSelectFilm={(film) => {
                       setDraft((prev) => ({
@@ -816,9 +1056,7 @@ export function ApplicationModal({
                 ) : (
                   <GuestField
                     id="filmName"
-                    label={
-                      current.productId === "keys" ? "Фильм / контент" : "Фильм"
-                    }
+                    label="Фильм"
                     editing={false}
                     value={current.watchCustom || current.filmName || ""}
                   />
@@ -875,26 +1113,59 @@ export function ApplicationModal({
                 />
               ) : null}
 
-              {current.productId === "group" || current.rentalDate ? (
-                <GuestField
-                  id="rentalDate"
-                  label="Дата сеанса"
-                  editing={editing}
-                  value={editing ? draft.rentalDate : (current.rentalDate ?? "")}
-                  onChange={(value) => setField("rentalDate", value)}
-                />
+              {current.productId === "group" ||
+              (current.rentalDate && !isRental) ? (
+                <div className="space-y-1">
+                  <label
+                    htmlFor="rentalDate"
+                    className="block text-xs font-medium text-muted"
+                  >
+                    Дата сеанса
+                  </label>
+                  {editing ? (
+                    <DatePicker
+                      id="rentalDate"
+                      value={draft.rentalDate}
+                      onChange={(value) => setField("rentalDate", value)}
+                    />
+                  ) : (
+                    <p className="min-h-9 rounded-xl border border-line bg-background/60 px-3 py-2 text-sm">
+                      {current.rentalDate || "—"}
+                    </p>
+                  )}
+                </div>
               ) : null}
 
-              {current.productId === "event" || current.rentalStart ? (
-                <GuestField
-                  id="rentalStart"
-                  label="Дата и время"
-                  editing={editing}
-                  value={
-                    editing ? draft.rentalStart : (current.rentalStart ?? "")
-                  }
-                  onChange={(value) => setField("rentalStart", value)}
-                />
+              {isRental || current.rentalStart ? (
+                <div className="space-y-1 sm:col-span-2">
+                  <label
+                    htmlFor="rentalStart"
+                    className="block text-xs font-medium text-muted"
+                  >
+                    {current.productId === "keys"
+                      ? "Дата и время сеанса"
+                      : "Дата и время"}
+                  </label>
+                  {editing ? (
+                    <DateTimePicker
+                      id="rentalStart"
+                      value={draft.rentalStart}
+                      min=""
+                      onChange={(value) => setField("rentalStart", value)}
+                    />
+                  ) : (
+                    <p className="min-h-9 rounded-xl border border-line bg-background/60 px-3 py-2 text-sm">
+                      {formatIsoDateTime(
+                        normalizeDateTimeValue(current.rentalStart) ||
+                          (current.rentalDate
+                            ? `${current.rentalDate}T${(current.rentalTime || "00:00").slice(0, 5)}`
+                            : ""),
+                      ) ||
+                        eventDateLabel(current) ||
+                        "—"}
+                    </p>
+                  )}
+                </div>
               ) : null}
 
               {(editing ? draft.hallCapacity : current.hallCapacity) != null ? (
@@ -938,28 +1209,6 @@ export function ApplicationModal({
               multiline
               onChange={(value) => setField("comment", value)}
             />
-
-            <div className="space-y-1">
-              <label
-                htmlFor="adminComment"
-                className="block text-xs font-medium text-muted"
-              >
-                Комментарий администратора
-              </label>
-              <textarea
-                id="adminComment"
-                className="min-h-20 w-full rounded-xl border border-line bg-background px-3 py-2 text-sm outline-none focus:border-gold"
-                value={editing ? draft.adminComment : (current.adminComment ?? "")}
-                onChange={(event) => {
-                  if (editing) setField("adminComment", event.target.value);
-                }}
-                onBlur={(event) => {
-                  if (!editing) {
-                    onSave({ adminComment: event.target.value });
-                  }
-                }}
-              />
-            </div>
           </div>
 
           <ApplicationChat

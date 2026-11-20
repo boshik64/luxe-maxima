@@ -24,7 +24,7 @@ export function Footer() {
               className="underline decoration-line underline-offset-4 hover:text-foreground"
               href="/feedback"
             >
-              Обратная связь
+              Контакты
             </Link>
           </p>
           <p>

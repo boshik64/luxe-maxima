@@ -49,13 +49,16 @@ export const applicationInputSchema = z
   .object({
     productId: z.enum(PRODUCT_IDS),
     source: z.string().trim().max(120).optional().or(z.literal("")),
-    contactName: requiredText("Укажите контактное лицо"),
+    contactName: requiredText("Укажите имя"),
+    contactLastName: requiredText("Укажите фамилию"),
     phone: ruPhoneSchema,
     email: emailFormatSchema,
     guests: z.string().trim().optional().or(z.literal("")),
     ticketType: z.string().trim().optional().or(z.literal("")),
     comment: optionalText(),
     watchCustom: optionalText(200),
+    wantRepertoireFilm: z.boolean().optional(),
+    wantCustomContent: z.boolean().optional(),
     rentalDate: z.string().trim().optional().or(z.literal("")),
     rentalTime: z.string().trim().optional().or(z.literal("")),
     rentalDuration: z.string().trim().optional().or(z.literal("")),
@@ -98,13 +101,6 @@ export const applicationInputSchema = z
           path: ["cinema", "id"],
         });
       }
-      if (!value.hallFormat?.id || value.hallFormat.id === CUSTOM_OPTION_ID) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Выберите формат зала",
-          path: ["hallFormat", "id"],
-        });
-      }
       if (!value.hall?.id || value.hall.id === CUSTOM_OPTION_ID) {
         ctx.addIssue({
           code: "custom",
@@ -115,15 +111,11 @@ export const applicationInputSchema = z
     }
 
     if (value.productId === "keys") {
-      const hasFilm = Boolean(value.film?.id && value.film.id !== CUSTOM_OPTION_ID);
-      const hasWatchCustom = Boolean(value.watchCustom?.trim());
-      if (hasFilm === hasWatchCustom) {
+      if (!value.wantRepertoireFilm && !value.wantCustomContent) {
         ctx.addIssue({
           code: "custom",
-          message: hasFilm
-            ? "Заполните только одно поле: фильм из репертуара или свой контент"
-            : "Выберите фильм из репертуара или укажите, что будете смотреть",
-          path: hasFilm ? ["watchCustom"] : ["film", "id"],
+          message: "Выберите хотя бы один вариант: фильм из репертуара или свой контент",
+          path: ["content"],
         });
       }
       if (!value.rentalStart) {

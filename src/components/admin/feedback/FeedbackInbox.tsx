@@ -55,8 +55,8 @@ export function FeedbackInbox() {
 
   return (
     <AdminPage
-      title="Обратная связь"
-      description={`Отдельная очередь со страницы «Обратная связь», не смешивается с заявками на услуги. Новых: ${newCount}.`}
+      title="Контакты"
+      description={`Отдельная очередь со страницы «Контакты», не смешивается с заявками на услуги. Новых: ${newCount}.`}
     >
       {error ? <p className="mb-4 text-sm text-primary">{error}</p> : null}
       <div className="mb-6 flex flex-wrap gap-2">

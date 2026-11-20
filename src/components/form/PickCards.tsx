@@ -234,26 +234,15 @@ export function PickCard({
         </>
       ) : null}
       <div
-        className={`relative z-[2] flex min-w-0 flex-1 flex-col ${
-          withPoster ? "justify-between p-4" : ""
+        className={`relative z-[2] flex min-h-0 min-w-0 flex-1 flex-col ${
+          withPoster ? "p-4" : ""
         }`}
       >
         {withCrest ? (
           <div className="flex items-start gap-2.5">
-            <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 font-semibold leading-snug text-foreground">
-                {title}
-              </p>
-              {lines.length ? (
-                <div className="mt-1.5 flex flex-col gap-1">
-                  {lines.map((line) => (
-                    <p key={line} className="text-sm leading-snug text-muted">
-                      {line}
-                    </p>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            <p className="min-w-0 flex-1 line-clamp-2 font-semibold leading-snug text-foreground">
+              {title}
+            </p>
             <div className="flex h-12 w-10 shrink-0 items-center justify-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -264,46 +253,44 @@ export function PickCard({
             </div>
           </div>
         ) : (
-          <>
-            <p
-              className={`line-clamp-2 min-h-[2.75rem] font-semibold leading-snug text-foreground ${
-                withPoster ? "drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]" : ""
-              }`}
-            >
-              {title}
-            </p>
-            {lines.length ? (
-              <div className="mt-3 flex flex-1 flex-col gap-2">
-                {lines.map((line) => (
-                  <p
-                    key={line}
-                    className={`text-sm leading-snug ${
-                      withPoster
-                        ? "text-foreground/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]"
-                        : "text-muted"
-                    }`}
-                  >
-                    {line}
-                  </p>
-                ))}
-              </div>
-            ) : (
-              <div className="flex-1" />
-            )}
-          </>
+          <p
+            className={`line-clamp-2 min-h-[2.75rem] font-semibold leading-snug text-foreground ${
+              withPoster ? "drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]" : ""
+            }`}
+          >
+            {title}
+          </p>
         )}
-        <span
-          className={`mt-4 flex items-center justify-between rounded-full border px-3.5 py-2 text-sm font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.55)] ${
-            selected
-              ? "border-primary bg-primary text-white"
-              : withPoster
-                ? "border-white/25 bg-black/55 text-foreground backdrop-blur-sm"
-                : "border-line text-foreground"
-          }`}
-        >
-          {action}
-          <span aria-hidden="true">›</span>
-        </span>
+        <div className="mt-auto shrink-0 pt-4">
+          {lines.length ? (
+            <div className={`mb-3 flex flex-col ${withPoster ? "gap-2" : "gap-1"}`}>
+              {lines.map((line) => (
+                <p
+                  key={line}
+                  className={`text-sm leading-snug ${
+                    withPoster
+                      ? "text-foreground/90 drop-shadow-[0_1px_6px_rgba(0,0,0,0.8)]"
+                      : "text-muted"
+                  }`}
+                >
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : null}
+          <span
+            className={`flex items-center justify-between rounded-full border px-3.5 py-2 text-sm font-semibold shadow-[0_8px_24px_rgba(0,0,0,0.55)] ${
+              selected
+                ? "border-primary bg-primary text-white"
+                : withPoster
+                  ? "border-white/25 bg-black/55 text-foreground backdrop-blur-sm"
+                  : "border-line text-foreground"
+            }`}
+          >
+            {action}
+            <span aria-hidden="true">›</span>
+          </span>
+        </div>
       </div>
     </button>
   );

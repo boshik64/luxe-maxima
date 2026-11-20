@@ -18,7 +18,8 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await context.params;
-  await pollInboundMailbox().catch(() => undefined);
+  // Не ждём EWS — иначе открытие чата зависает на таймауте почты.
+  void pollInboundMailbox().catch(() => undefined);
   const item = await getApplication(id);
   if (!item) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
   return NextResponse.json({ item });

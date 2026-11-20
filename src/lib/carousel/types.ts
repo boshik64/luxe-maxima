@@ -26,7 +26,7 @@ export const CAROUSEL_INTERNAL_LINKS = [
   { href: "/group#form", label: "Форма на странице групповых походов" },
   { href: "/event", label: "Страница мероприятий" },
   { href: "/event#form", label: "Форма на странице мероприятий" },
-  { href: "/feedback", label: "Обратная связь" },
+  { href: "/feedback", label: "Контакты" },
 ] as const;
 
 export class CarouselHrefError extends Error {}
