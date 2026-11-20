@@ -104,8 +104,16 @@ export async function PATCH(
     data.manager = { connect: { id: session.sub } };
   }
 
-  const updated = await updateApplication(id, data);
-  return NextResponse.json({ item: updated });
+  try {
+    const updated = await updateApplication(id, data);
+    return NextResponse.json({ item: updated });
+  } catch (error) {
+    console.error("Application PATCH failed", error);
+    return NextResponse.json(
+      { error: "Не удалось сохранить заявку" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function DELETE(

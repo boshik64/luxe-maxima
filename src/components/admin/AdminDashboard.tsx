@@ -159,23 +159,38 @@ export function AdminDashboard() {
   async function save(id: string, patch: Partial<ApplicationRecord>) {
     setSaving(true);
     setError("");
-    const response = await fetch(`/api/admin/applications/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patch),
-    });
-    const data = (await response.json()) as {
-      item?: ApplicationRecord;
-      error?: string;
-    };
-    setSaving(false);
-    if (!response.ok) {
-      setError(data.error ?? "Не удалось сохранить");
+    try {
+      const response = await fetch(`/api/admin/applications/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const raw = await response.text();
+      let data: { item?: ApplicationRecord; error?: string } = {};
+      if (raw) {
+        try {
+          data = JSON.parse(raw) as {
+            item?: ApplicationRecord;
+            error?: string;
+          };
+        } catch {
+          data = {};
+        }
+      }
+      setSaving(false);
+      if (!response.ok) {
+        setError(data.error ?? "Не удалось сохранить");
+        await load();
+        return false;
+      }
+      if (data.item) replaceItem(data.item);
+      return true;
+    } catch {
+      setSaving(false);
+      setError("Не удалось сохранить");
       await load();
       return false;
     }
-    if (data.item) replaceItem(data.item);
-    return true;
   }
 
   async function moveToStatus(id: string, status: ApplicationStatus) {
