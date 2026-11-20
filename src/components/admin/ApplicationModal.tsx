@@ -6,6 +6,8 @@ import { AdminFilmPicker } from "@/components/admin/AdminFilmPicker";
 import { ApplicationChat } from "@/components/admin/ApplicationChat";
 import { GuestField } from "@/components/admin/GuestField";
 import { CustomSelect, type SelectOption } from "@/components/ui/CustomSelect";
+import { DatePicker, DateTimePicker, formatIsoDateTime } from "@/components/form/DatePicker";
+import { ContentFields } from "@/components/form/ContentFields";
 import { PRODUCT_EMOJI } from "@/lib/admin/products";
 import { STATUS_LABEL } from "@/lib/admin/status";
 import {
@@ -18,7 +20,6 @@ import {
   guestFullName,
 } from "@/lib/applications/display";
 import type { ApplicationRecord } from "@/lib/applications/types";
-import { ContentFields } from "@/components/form/ContentFields";
 import { PRODUCTS, TICKET_TYPES } from "@/lib/products";
 import {
   validateContactLastName,
@@ -86,6 +87,15 @@ const TICKET_OPTIONS = TICKET_TYPES.map((item) => ({
   label: item.label,
 }));
 
+function normalizeDateTimeValue(raw?: string | null) {
+  const value = raw?.trim() ?? "";
+  if (!value) return "";
+  if (value.includes("T")) return value.slice(0, 16);
+  const spaced = value.match(/^(\d{4}-\d{2}-\d{2})[ ](\d{2}:\d{2})/);
+  if (spaced) return `${spaced[1]}T${spaced[2]}`;
+  return value;
+}
+
 function draftFromItem(item: ApplicationRecord): GuestDraft {
   const rentalDuration =
     item.rentalStart && item.rentalEnd
@@ -93,6 +103,11 @@ function draftFromItem(item: ApplicationRecord): GuestDraft {
       : [item.rentalDate, item.rentalTime, item.rentalDuration]
           .filter(Boolean)
           .join(" ") || "";
+
+  const fromParts =
+    item.rentalDate && /^\d{4}-\d{2}-\d{2}$/.test(item.rentalDate)
+      ? `${item.rentalDate}T${(item.rentalTime || "00:00").slice(0, 5)}`
+      : "";
 
   return {
     contactName: item.contactName,
@@ -119,7 +134,7 @@ function draftFromItem(item: ApplicationRecord): GuestDraft {
     guests: item.guests != null ? String(item.guests) : "",
     ticketType: item.ticketType ?? "",
     rentalDate: item.rentalDate ?? "",
-    rentalStart: item.rentalStart ?? "",
+    rentalStart: normalizeDateTimeValue(item.rentalStart) || fromParts,
     rentalEnd: item.rentalEnd ?? "",
     rentalDuration,
     comment: item.comment ?? "",
@@ -617,8 +632,11 @@ export function ApplicationModal({
     if (draft.guests) patch.guests = Number(draft.guests);
     if (current.productId === "group") {
       patch.rentalDate = draft.rentalDate.trim();
-    } else if (current.productId === "event" || current.rentalStart) {
-      patch.rentalStart = draft.rentalStart.trim();
+    } else if (isRental) {
+      const start = draft.rentalStart.trim();
+      patch.rentalStart = start;
+      patch.rentalDate = start.slice(0, 10) || "";
+      patch.rentalTime = start.slice(11, 16) || "";
       if (draft.rentalEnd) patch.rentalEnd = draft.rentalEnd.trim();
     } else if (draft.rentalDuration) {
       patch.rentalDuration = draft.rentalDuration.trim();
@@ -1000,26 +1018,59 @@ export function ApplicationModal({
                 />
               ) : null}
 
-              {current.productId === "group" || current.rentalDate ? (
-                <GuestField
-                  id="rentalDate"
-                  label="Дата сеанса"
-                  editing={editing}
-                  value={editing ? draft.rentalDate : (current.rentalDate ?? "")}
-                  onChange={(value) => setField("rentalDate", value)}
-                />
+              {current.productId === "group" ||
+              (current.rentalDate && !isRental) ? (
+                <div className="space-y-1">
+                  <label
+                    htmlFor="rentalDate"
+                    className="block text-xs font-medium text-muted"
+                  >
+                    Дата сеанса
+                  </label>
+                  {editing ? (
+                    <DatePicker
+                      id="rentalDate"
+                      value={draft.rentalDate}
+                      onChange={(value) => setField("rentalDate", value)}
+                    />
+                  ) : (
+                    <p className="min-h-9 rounded-xl border border-line bg-background/60 px-3 py-2 text-sm">
+                      {current.rentalDate || "—"}
+                    </p>
+                  )}
+                </div>
               ) : null}
 
-              {current.productId === "event" || current.rentalStart ? (
-                <GuestField
-                  id="rentalStart"
-                  label="Дата и время"
-                  editing={editing}
-                  value={
-                    editing ? draft.rentalStart : (current.rentalStart ?? "")
-                  }
-                  onChange={(value) => setField("rentalStart", value)}
-                />
+              {isRental || current.rentalStart ? (
+                <div className="space-y-1 sm:col-span-2">
+                  <label
+                    htmlFor="rentalStart"
+                    className="block text-xs font-medium text-muted"
+                  >
+                    {current.productId === "keys"
+                      ? "Дата и время сеанса"
+                      : "Дата и время"}
+                  </label>
+                  {editing ? (
+                    <DateTimePicker
+                      id="rentalStart"
+                      value={draft.rentalStart}
+                      min=""
+                      onChange={(value) => setField("rentalStart", value)}
+                    />
+                  ) : (
+                    <p className="min-h-9 rounded-xl border border-line bg-background/60 px-3 py-2 text-sm">
+                      {formatIsoDateTime(
+                        normalizeDateTimeValue(current.rentalStart) ||
+                          (current.rentalDate
+                            ? `${current.rentalDate}T${(current.rentalTime || "00:00").slice(0, 5)}`
+                            : ""),
+                      ) ||
+                        eventDateLabel(current) ||
+                        "—"}
+                    </p>
+                  )}
+                </div>
               ) : null}
 
               {(editing ? draft.hallCapacity : current.hallCapacity) != null ? (

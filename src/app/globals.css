@@ -65,6 +65,33 @@
   color-scheme: dark;
 }
 
+/* Канбан: оплачено / срочно — без зависимости от палитры Tailwind */
+.admin-card-paid {
+  background: color-mix(in srgb, #16a34a 24%, var(--background));
+  border-color: #22c55e;
+  color: #ecfdf5;
+}
+.admin-card-paid .tone-muted {
+  color: color-mix(in srgb, #bbf7d0 75%, transparent);
+}
+.admin-card-paid .tone-accent {
+  color: #bbf7d0;
+}
+.admin-card-paid-progress {
+  box-shadow: inset -6px 0 0 0 #22c55e;
+}
+.admin-card-urgent {
+  background: color-mix(in srgb, #dc2626 30%, var(--background));
+  border-color: #ef4444;
+  color: #fef2f2;
+}
+.admin-card-urgent .tone-muted {
+  color: color-mix(in srgb, #fecaca 80%, transparent);
+}
+.admin-card-urgent .tone-accent {
+  color: #fecaca;
+}
+
 html {
   scroll-behavior: smooth;
 }

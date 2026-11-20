@@ -27,16 +27,13 @@ type ManagerOption = { id: string; name: string };
 function cardToneClass(item: ApplicationRecord) {
   const urgent =
     item.status === "IN_PROGRESS" && isWithinHours(item, 72);
-  if (urgent) {
-    return "border-red-500/80 bg-red-950 text-red-50 hover:border-red-400 [&_.tone-muted]:text-red-200/80 [&_.tone-accent]:text-red-200";
-  }
+  if (urgent) return "admin-card-urgent border";
   if (item.paid) {
-    if (item.status === "IN_PROGRESS") {
-      return "border-emerald-500/70 bg-emerald-950/80 text-emerald-50 shadow-[inset_-6px_0_0_0_#22c55e] hover:border-emerald-400 [&_.tone-muted]:text-emerald-200/80 [&_.tone-accent]:text-emerald-200";
-    }
-    return "border-emerald-500/70 bg-emerald-950/80 text-emerald-50 hover:border-emerald-400 [&_.tone-muted]:text-emerald-200/80 [&_.tone-accent]:text-emerald-200";
+    return item.status === "IN_PROGRESS"
+      ? "admin-card-paid admin-card-paid-progress border"
+      : "admin-card-paid border";
   }
-  return "border-line bg-background hover:border-gold";
+  return "border border-line bg-background hover:border-gold";
 }
 
 export function AdminDashboard() {
