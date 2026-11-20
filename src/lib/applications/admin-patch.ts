@@ -66,6 +66,7 @@ export const applicationAdminPatchSchema = z.object({
   wantRepertoireFilm: z.boolean().optional(),
   wantCustomContent: z.boolean().optional(),
   paid: z.boolean().optional(),
+  archived: z.boolean().optional(),
   managerId: z
     .string()
     .trim()

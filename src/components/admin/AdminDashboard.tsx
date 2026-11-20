@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ApplicationStatus } from "@prisma/client";
 import { ApplicationModal } from "@/components/admin/ApplicationModal";
@@ -8,7 +15,14 @@ import { CreateApplicationModal } from "@/components/admin/CreateApplicationModa
 import { AdminNav } from "@/components/admin/AdminNav";
 import { CustomSelect } from "@/components/ui/CustomSelect";
 import { PRODUCT_EMOJI } from "@/lib/admin/products";
-import { STATUS_ACCENT, STATUS_LABEL, STATUSES } from "@/lib/admin/status";
+import {
+  ARCHIVE_BOARD_STATUSES,
+  ARCHIVE_STATUS_LABEL,
+  MAIN_BOARD_STATUSES,
+  STATUS_ACCENT,
+  STATUS_LABEL,
+  STATUSES,
+} from "@/lib/admin/status";
 import {
   eventDateLabel,
   formatCreatedShort,
@@ -23,6 +37,8 @@ import type { ApplicationRecord } from "@/lib/applications/types";
 import { PRODUCTS, type StoredProductId } from "@/lib/products";
 
 type ManagerOption = { id: string; name: string };
+type BoardKind = "main" | "archive";
+type ViewMode = "kanban" | "list";
 
 function isUrgentCard(item: ApplicationRecord) {
   return item.status === "IN_PROGRESS" && isWithinHours(item, 72);
@@ -38,9 +54,181 @@ function cardToneClass(item: ApplicationRecord) {
   return "border border-line bg-background hover:border-gold";
 }
 
-export function AdminDashboard() {
+function statusLabelForBoard(board: BoardKind, status: ApplicationStatus) {
+  if (board === "archive" && (status === "CLOSED" || status === "REJECTED")) {
+    return ARCHIVE_STATUS_LABEL[status];
+  }
+  return STATUS_LABEL[status];
+}
+
+function ViewModeToggle({
+  value,
+  onChange,
+}: {
+  value: ViewMode;
+  onChange: (value: ViewMode) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 rounded-full border border-line bg-card p-1">
+      <button
+        type="button"
+        aria-label="Канбан"
+        aria-pressed={value === "kanban"}
+        className={`rounded-full p-2 transition ${
+          value === "kanban"
+            ? "bg-primary text-white"
+            : "text-muted hover:text-foreground"
+        }`}
+        onClick={() => onChange("kanban")}
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="3" y="4" width="7" height="16" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+          <rect x="14" y="4" width="7" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        aria-label="Список"
+        aria-pressed={value === "list"}
+        className={`rounded-full p-2 transition ${
+          value === "list"
+            ? "bg-primary text-white"
+            : "text-muted hover:text-foreground"
+        }`}
+        onClick={() => onChange("list")}
+      >
+        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          <circle cx="4" cy="6" r="1.2" fill="currentColor" />
+          <circle cx="4" cy="12" r="1.2" fill="currentColor" />
+          <circle cx="4" cy="18" r="1.2" fill="currentColor" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function ApplicationCard({
+  item,
+  layout,
+  board,
+  draggable,
+  onOpen,
+  onDragStart,
+  onDrag,
+  onDragEnd,
+}: {
+  item: ApplicationRecord;
+  layout: ViewMode;
+  board: BoardKind;
+  draggable: boolean;
+  onOpen: () => void;
+  onDragStart?: (event: DragEvent) => void;
+  onDrag?: () => void;
+  onDragEnd?: () => void;
+}) {
+  const urgent = isUrgentCard(item);
+  if (layout === "list") {
+    return (
+      <article
+        draggable={draggable}
+        onDragStart={onDragStart}
+        onDrag={onDrag}
+        onDragEnd={onDragEnd}
+        onClick={onOpen}
+        className={`grid cursor-pointer grid-cols-1 items-center gap-2 rounded-2xl border px-4 py-3 text-left transition sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_auto] ${cardToneClass(item)}`}
+      >
+        <div className="min-w-0">
+          <p className="tone-accent text-xs text-gold">
+            <span aria-hidden="true">
+              {PRODUCT_EMOJI[item.productId as StoredProductId]}
+            </span>{" "}
+            {PRODUCTS[item.productId as StoredProductId].title} ·{" "}
+            {publicApplicationCode(item.publicNumber)}
+            {item.paid ? " · Оплачено" : ""}
+          </p>
+          <p className="mt-0.5 truncate font-medium">{guestFullName(item)}</p>
+        </div>
+        <div className="tone-muted min-w-0 text-sm text-muted">
+          <p className="truncate">
+            {item.cityName} · {item.cinemaName}
+          </p>
+          <p className="truncate">
+            {eventDateLabel(item)
+              ? `мероприятие ${eventDateLabel(item)}`
+              : contentChoiceLabel(item) || "—"}
+          </p>
+        </div>
+        <div className="tone-muted min-w-0 text-sm text-muted">
+          <p>{item.manager?.name ?? "Без менеджера"}</p>
+          <p className="text-xs">
+            {statusLabelForBoard(board, item.status)} ·{" "}
+            {formatCreatedShort(item.createdAt)}
+          </p>
+        </div>
+        <div className="tone-muted text-xs text-muted sm:text-right">
+          {item.guests ? `${item.guests} гостей` : "—"}
+        </div>
+      </article>
+    );
+  }
+
+  return (
+    <article
+      draggable={draggable}
+      onDragStart={onDragStart}
+      onDrag={onDrag}
+      onDragEnd={onDragEnd}
+      onClick={onOpen}
+      className={`shrink-0 cursor-pointer rounded-2xl border p-4 text-left transition ${cardToneClass(item)}`}
+    >
+      {urgent && item.paid ? (
+        <span className="admin-card-paid-sticker">Оплачено</span>
+      ) : null}
+      <p
+        className={`tone-muted text-[11px] text-muted ${
+          urgent && item.paid ? "pr-20" : ""
+        }`}
+      >
+        Создана: {formatCreatedShort(item.createdAt)}
+        {item.paid && !urgent ? " · Оплачено" : ""}
+      </p>
+      <p className="tone-accent mt-1 text-xs text-gold">
+        <span aria-hidden="true">
+          {PRODUCT_EMOJI[item.productId as StoredProductId]}
+        </span>{" "}
+        {PRODUCTS[item.productId as StoredProductId].title} ·{" "}
+        {publicApplicationCode(item.publicNumber)}
+      </p>
+      <p className="mt-1 font-medium">{guestFullName(item)}</p>
+      <p className="tone-muted mt-1 text-sm text-muted">
+        {item.cityName} · {item.cinemaName}
+      </p>
+      {contentChoiceLabel(item) ? (
+        <p className="tone-muted mt-1 text-sm text-muted">
+          {contentChoiceLabel(item)}
+        </p>
+      ) : null}
+      <p className="tone-muted mt-2 text-xs text-muted">
+        {item.guests ? `${item.guests} гостей` : ""}
+        {item.guests && eventDateLabel(item) ? " · " : ""}
+        {eventDateLabel(item) ? `мероприятие ${eventDateLabel(item)}` : ""}
+      </p>
+      <p className="tone-accent mt-2 text-xs text-gold">
+        {item.manager?.name ?? "Без менеджера"}
+      </p>
+    </article>
+  );
+}
+
+export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const basePath = board === "archive" ? "/admin/archive" : "/admin";
+  const boardStatuses =
+    board === "archive" ? ARCHIVE_BOARD_STATUSES : MAIN_BOARD_STATUSES;
+  const viewStorageKey = `luxe-admin-view-${board}`;
+
   const [items, setItems] = useState<ApplicationRecord[]>([]);
   const [managers, setManagers] = useState<ManagerOption[]>([]);
   const [total, setTotal] = useState(0);
@@ -56,9 +244,28 @@ export function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const [openId, setOpenId] = useState<string | null>(searchParams.get("id"));
   const [creating, setCreating] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [dragOver, setDragOver] = useState<ApplicationStatus | null>(null);
   const draggingId = useRef<string | null>(null);
   const dragged = useRef(false);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(viewStorageKey);
+      if (saved === "kanban" || saved === "list") setViewMode(saved);
+    } catch {
+      // ignore
+    }
+  }, [viewStorageKey]);
+
+  function changeViewMode(next: ViewMode) {
+    setViewMode(next);
+    try {
+      window.localStorage.setItem(viewStorageKey, next);
+    } catch {
+      // ignore
+    }
+  }
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -68,7 +275,7 @@ export function AdminDashboard() {
   }, [searchInput]);
 
   const load = useCallback(() => {
-    const params = new URLSearchParams({ pageSize: "200" });
+    const params = new URLSearchParams({ pageSize: "500", board });
     if (product !== "all") params.set("productId", product);
     if (statusFilter !== "all") params.set("status", statusFilter);
     if (paidFilter !== "all") params.set("paid", paidFilter);
@@ -101,6 +308,7 @@ export function AdminDashboard() {
       setTotal(data.total ?? 0);
     });
   }, [
+    board,
     createdFrom,
     createdTo,
     managerFilter,
@@ -137,12 +345,12 @@ export function AdminDashboard() {
 
   function openModal(id: string) {
     setOpenId(id);
-    router.replace(`/admin?id=${id}`, { scroll: false });
+    router.replace(`${basePath}?id=${id}`, { scroll: false });
   }
 
   function closeModal() {
     setOpenId(null);
-    router.replace("/admin", { scroll: false });
+    router.replace(basePath, { scroll: false });
   }
 
   const replaceItem = useCallback((next: ApplicationRecord) => {
@@ -157,6 +365,18 @@ export function AdminDashboard() {
       }),
     );
   }, []);
+
+  function applySavedItem(item: ApplicationRecord) {
+    const belongsHere =
+      board === "archive" ? item.archived === true : item.archived !== true;
+    if (!belongsHere) {
+      setItems((list) => list.filter((entry) => entry.id !== item.id));
+      setTotal((value) => Math.max(0, value - 1));
+      if (openId === item.id) closeModal();
+      return;
+    }
+    replaceItem(item);
+  }
 
   async function save(id: string, patch: Partial<ApplicationRecord>) {
     setSaving(true);
@@ -185,7 +405,7 @@ export function AdminDashboard() {
         await load();
         return false;
       }
-      if (data.item) replaceItem(data.item);
+      if (data.item) applySavedItem(data.item);
       return true;
     } catch {
       setSaving(false);
@@ -204,10 +424,35 @@ export function AdminDashboard() {
     await save(id, { status });
   }
 
-  const columns = STATUSES.map((status) => ({
+  const columns = boardStatuses.map((status) => ({
     status,
     items: items.filter((item) => item.status === status),
   }));
+
+  function bindDrag(item: ApplicationRecord) {
+    return {
+      onDragStart: (event: DragEvent) => {
+        draggingId.current = item.id;
+        dragged.current = false;
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", item.id);
+      },
+      onDrag: () => {
+        dragged.current = true;
+      },
+      onDragEnd: () => {
+        draggingId.current = null;
+        setDragOver(null);
+      },
+      onOpen: () => {
+        if (dragged.current) {
+          dragged.current = false;
+          return;
+        }
+        openModal(item.id);
+      },
+    };
+  }
 
   return (
     <main className="mx-auto flex h-dvh w-full max-w-[1800px] flex-col overflow-hidden px-4 py-6">
@@ -217,21 +462,25 @@ export function AdminDashboard() {
       <div className="mb-4 flex shrink-0 flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl">
-            Заявки
+            {board === "archive" ? "Архив" : "Заявки"}
           </h1>
           <p className="mt-2 text-sm text-muted">
-            Канбан по статусам. Карточка открывается в окне, статус можно сменить
-            перетаскиванием. Всего: {total}
+            {board === "archive"
+              ? "Выполненные и неактуальные заявки. Через 7 дней попадают сюда автоматически. Всего: "
+              : "Канбан по статусам. Карточка открывается в окне, статус можно сменить перетаскиванием. Всего: "}
+            {total}
           </p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <button
-            type="button"
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-            onClick={() => setCreating(true)}
-          >
-            Создать заявку
-          </button>
+          {board === "main" ? (
+            <button
+              type="button"
+              className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+              onClick={() => setCreating(true)}
+            >
+              Создать заявку
+            </button>
+          ) : null}
           <label className="text-xs text-muted">
             Поиск
             <input
@@ -261,10 +510,12 @@ export function AdminDashboard() {
             value={statusFilter}
             options={[
               { value: "all", label: "Все статусы" },
-              ...STATUSES.map((status) => ({
-                value: status,
-                label: STATUS_LABEL[status],
-              })),
+              ...(board === "archive" ? ARCHIVE_BOARD_STATUSES : STATUSES).map(
+                (status) => ({
+                  value: status,
+                  label: statusLabelForBoard(board, status),
+                }),
+              ),
             ]}
             onChange={setStatusFilter}
           />
@@ -311,128 +562,108 @@ export function AdminDashboard() {
         </div>
       </div>
 
+      <div className="mb-3 flex shrink-0 items-center justify-end">
+        <ViewModeToggle value={viewMode} onChange={changeViewMode} />
+      </div>
+
       {error ? (
         <p className="mb-3 shrink-0 text-sm text-primary">{error}</p>
       ) : null}
 
-      <div className="pretty-scroll flex min-h-0 flex-1 gap-4 overflow-x-auto">
-        {columns.map((column) => (
-          <section
-            key={column.status}
-            className={`flex min-h-0 min-w-64 flex-1 flex-col overflow-hidden rounded-3xl border bg-card/60 p-3 transition ${
-              dragOver === column.status ? "border-gold" : "border-line"
-            }`}
-            onDragOver={(event) => {
-              event.preventDefault();
-              setDragOver(column.status);
-            }}
-            onDragLeave={() => {
-              setDragOver((value) =>
-                value === column.status ? null : value,
-              );
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              setDragOver(null);
-              const id =
-                event.dataTransfer.getData("text/plain") || draggingId.current;
-              if (id) void moveToStatus(id, column.status);
-            }}
-          >
-            <header className="mb-3 flex shrink-0 items-center justify-between px-2 pt-1">
-              <h2 className="flex items-center gap-2 text-sm font-semibold">
-                <span
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ background: STATUS_ACCENT[column.status] }}
-                />
-                {STATUS_LABEL[column.status]}
-              </h2>
-              <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted">
-                {column.items.length}
-              </span>
-            </header>
-            <div className="pretty-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
-              {column.items.map((item) => (
-                <article
+      {viewMode === "kanban" ? (
+        <div className="pretty-scroll flex min-h-0 flex-1 gap-4 overflow-x-auto">
+          {columns.map((column) => (
+            <section
+              key={column.status}
+              className={`flex min-h-0 min-w-64 flex-1 flex-col overflow-hidden rounded-3xl border bg-card/60 p-3 transition ${
+                dragOver === column.status ? "border-gold" : "border-line"
+              }`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setDragOver(column.status);
+              }}
+              onDragLeave={() => {
+                setDragOver((value) =>
+                  value === column.status ? null : value,
+                );
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                setDragOver(null);
+                const id =
+                  event.dataTransfer.getData("text/plain") ||
+                  draggingId.current;
+                if (id) void moveToStatus(id, column.status);
+              }}
+            >
+              <header className="mb-3 flex shrink-0 items-center justify-between px-2 pt-1">
+                <h2 className="flex items-center gap-2 text-sm font-semibold">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ background: STATUS_ACCENT[column.status] }}
+                  />
+                  {statusLabelForBoard(board, column.status)}
+                </h2>
+                <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted">
+                  {column.items.length}
+                </span>
+              </header>
+              <div className="pretty-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain pr-1">
+                {column.items.map((item) => {
+                  const drag = bindDrag(item);
+                  return (
+                    <ApplicationCard
+                      key={item.id}
+                      item={item}
+                      layout="kanban"
+                      board={board}
+                      draggable
+                      {...drag}
+                    />
+                  );
+                })}
+                {column.items.length === 0 ? (
+                  <p className="px-2 py-8 text-center text-sm text-muted">
+                    Перетащите заявку сюда
+                  </p>
+                ) : null}
+              </div>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <div className="pretty-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain pr-1">
+          {items.length === 0 ? (
+            <p className="rounded-3xl border border-line bg-card/60 px-4 py-12 text-center text-sm text-muted">
+              Нет заявок по текущим фильтрам
+            </p>
+          ) : (
+            items.map((item) => {
+              const drag = bindDrag(item);
+              return (
+                <ApplicationCard
                   key={item.id}
-                  draggable
-                  onDragStart={(event) => {
-                    draggingId.current = item.id;
-                    dragged.current = false;
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", item.id);
-                  }}
-                  onDrag={() => {
-                    dragged.current = true;
-                  }}
-                  onDragEnd={() => {
-                    draggingId.current = null;
-                    setDragOver(null);
-                  }}
-                  onClick={() => {
-                    if (dragged.current) {
-                      dragged.current = false;
-                      return;
-                    }
-                    openModal(item.id);
-                  }}
-                  className={`shrink-0 cursor-pointer rounded-2xl border p-4 text-left transition ${cardToneClass(item)}`}
-                >
-                  {isUrgentCard(item) && item.paid ? (
-                    <span className="admin-card-paid-sticker">Оплачено</span>
-                  ) : null}
-                  <p
-                    className={`tone-muted text-[11px] text-muted ${
-                      isUrgentCard(item) && item.paid ? "pr-20" : ""
-                    }`}
-                  >
-                    Создана: {formatCreatedShort(item.createdAt)}
-                    {item.paid && !isUrgentCard(item) ? " · Оплачено" : ""}
-                  </p>
-                  <p className="tone-accent mt-1 text-xs text-gold">
-                    <span aria-hidden="true">
-                      {PRODUCT_EMOJI[item.productId as StoredProductId]}
-                    </span>{" "}
-                    {PRODUCTS[item.productId as StoredProductId].title} ·{" "}
-                    {publicApplicationCode(item.publicNumber)}
-                  </p>
-                  <p className="mt-1 font-medium">{guestFullName(item)}</p>
-                  <p className="tone-muted mt-1 text-sm text-muted">
-                    {item.cityName} · {item.cinemaName}
-                  </p>
-                  {contentChoiceLabel(item) ? (
-                    <p className="tone-muted mt-1 text-sm text-muted">
-                      {contentChoiceLabel(item)}
-                    </p>
-                  ) : null}
-                  <p className="tone-muted mt-2 text-xs text-muted">
-                    {item.guests ? `${item.guests} гостей` : ""}
-                    {item.guests && eventDateLabel(item) ? " · " : ""}
-                    {eventDateLabel(item)
-                      ? `мероприятие ${eventDateLabel(item)}`
-                      : ""}
-                  </p>
-                  <p className="tone-accent mt-2 text-xs text-gold">
-                    {item.manager?.name ?? "Без менеджера"}
-                  </p>
-                </article>
-              ))}
-              {column.items.length === 0 ? (
-                <p className="px-2 py-8 text-center text-sm text-muted">
-                  Перетащите заявку сюда
-                </p>
-              ) : null}
-            </div>
-          </section>
-        ))}
-      </div>
+                  item={item}
+                  layout="list"
+                  board={board}
+                  draggable={false}
+                  {...drag}
+                />
+              );
+            })
+          )}
+        </div>
+      )}
 
-      {creating ? (
+      {creating && board === "main" ? (
         <CreateApplicationModal
           onClose={() => setCreating(false)}
           onCreated={(item) => {
             setCreating(false);
-            setItems((current) => [item, ...current.filter((entry) => entry.id !== item.id)]);
+            setItems((current) => [
+              item,
+              ...current.filter((entry) => entry.id !== item.id),
+            ]);
             setTotal((value) => value + 1);
             openModal(item.id);
           }}
@@ -444,11 +675,12 @@ export function AdminDashboard() {
           key={openItem.id}
           item={openItem}
           managers={managers}
+          board={board}
           saving={saving}
           error={error}
           onClose={closeModal}
           onSave={(patch) => save(openItem.id, patch)}
-          onItem={replaceItem}
+          onItem={(next) => applySavedItem(next)}
         />
       ) : null}
     </main>

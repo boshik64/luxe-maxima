@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     managerId: searchParams.get("managerId") ?? undefined,
     paid: searchParams.get("paid") ?? undefined,
     q: searchParams.get("q") ?? undefined,
+    board: searchParams.get("board") ?? undefined,
     createdFrom: searchParams.get("createdFrom") ?? undefined,
     createdTo: searchParams.get("createdTo") ?? undefined,
     page: Number(searchParams.get("page") ?? 1),

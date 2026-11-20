@@ -8,7 +8,8 @@ const SHOW_BANNER_NAV = false; // true — снова показать пунк�
 const SHOW_FEEDBACK_NAV = false; // true — снова показать пункт «Контакты» (бывш. обратная связь)
 
 const links = [
-  { href: "/admin", label: "Заявки" },
+  { href: "/admin", label: "Заявки", exact: true },
+  { href: "/admin/archive", label: "Архив" },
   { href: "/admin/catalogs", label: "Справочники" },
   { href: "/admin/film-sales", label: "Механики продажи" },
   { href: "/admin/events", label: "Мероприятия" },
@@ -58,10 +59,9 @@ export function AdminNav() {
                 !link.hidden && (!link.adminOnly || isAdmin),
             )
             .map((link) => {
-              const active =
-                link.href === "/admin"
-                  ? pathname === "/admin"
-                  : pathname.startsWith(link.href);
+              const active = link.exact
+                ? pathname === link.href
+                : pathname === link.href || pathname.startsWith(`${link.href}/`);
               return (
                 <Link
                   key={link.href}

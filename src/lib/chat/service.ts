@@ -130,11 +130,15 @@ export async function sendGuestReply(options: {
     options.application.status === "ANSWERED"
       ? "WAITING_REPLY"
       : options.application.status;
+  const statusChanged = nextStatus !== options.application.status;
 
   const updated = await prisma.application.update({
     where: { id: options.application.id },
     data: {
       status: nextStatus,
+      ...(statusChanged
+        ? { statusEnteredAt: new Date(), archived: false }
+        : {}),
       managerId: options.application.managerId ?? options.authorId,
     },
     include: applicationInclude(),
@@ -216,10 +220,13 @@ export async function ingestInboundMessage(options: {
   const restoreWaiting =
     application.status === "REJECTED" && application.autoRejectedOverdue;
 
+  const nextStatus = restoreWaiting ? "WAITING_REPLY" : "ANSWERED";
   const next = await prisma.application.update({
     where: { id: application.id },
     data: {
-      status: restoreWaiting ? "WAITING_REPLY" : "ANSWERED",
+      status: nextStatus,
+      statusEnteredAt: new Date(),
+      archived: false,
     },
     include: { manager: true },
   });

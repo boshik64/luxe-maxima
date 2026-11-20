@@ -37,6 +37,7 @@ export async function archiveOverdueWaitingApplications() {
     data: {
       status: "REJECTED",
       autoRejectedOverdue: true,
+      statusEnteredAt: new Date(),
     },
   });
 

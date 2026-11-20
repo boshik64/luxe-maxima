@@ -1,5 +1,6 @@
 import { ApplicationStatus, Prisma, ProductId } from "@prisma/client";
 import { archiveOverdueWaitingApplications } from "@/lib/applications/archive-overdue";
+import { moveStaleTerminalToArchiveBoard } from "@/lib/applications/board-archive";
 import { contentChoiceLabel } from "@/lib/applications/display";
 import { ApplicationValidationError } from "@/lib/applications/errors";
 import type { ApplicationInput } from "@/lib/applications/schema";
@@ -207,6 +208,7 @@ export async function listApplications(params: {
   managerId?: string;
   paid?: string;
   q?: string;
+  board?: string;
   createdFrom?: string;
   createdTo?: string;
   page?: number;
@@ -215,10 +217,19 @@ export async function listApplications(params: {
   await archiveOverdueWaitingApplications().catch((error) => {
     logger.error("Failed to archive overdue waiting applications", error);
   });
+  await moveStaleTerminalToArchiveBoard().catch((error) => {
+    logger.error("Failed to move stale terminals to archive board", error);
+  });
 
   const page = Math.max(1, params.page ?? 1);
-  const pageSize = Math.min(200, Math.max(10, params.pageSize ?? 20));
+  const pageSize = Math.min(500, Math.max(10, params.pageSize ?? 20));
   const where: Prisma.ApplicationWhereInput = {};
+  if (params.board === "archive") {
+    where.archived = true;
+    where.status = { in: ["CLOSED", "REJECTED"] };
+  } else {
+    where.archived = false;
+  }
   if (
     params.status &&
     (Object.values(ApplicationStatus) as string[]).includes(params.status)
