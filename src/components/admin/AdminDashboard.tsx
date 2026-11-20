@@ -377,17 +377,26 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
     );
   }, []);
 
-  function applySavedItem(item: ApplicationRecord) {
-    const belongsHere =
-      board === "archive" ? item.archived === true : item.archived !== true;
-    if (!belongsHere) {
-      setItems((list) => list.filter((entry) => entry.id !== item.id));
-      setTotal((value) => Math.max(0, value - 1));
-      if (openId === item.id) closeModal();
-      return;
-    }
-    replaceItem(item);
-  }
+  const applySavedItem = useCallback(
+    (entry: ApplicationRecord) => {
+      const belongsHere =
+        board === "archive" ? entry.archived === true : entry.archived !== true;
+      if (!belongsHere) {
+        setItems((list) => list.filter((row) => row.id !== entry.id));
+        setTotal((value) => Math.max(0, value - 1));
+        setOpenId((id) => {
+          if (id === entry.id) {
+            router.replace(basePath, { scroll: false });
+            return null;
+          }
+          return id;
+        });
+        return;
+      }
+      replaceItem(entry);
+    },
+    [basePath, board, replaceItem, router],
+  );
 
   async function save(id: string, patch: Partial<ApplicationRecord>) {
     setSaving(true);
@@ -736,7 +745,7 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
           error={error}
           onClose={closeModal}
           onSave={(patch) => save(openItem.id, patch)}
-          onItem={(next) => applySavedItem(next)}
+          onItem={applySavedItem}
         />
       ) : null}
     </main>

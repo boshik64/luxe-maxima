@@ -13,7 +13,6 @@ import {
 } from "@/lib/applications/service";
 import { prisma } from "@/lib/db";
 import { checkMailbox } from "@/lib/email/mailbox";
-import { pollInboundMailbox } from "@/lib/chat/inbound";
 
 export async function GET(
   _request: NextRequest,
@@ -26,8 +25,8 @@ export async function GET(
   }
 
   const { id } = await context.params;
-  // Не блокируем карточку опросом ящика — cron / messages подтянут почту сами.
-  void pollInboundMailbox().catch(() => undefined);
+  // Почту не трогаем здесь: иначе каждый refresh карточки/чата долбит EWS.
+  // Входящие — cron и GET .../messages.
   const item = await getApplication(id);
   if (!item) return NextResponse.json({ error: "Не найдено" }, { status: 404 });
   return NextResponse.json({ item });
