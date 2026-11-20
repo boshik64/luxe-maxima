@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ApplicationStatus } from "@prisma/client";
 import { AdminFilmPicker } from "@/components/admin/AdminFilmPicker";
 import { ApplicationChat } from "@/components/admin/ApplicationChat";
@@ -174,19 +182,11 @@ export function ApplicationModal({
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const dataEpochRef = useRef(0);
-  const editingRef = useRef(false);
-  const currentRef = useRef(item);
-  const onItemRef = useRef(onItem);
-  const onCloseRef = useRef(onClose);
   const [current, setCurrent] = useState(item);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(() => draftFromItem(item));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [localSaving, setLocalSaving] = useState(false);
-  editingRef.current = editing;
-  currentRef.current = current;
-  onItemRef.current = onItem;
-  onCloseRef.current = onClose;
 
   const [catalogCinemas, setCatalogCinemas] = useState<CatalogCinema[]>([]);
   const [catalogHalls, setCatalogHalls] = useState<CatalogHall[]>([]);
@@ -227,19 +227,39 @@ export function ApplicationModal({
     }
   }
 
+  const handleEscape = useEffectEvent(() => {
+    if (editing) {
+      setEditing(false);
+      setDraft(draftFromItem(current));
+      setFieldErrors({});
+      return;
+    }
+    onClose();
+  });
+
+  const refreshApplication = useEffectEvent(async (cancelled: () => boolean) => {
+    if (editing) return;
+    const epoch = dataEpochRef.current;
+    const response = await fetch(`/api/admin/applications/${item.id}`);
+    const data = (await response.json()) as { item?: ApplicationRecord };
+    // Игнорируем устаревший ответ, если пока ждали успел сохраниться paid/статус/черновик.
+    if (cancelled() || epoch !== dataEpochRef.current || !data.item) return;
+    setCurrent((prev) => ({
+      ...data.item!,
+      messages: Array.isArray(data.item!.messages)
+        ? data.item!.messages
+        : prev.messages,
+    }));
+    onItem(data.item);
+  });
+
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     dialogRef.current?.focus();
     function onKey(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (editingRef.current) {
-        setEditing(false);
-        setDraft(draftFromItem(currentRef.current));
-        setFieldErrors({});
-        return;
-      }
-      onCloseRef.current();
+      handleEscape();
     }
     window.addEventListener("keydown", onKey);
     return () => {
@@ -250,23 +270,12 @@ export function ApplicationModal({
 
   useEffect(() => {
     let cancelled = false;
-    async function refresh() {
-      if (editingRef.current) return;
-      const epoch = dataEpochRef.current;
-      const response = await fetch(`/api/admin/applications/${item.id}`);
-      const data = (await response.json()) as { item?: ApplicationRecord };
-      // Игнорируем устаревший ответ, если пока ждали успел сохраниться paid/статус/черновик.
-      if (cancelled || epoch !== dataEpochRef.current || !data.item) return;
-      setCurrent((prev) => ({
-        ...data.item!,
-        messages: Array.isArray(data.item!.messages)
-          ? data.item!.messages
-          : prev.messages,
-      }));
-      onItemRef.current(data.item);
-    }
-    void refresh();
-    const timer = window.setInterval(() => void refresh(), 20000);
+    const isCancelled = () => cancelled;
+    void refreshApplication(isCancelled);
+    const timer = window.setInterval(
+      () => void refreshApplication(isCancelled),
+      20000,
+    );
     return () => {
       cancelled = true;
       window.clearInterval(timer);

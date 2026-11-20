@@ -40,6 +40,17 @@ type ManagerOption = { id: string; name: string };
 type BoardKind = "main" | "archive";
 type ViewMode = "kanban" | "list";
 
+function readStoredViewMode(key: string): ViewMode {
+  if (typeof window === "undefined") return "kanban";
+  try {
+    const saved = window.localStorage.getItem(key);
+    if (saved === "kanban" || saved === "list") return saved;
+  } catch {
+    // ignore
+  }
+  return "kanban";
+}
+
 const filterControlClass =
   "rounded-2xl border border-line bg-background px-4 py-3 text-sm text-foreground outline-none transition placeholder:text-muted focus:border-gold";
 
@@ -252,22 +263,20 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
   const [saving, setSaving] = useState(false);
   const [openId, setOpenId] = useState<string | null>(searchParams.get("id"));
   const [creating, setCreating] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("kanban");
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    readStoredViewMode(viewStorageKey),
+  );
+  const [storedViewKey, setStoredViewKey] = useState(viewStorageKey);
+  if (storedViewKey !== viewStorageKey) {
+    setStoredViewKey(viewStorageKey);
+    setViewMode(readStoredViewMode(viewStorageKey));
+  }
   const [collapsedStatuses, setCollapsedStatuses] = useState<
     Partial<Record<ApplicationStatus, boolean>>
   >({});
   const [dragOver, setDragOver] = useState<ApplicationStatus | null>(null);
   const draggingId = useRef<string | null>(null);
   const dragged = useRef(false);
-
-  useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(viewStorageKey);
-      if (saved === "kanban" || saved === "list") setViewMode(saved);
-    } catch {
-      // ignore
-    }
-  }, [viewStorageKey]);
 
   function changeViewMode(next: ViewMode) {
     setViewMode(next);

@@ -82,6 +82,11 @@ export function AdminNav() {
   const [role, setRole] = useState<string | null>(null);
   const [feedbackNewCount, setFeedbackNewCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPath, setMenuPath] = useState(pathname);
+  if (menuPath !== pathname) {
+    setMenuPath(pathname);
+    setMenuOpen(false);
+  }
 
   useEffect(() => {
     fetch("/api/admin/me")
@@ -95,10 +100,6 @@ export function AdminNav() {
         setFeedbackNewCount(data.feedbackNewCount ?? 0);
       })
       .catch(() => undefined);
-  }, [pathname]);
-
-  useEffect(() => {
-    setMenuOpen(false);
   }, [pathname]);
 
   useEffect(() => {
