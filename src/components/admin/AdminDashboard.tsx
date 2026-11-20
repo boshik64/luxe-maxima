@@ -24,10 +24,12 @@ import { PRODUCTS, type StoredProductId } from "@/lib/products";
 
 type ManagerOption = { id: string; name: string };
 
+function isUrgentCard(item: ApplicationRecord) {
+  return item.status === "IN_PROGRESS" && isWithinHours(item, 72);
+}
+
 function cardToneClass(item: ApplicationRecord) {
-  const urgent =
-    item.status === "IN_PROGRESS" && isWithinHours(item, 72);
-  if (urgent) return "admin-card-urgent border";
+  if (isUrgentCard(item)) return "admin-card-urgent relative border";
   if (item.paid) {
     return item.status === "IN_PROGRESS"
       ? "admin-card-paid admin-card-paid-progress border"
@@ -376,9 +378,16 @@ export function AdminDashboard() {
                   }}
                   className={`shrink-0 cursor-pointer rounded-2xl border p-4 text-left transition ${cardToneClass(item)}`}
                 >
-                  <p className="tone-muted text-[11px] text-muted">
+                  {isUrgentCard(item) && item.paid ? (
+                    <span className="admin-card-paid-sticker">Оплачено</span>
+                  ) : null}
+                  <p
+                    className={`tone-muted text-[11px] text-muted ${
+                      isUrgentCard(item) && item.paid ? "pr-20" : ""
+                    }`}
+                  >
                     Создана: {formatCreatedShort(item.createdAt)}
-                    {item.paid ? " · Оплачено" : ""}
+                    {item.paid && !isUrgentCard(item) ? " · Оплачено" : ""}
                   </p>
                   <p className="tone-accent mt-1 text-xs text-gold">
                     <span aria-hidden="true">
