@@ -31,10 +31,22 @@ type Point = { x: number; y: number };
 
 type Surface = {
   id: string;
+  el: HTMLElement;
+  radius: number;
   points: Point[];
   heights: Float32Array;
   maxDepth: number;
 };
+
+let surfaceSeq = 0;
+
+function ensureSurfaceId(el: HTMLElement) {
+  if (!el.dataset.winterSurfaceId) {
+    surfaceSeq += 1;
+    el.dataset.winterSurfaceId = `ws-${surfaceSeq}`;
+  }
+  return el.dataset.winterSurfaceId;
+}
 
 type Excavator = {
   x: number;
@@ -311,13 +323,15 @@ export function WinterSnow() {
         const next = new Float32Array(cols);
         next.set(floor.subarray(0, Math.min(floor.length, cols)));
         floor = next;
+      }
+      if (isDesktop()) {
         if (!floorSeeded) {
           seedFloor(floor);
           floorSeeded = true;
         }
-      } else if (!floorSeeded) {
-        seedFloor(floor);
-        floorSeeded = true;
+      } else {
+        floor.fill(0);
+        floorSeeded = false;
       }
 
       if (flakes.length === 0) {
@@ -331,23 +345,21 @@ export function WinterSnow() {
     function rebuildSurfaces() {
       const next: Surface[] = [];
       const seen = new Set<Element>();
+      const byId = new Map(surfaces.map((s) => [s.id, s]));
       const nodes = document.querySelectorAll<HTMLElement>(surfaceSelector());
-      let index = 0;
       nodes.forEach((el) => {
         if (seen.has(el)) return;
         seen.add(el);
         const rect = el.getBoundingClientRect();
         if (rect.width < 24 || rect.height < 12) return;
-        if (rect.bottom < -40 || rect.top > h + 40) return;
 
+        const id = ensureSurfaceId(el);
+        const prev = byId.get(id);
         const radius = readTopRadius(el, rect);
         const contour = resampleContour(topContour(rect, radius));
         if (contour.length < 2) return;
 
-        const id = elKey(el, index);
-        const prev = surfaces.find((s) => s.id === id);
         let heights: Float32Array;
-
         if (prev && prev.heights.length === contour.length) {
           heights = prev.heights;
         } else if (prev && prev.heights.length > 0) {
@@ -365,22 +377,55 @@ export function WinterSnow() {
 
         next.push({
           id,
+          el,
+          radius,
           points: contour,
           heights,
           maxDepth: MAX_SURFACE_DEPTH,
         });
-        index += 1;
       });
       surfaces = next;
+    }
+
+    /** Позиции шапок из DOM каждый кадр — без отставания при скролле. */
+    function syncSurfaceGeometry() {
+      for (const surface of surfaces) {
+        if (!surface.el.isConnected) {
+          surface.points = [];
+          continue;
+        }
+        const rect = surface.el.getBoundingClientRect();
+        if (rect.width < 24 || rect.height < 12) {
+          surface.points = [];
+          continue;
+        }
+        if (rect.bottom < -160 || rect.top > h + 160) {
+          surface.points = [];
+          continue;
+        }
+        const contour = resampleContour(topContour(rect, surface.radius));
+        if (contour.length < 2) {
+          surface.points = [];
+          continue;
+        }
+        if (contour.length !== surface.heights.length) {
+          const nextH = new Float32Array(contour.length);
+          for (let i = 0; i < nextH.length; i++) {
+            const src = Math.floor(
+              (i / Math.max(1, nextH.length - 1)) *
+                (surface.heights.length - 1),
+            );
+            nextH[i] = surface.heights[src] ?? 0;
+          }
+          surface.heights = nextH;
+        }
+        surface.points = contour;
+      }
     }
 
     function floorHeightAt(x: number) {
       const col = Math.max(0, Math.min(floor.length - 1, Math.floor(x / CELL)));
       return floor[col] ?? 0;
-    }
-
-    function elKey(el: HTMLElement, index: number) {
-      return `${el.className.toString().slice(0, 24)}-${index}-${Math.round(el.getBoundingClientRect().width)}`;
     }
 
     function spillExcess(surface: Surface) {
@@ -500,7 +545,9 @@ export function WinterSnow() {
         }
       }
 
-      // Нижний сугроб — развеиваем мышкой
+      // Нижний сугроб — только десктоп
+      if (!isDesktop()) return;
+
       const col = Math.floor(pointerX / CELL);
       const brushRadius = 7;
       for (let c = col - brushRadius; c <= col + brushRadius; c++) {
@@ -508,7 +555,6 @@ export function WinterSnow() {
         const depth = floor[c]!;
         if (depth < 0.4) continue;
         const top = h - depth;
-        // Зона кисти: чуть выше поверхности сугроба и вниз до низа экрана
         if (pointerY < top - 28 || pointerY > h + 8) continue;
 
         const falloff = 1 - Math.abs(c - col) / (brushRadius + 0.01);
@@ -519,7 +565,6 @@ export function WinterSnow() {
         if (take < 0.04) continue;
         floor[c]! -= take;
 
-        // Часть снега отлетает хлопьями, часть сдвигается в сторону движения
         const pushCol = Math.max(
           0,
           Math.min(floor.length - 1, c + Math.sign(dx || 1) * 2),
@@ -676,10 +721,12 @@ export function WinterSnow() {
     }
 
     function drawPile(surface: Surface) {
+      if (surface.points.length === 0) return;
       for (let i = 0; i < surface.heights.length; i++) {
         const d = surface.heights[i]!;
         if (d < 0.55) continue;
-        const p = surface.points[i]!;
+        const p = surface.points[i];
+        if (!p) continue;
         const radiusX = CELL * 1.25 + d * 0.18;
         const radiusY = d * 0.95;
         const cx = p.x;
@@ -705,6 +752,7 @@ export function WinterSnow() {
     }
 
     function drawFloor() {
+      if (!isDesktop()) return;
       let any = false;
       for (let i = 0; i < floor.length; i++) {
         if (floor[i]! > 0.4) {
@@ -714,7 +762,6 @@ export function WinterSnow() {
       }
       if (!any) return;
 
-      const desktop = isDesktop();
       ctx!.beginPath();
       ctx!.moveTo(0, h);
       ctx!.lineTo(0, h - floor[0]!);
@@ -724,23 +771,14 @@ export function WinterSnow() {
       ctx!.lineTo(w, h - floor[floor.length - 1]!);
       ctx!.lineTo(w, h);
       ctx!.closePath();
-      // Непрозрачный «корпус» сугроба, чтобы ковш не просвечивал.
-      ctx!.fillStyle = desktop
-        ? "rgba(244, 249, 253, 0.97)"
-        : "rgba(238, 244, 250, 0.9)";
+      ctx!.fillStyle = "rgba(244, 249, 253, 0.97)";
       ctx!.fill();
 
       const grad = ctx!.createLinearGradient(0, h - MAX_FLOOR_DEPTH, 0, h);
-      if (desktop) {
-        grad.addColorStop(0, "rgba(255, 255, 255, 1)");
-        grad.addColorStop(0.4, "rgba(248, 252, 255, 0.98)");
-        grad.addColorStop(0.75, "rgba(236, 244, 250, 0.95)");
-        grad.addColorStop(1, "rgba(228, 238, 248, 0.9)");
-      } else {
-        grad.addColorStop(0, "rgba(250, 252, 255, 0.95)");
-        grad.addColorStop(0.7, "rgba(232, 240, 248, 0.85)");
-        grad.addColorStop(1, "rgba(220, 230, 240, 0.55)");
-      }
+      grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+      grad.addColorStop(0.4, "rgba(248, 252, 255, 0.98)");
+      grad.addColorStop(0.75, "rgba(236, 244, 250, 0.95)");
+      grad.addColorStop(1, "rgba(228, 238, 248, 0.9)");
       ctx!.fillStyle = grad;
       ctx!.fill();
     }
@@ -797,17 +835,20 @@ export function WinterSnow() {
       shakeBoost = Math.max(0, shakeBoost - dt * 0.045);
       wind = 0.12 + tiltX * 1.6 + Math.sin(time * 0.7) * 0.1;
 
-      if (Math.random() < 0.08) rebuildSurfaces();
+      // Редко ищем новые элементы; координаты — каждый кадр.
+      if (Math.random() < 0.03) rebuildSurfaces();
+      syncSurfaceGeometry();
 
       brushSurfaces(dt);
       slideByTilt(dt);
       updateExcavator(dt);
 
       for (const surface of surfaces) {
+        if (surface.points.length === 0) continue;
         relaxHeights(surface.heights, surface.maxDepth);
         spillExcess(surface);
       }
-      relaxHeights(floor, MAX_FLOOR_DEPTH);
+      if (isDesktop()) relaxHeights(floor, MAX_FLOOR_DEPTH);
 
       while (flakes.length < FLAKE_COUNT) flakes.push(makeFlake(w, h, true));
       if (flakes.length > FLAKE_COUNT * 1.4) {
@@ -859,28 +900,32 @@ export function WinterSnow() {
           }
 
           if (!landed) {
-            const col = Math.max(
-              0,
-              Math.min(floor.length - 1, Math.floor(f.x / CELL)),
-            );
-            const ground = h - floor[col]!;
-            if (f.y >= ground && f.x >= 0 && f.x <= w) {
-              floor[col] = Math.min(
-                MAX_FLOOR_DEPTH,
-                floor[col]! + f.size * FLOOR_CATCH,
+            if (isDesktop()) {
+              const col = Math.max(
+                0,
+                Math.min(floor.length - 1, Math.floor(f.x / CELL)),
               );
-              if (col > 0) {
-                floor[col - 1] = Math.min(
+              const ground = h - floor[col]!;
+              if (f.y >= ground && f.x >= 0 && f.x <= w) {
+                floor[col] = Math.min(
                   MAX_FLOOR_DEPTH,
-                  floor[col - 1]! + f.size * 0.22,
+                  floor[col]! + f.size * FLOOR_CATCH,
                 );
+                if (col > 0) {
+                  floor[col - 1] = Math.min(
+                    MAX_FLOOR_DEPTH,
+                    floor[col - 1]! + f.size * 0.22,
+                  );
+                }
+                if (col < floor.length - 1) {
+                  floor[col + 1] = Math.min(
+                    MAX_FLOOR_DEPTH,
+                    floor[col + 1]! + f.size * 0.22,
+                  );
+                }
+                landed = true;
               }
-              if (col < floor.length - 1) {
-                floor[col + 1] = Math.min(
-                  MAX_FLOOR_DEPTH,
-                  floor[col + 1]! + f.size * 0.22,
-                );
-              }
+            } else if (f.y >= h) {
               landed = true;
             }
           }
@@ -996,12 +1041,14 @@ export function WinterSnow() {
     const mo = new MutationObserver(scheduleSurfaces);
     mo.observe(document.body, { childList: true, subtree: true });
     const mq = window.matchMedia("(min-width: 768px)");
-    mq.addEventListener("change", scheduleSurfaces);
+    const onMqChange = () => {
+      floorSeeded = false;
+      resize();
+      scheduleSurfaces();
+    };
+    mq.addEventListener("change", onMqChange);
 
-    window.addEventListener("scroll", scheduleSurfaces, {
-      passive: true,
-      capture: true,
-    });
+    // Скролл не пересобирает список — syncSurfaceGeometry каждый кадр.
     window.addEventListener("pointermove", onPointer, { passive: true });
     window.addEventListener("pointerdown", onPointer, { passive: true });
     window.addEventListener("pointerdown", onFirstInteract, { passive: true });
@@ -1013,8 +1060,7 @@ export function WinterSnow() {
       if (syncRaf) cancelAnimationFrame(syncRaf);
       ro.disconnect();
       mo.disconnect();
-      mq.removeEventListener("change", scheduleSurfaces);
-      window.removeEventListener("scroll", scheduleSurfaces, true);
+      mq.removeEventListener("change", onMqChange);
       window.removeEventListener("pointermove", onPointer);
       window.removeEventListener("pointerdown", onPointer);
       window.removeEventListener("pointerdown", onFirstInteract);
