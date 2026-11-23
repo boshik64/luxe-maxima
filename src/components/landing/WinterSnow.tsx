@@ -29,13 +29,24 @@ type Flake = {
 
 type Point = { x: number; y: number };
 
+/** Запас сверху у canvas-шапки (рисуем выше верхнего края кнопки). */
+const CAP_PAD = 18;
+
 type Surface = {
   id: string;
   el: HTMLElement;
+  cap: HTMLCanvasElement;
+  capCtx: CanvasRenderingContext2D;
   radius: number;
+  /** Контур в локальных координатах элемента (0,0 = левый верх). */
   points: Point[];
+  /** Viewport-origin элемента — только для попадания снежинок. */
+  originX: number;
+  originY: number;
+  width: number;
   heights: Float32Array;
   maxDepth: number;
+  prevPosition: string;
 };
 
 let surfaceSeq = 0;
@@ -46,6 +57,22 @@ function ensureSurfaceId(el: HTMLElement) {
     el.dataset.winterSurfaceId = `ws-${surfaceSeq}`;
   }
   return el.dataset.winterSurfaceId;
+}
+
+function localRect(width: number, height: number) {
+  return {
+    left: 0,
+    top: 0,
+    right: width,
+    bottom: height,
+    width,
+    height,
+    x: 0,
+    y: 0,
+    toJSON() {
+      return {};
+    },
+  } as DOMRect;
 }
 
 type Excavator = {
@@ -342,6 +369,66 @@ export function WinterSnow() {
       rebuildSurfaces();
     }
 
+    function disposeSurface(surface: Surface) {
+      surface.cap.remove();
+      if (surface.el.style.position === "relative") {
+        surface.el.style.position = surface.prevPosition;
+      }
+    }
+
+    function ensureCapCanvas(el: HTMLElement, prev?: Surface) {
+      let cap = prev?.cap;
+      let capCtx = prev?.capCtx;
+      if (!cap || !cap.isConnected || cap.parentElement !== el) {
+        cap?.remove();
+        cap = document.createElement("canvas");
+        cap.dataset.winterCap = "1";
+        cap.setAttribute("aria-hidden", "true");
+        cap.style.cssText = [
+          "position:absolute",
+          "left:0",
+          `top:-${CAP_PAD}px`,
+          "width:100%",
+          `height:${CAP_PAD + 22}px`,
+          "pointer-events:none",
+          "z-index:6",
+          "display:block",
+        ].join(";");
+        const ctx2 = cap.getContext("2d");
+        if (!ctx2) return null;
+        capCtx = ctx2;
+        el.prepend(cap);
+      }
+      return { cap: cap!, capCtx: capCtx! };
+    }
+
+    function rebuildLocalContour(surface: Surface, width: number, height: number) {
+      const radius = readTopRadius(surface.el, localRect(width, height));
+      surface.radius = radius;
+      const contour = resampleContour(topContour(localRect(width, height), radius));
+      if (contour.length < 2) {
+        surface.points = [];
+        return;
+      }
+      if (contour.length !== surface.heights.length) {
+        const nextH = new Float32Array(contour.length);
+        if (surface.heights.length > 0) {
+          for (let i = 0; i < nextH.length; i++) {
+            const src = Math.floor(
+              (i / Math.max(1, nextH.length - 1)) *
+                (surface.heights.length - 1),
+            );
+            nextH[i] = surface.heights[src] ?? 0;
+          }
+        } else {
+          seedCap(nextH, surface.maxDepth);
+        }
+        surface.heights = nextH;
+      }
+      surface.points = contour;
+      surface.width = width;
+    }
+
     function rebuildSurfaces() {
       const next: Surface[] = [];
       const seen = new Set<Element>();
@@ -355,72 +442,86 @@ export function WinterSnow() {
 
         const id = ensureSurfaceId(el);
         const prev = byId.get(id);
-        const radius = readTopRadius(el, rect);
-        const contour = resampleContour(topContour(rect, radius));
-        if (contour.length < 2) return;
+        const host = ensureCapCanvas(el, prev);
+        if (!host) return;
 
-        let heights: Float32Array;
-        if (prev && prev.heights.length === contour.length) {
-          heights = prev.heights;
-        } else if (prev && prev.heights.length > 0) {
-          heights = new Float32Array(contour.length);
-          for (let i = 0; i < heights.length; i++) {
-            const src = Math.floor(
-              (i / Math.max(1, heights.length - 1)) * (prev.heights.length - 1),
-            );
-            heights[i] = prev.heights[src] ?? 0;
-          }
-        } else {
-          heights = new Float32Array(contour.length);
-          seedCap(heights, MAX_SURFACE_DEPTH);
+        const prevPosition =
+          prev?.prevPosition ??
+          (el.style.position || "");
+        if (getComputedStyle(el).position === "static") {
+          el.style.position = "relative";
         }
 
-        next.push({
+        let heights: Float32Array;
+        if (prev) {
+          heights = prev.heights;
+        } else {
+          heights = new Float32Array(0);
+        }
+
+        const surface: Surface = {
           id,
           el,
-          radius,
-          points: contour,
+          cap: host.cap,
+          capCtx: host.capCtx,
+          radius: prev?.radius ?? 0,
+          points: prev?.points ?? [],
+          originX: rect.left,
+          originY: rect.top,
+          width: prev?.width ?? 0,
           heights,
           maxDepth: MAX_SURFACE_DEPTH,
-        });
+          prevPosition,
+        };
+        rebuildLocalContour(surface, rect.width, rect.height);
+        if (surface.points.length < 2) {
+          if (!prev) disposeSurface(surface);
+          return;
+        }
+        sizeCapCanvas(surface);
+        next.push(surface);
+        byId.delete(id);
       });
+      byId.forEach((orphan) => disposeSurface(orphan));
       surfaces = next;
     }
 
-    /** Позиции шапок из DOM каждый кадр — без отставания при скролле. */
-    function syncSurfaceGeometry() {
+    /** Только origin для hit-test; шапка в DOM и не отстаёт от скролла. */
+    function syncSurfaceOrigins() {
       for (const surface of surfaces) {
         if (!surface.el.isConnected) {
           surface.points = [];
           continue;
         }
         const rect = surface.el.getBoundingClientRect();
-        if (rect.width < 24 || rect.height < 12) {
-          surface.points = [];
-          continue;
+        surface.originX = rect.left;
+        surface.originY = rect.top;
+        if (Math.abs(rect.width - surface.width) > 1.5) {
+          rebuildLocalContour(surface, rect.width, rect.height);
+          sizeCapCanvas(surface);
         }
-        if (rect.bottom < -160 || rect.top > h + 160) {
-          surface.points = [];
-          continue;
-        }
-        const contour = resampleContour(topContour(rect, surface.radius));
-        if (contour.length < 2) {
-          surface.points = [];
-          continue;
-        }
-        if (contour.length !== surface.heights.length) {
-          const nextH = new Float32Array(contour.length);
-          for (let i = 0; i < nextH.length; i++) {
-            const src = Math.floor(
-              (i / Math.max(1, nextH.length - 1)) *
-                (surface.heights.length - 1),
-            );
-            nextH[i] = surface.heights[src] ?? 0;
-          }
-          surface.heights = nextH;
-        }
-        surface.points = contour;
       }
+    }
+
+    function sizeCapCanvas(surface: Surface) {
+      const dprCap = Math.min(window.devicePixelRatio || 1, 2);
+      const cw = Math.max(1, Math.ceil(surface.width));
+      const ch = CAP_PAD + 22;
+      if (
+        surface.cap.width !== Math.floor(cw * dprCap) ||
+        surface.cap.height !== Math.floor(ch * dprCap)
+      ) {
+        surface.cap.width = Math.floor(cw * dprCap);
+        surface.cap.height = Math.floor(ch * dprCap);
+        surface.capCtx.setTransform(dprCap, 0, 0, dprCap, 0, 0);
+      }
+    }
+
+    function viewX(surface: Surface, localX: number) {
+      return surface.originX + localX;
+    }
+    function viewY(surface: Surface, localY: number) {
+      return surface.originY + localY;
     }
 
     function floorHeightAt(x: number) {
@@ -429,6 +530,7 @@ export function WinterSnow() {
     }
 
     function spillExcess(surface: Surface) {
+      if (surface.points.length === 0) return;
       const limit = surface.maxDepth * SPILL_RATIO;
       // Лишнее стекает к ближайшему краю и падает.
       for (let i = 0; i < surface.heights.length; i++) {
@@ -445,7 +547,13 @@ export function WinterSnow() {
           if (j < 0 || j >= surface.heights.length) {
             const edge = toEdge < 0 ? 0 : surface.heights.length - 1;
             const p = surface.points[edge]!;
-            spillFlake(flakes, p.x, p.y - surface.heights[edge]!, toEdge, moved);
+            spillFlake(
+              flakes,
+              viewX(surface, p.x),
+              viewY(surface, p.y) - surface.heights[edge]!,
+              toEdge,
+              moved,
+            );
             break;
           }
           const room = Math.max(0, limit - surface.heights[j]!);
@@ -456,8 +564,8 @@ export function WinterSnow() {
             const p = surface.points[j]!;
             spillFlake(
               flakes,
-              p.x,
-              p.y - surface.heights[j]!,
+              viewX(surface, p.x),
+              viewY(surface, p.y) - surface.heights[j]!,
               toEdge,
               moved + surface.heights[j]! * 0.15,
             );
@@ -475,17 +583,25 @@ export function WinterSnow() {
         const side = edge === 0 ? -1 : 1;
         const drop = surface.heights[edge]! * 0.12;
         surface.heights[edge]! -= drop;
-        spillFlake(flakes, p.x, p.y - surface.heights[edge]!, side, drop);
+        spillFlake(
+          flakes,
+          viewX(surface, p.x),
+          viewY(surface, p.y) - surface.heights[edge]!,
+          side,
+          drop,
+        );
       }
     }
 
     function deposit(surface: Surface, x: number, y: number, amount: number) {
+      if (surface.points.length === 0) return false;
       let best = -1;
       let bestDist = 12;
       for (let i = 0; i < surface.points.length; i++) {
         const p = surface.points[i]!;
-        const surfaceY = p.y - surface.heights[i]!;
-        const d = Math.hypot(p.x - x, (surfaceY - y) * 1.35);
+        const px = viewX(surface, p.x);
+        const surfaceY = viewY(surface, p.y) - surface.heights[i]!;
+        const d = Math.hypot(px - x, (surfaceY - y) * 1.35);
         if (d < bestDist) {
           bestDist = d;
           best = i;
@@ -494,9 +610,10 @@ export function WinterSnow() {
       if (best < 0) return false;
 
       const p = surface.points[best]!;
-      const surfaceY = p.y - surface.heights[best]!;
+      const px = viewX(surface, p.x);
+      const surfaceY = viewY(surface, p.y) - surface.heights[best]!;
       if (y > surfaceY + 4 || y < surfaceY - 12) return false;
-      if (Math.abs(x - p.x) > CELL * 1.8) return false;
+      if (Math.abs(x - px) > CELL * 1.8) return false;
 
       surface.heights[best] = Math.min(
         surface.maxDepth,
@@ -527,14 +644,16 @@ export function WinterSnow() {
       for (const surface of surfaces) {
         for (let i = 0; i < surface.points.length; i++) {
           const p = surface.points[i]!;
-          const top = p.y - surface.heights[i]!;
-          if (Math.abs(pointerX - p.x) > 14) continue;
-          if (pointerY < top - 16 || pointerY > p.y + 8) continue;
+          const px = viewX(surface, p.x);
+          const py = viewY(surface, p.y);
+          const top = py - surface.heights[i]!;
+          if (Math.abs(pointerX - px) > 14) continue;
+          if (pointerY < top - 16 || pointerY > py + 8) continue;
           const take = Math.min(surface.heights[i]!, (0.35 + speed * 0.05) * dt);
           if (take < 0.05) continue;
           surface.heights[i]! -= take;
           flakes.push({
-            x: p.x,
+            x: px,
             y: top,
             vx: dx * 0.25 + (Math.random() - 0.5),
             vy: dy * 0.15 - 1.2,
@@ -722,6 +841,11 @@ export function WinterSnow() {
 
     function drawPile(surface: Surface) {
       if (surface.points.length === 0) return;
+      sizeCapCanvas(surface);
+      const c = surface.capCtx;
+      const ch = CAP_PAD + 22;
+      c.clearRect(0, 0, surface.width, ch);
+
       for (let i = 0; i < surface.heights.length; i++) {
         const d = surface.heights[i]!;
         if (d < 0.55) continue;
@@ -730,10 +854,10 @@ export function WinterSnow() {
         const radiusX = CELL * 1.25 + d * 0.18;
         const radiusY = d * 0.95;
         const cx = p.x;
-        // Центр чуть ниже контура — шапка налезает на элемент
-        const cy = p.y - d * 0.35;
+        // Локальные coords → canvas со сдвигом CAP_PAD
+        const cy = p.y + CAP_PAD - d * 0.35;
 
-        const grad = ctx!.createRadialGradient(
+        const grad = c.createRadialGradient(
           cx,
           cy - radiusY * 0.25,
           0.2,
@@ -744,10 +868,10 @@ export function WinterSnow() {
         grad.addColorStop(0, "rgba(248, 251, 255, 0.88)");
         grad.addColorStop(0.55, "rgba(230, 238, 247, 0.5)");
         grad.addColorStop(1, "rgba(210, 222, 235, 0)");
-        ctx!.fillStyle = grad;
-        ctx!.beginPath();
-        ctx!.ellipse(cx, cy, radiusX, radiusY, 0, 0, Math.PI * 2);
-        ctx!.fill();
+        c.fillStyle = grad;
+        c.beginPath();
+        c.ellipse(cx, cy, radiusX, radiusY, 0, 0, Math.PI * 2);
+        c.fill();
       }
     }
 
@@ -788,11 +912,18 @@ export function WinterSnow() {
       const force = tiltX;
       if (Math.abs(force) > 0.5 || shakeBoost > 1.1) {
         for (const surface of surfaces) {
+          if (surface.points.length === 0) continue;
           for (let i = 0; i < surface.heights.length; i++) {
             const amount = surface.heights[i]!;
             if (amount < 0.4) continue;
             const p = surface.points[i]!;
-            spillFlake(flakes, p.x, p.y - amount * 0.4, force * 2, amount);
+            spillFlake(
+              flakes,
+              viewX(surface, p.x),
+              viewY(surface, p.y) - amount * 0.4,
+              force * 2,
+              amount,
+            );
             surface.heights[i] = 0;
           }
         }
@@ -800,6 +931,7 @@ export function WinterSnow() {
       }
 
       for (const surface of surfaces) {
+        if (surface.points.length === 0) continue;
         const dir = force > 0 ? 1 : -1;
         if (dir > 0) {
           for (let i = surface.heights.length - 2; i >= 0; i--) {
@@ -835,9 +967,9 @@ export function WinterSnow() {
       shakeBoost = Math.max(0, shakeBoost - dt * 0.045);
       wind = 0.12 + tiltX * 1.6 + Math.sin(time * 0.7) * 0.1;
 
-      // Редко ищем новые элементы; координаты — каждый кадр.
+      // Редко ищем новые элементы; origin — каждый кадр для hit-test.
       if (Math.random() < 0.03) rebuildSurfaces();
-      syncSurfaceGeometry();
+      syncSurfaceOrigins();
 
       brushSurfaces(dt);
       slideByTilt(dt);
@@ -882,9 +1014,10 @@ export function WinterSnow() {
             }
             for (let s = 0; s < surface.points.length; s++) {
               const p = surface.points[s]!;
-              const sy = p.y - surface.heights[s]!;
+              const px = viewX(surface, p.x);
+              const sy = viewY(surface, p.y) - surface.heights[s]!;
               if (
-                Math.abs(f.x - p.x) <= CELL * 1.25 &&
+                Math.abs(f.x - px) <= CELL * 1.25 &&
                 prevY <= sy &&
                 f.y >= sy
               ) {
@@ -942,7 +1075,7 @@ export function WinterSnow() {
       }
       flakes.length = write;
 
-      // Сначала экскаватор, потом пол — снег накрывает низ колёс (утоплен).
+      // Экскаватор и пол на fixed-canvas; шапки — в DOM у элементов.
       drawExcavator();
       drawFloor();
       for (const surface of surfaces) drawPile(surface);
@@ -1013,11 +1146,18 @@ export function WinterSnow() {
       if (jerk > 14) {
         shakeBoost = Math.min(2.5, shakeBoost + jerk * 0.08);
         for (const surface of surfaces) {
+          if (surface.points.length === 0) continue;
           for (let i = 0; i < surface.heights.length; i++) {
             const amount = surface.heights[i]!;
             if (amount < 0.3) continue;
             const p = surface.points[i]!;
-            spillFlake(flakes, p.x, p.y, tiltX * 3, amount);
+            spillFlake(
+              flakes,
+              viewX(surface, p.x),
+              viewY(surface, p.y),
+              tiltX * 3,
+              amount,
+            );
             surface.heights[i] = 0;
           }
         }
@@ -1038,7 +1178,22 @@ export function WinterSnow() {
         rebuildSurfaces();
       });
     };
-    const mo = new MutationObserver(scheduleSurfaces);
+    const onlyWinterCaps = (nodes: NodeList) => {
+      for (const n of nodes) {
+        if (!(n instanceof HTMLElement) || n.dataset.winterCap !== "1") {
+          return false;
+        }
+      }
+      return true;
+    };
+    const mo = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (!onlyWinterCaps(m.addedNodes) || !onlyWinterCaps(m.removedNodes)) {
+          scheduleSurfaces();
+          return;
+        }
+      }
+    });
     mo.observe(document.body, { childList: true, subtree: true });
     const mq = window.matchMedia("(min-width: 768px)");
     const onMqChange = () => {
@@ -1048,7 +1203,6 @@ export function WinterSnow() {
     };
     mq.addEventListener("change", onMqChange);
 
-    // Скролл не пересобирает список — syncSurfaceGeometry каждый кадр.
     window.addEventListener("pointermove", onPointer, { passive: true });
     window.addEventListener("pointerdown", onPointer, { passive: true });
     window.addEventListener("pointerdown", onFirstInteract, { passive: true });
@@ -1058,6 +1212,8 @@ export function WinterSnow() {
       running = false;
       cancelAnimationFrame(raf);
       if (syncRaf) cancelAnimationFrame(syncRaf);
+      surfaces.forEach(disposeSurface);
+      surfaces = [];
       ro.disconnect();
       mo.disconnect();
       mq.removeEventListener("change", onMqChange);
