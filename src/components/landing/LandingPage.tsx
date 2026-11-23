@@ -20,6 +20,7 @@ import type { PublicHallShowcaseItem } from "@/lib/catalog/admin-types";
 import type { PublicCarousel } from "@/lib/carousel/types";
 import type { PublicEventPromo } from "@/lib/events/types";
 import { PRODUCTS, type ProductId } from "@/lib/products";
+import { getSeasonCampaignLabel } from "@/lib/site-theme";
 
 export function LandingPage({
   initialProduct,
@@ -44,6 +45,7 @@ export function LandingPage({
   const [liveBanner, setLiveBanner] = useState<PublicBanner | null>(banner);
   const [liveFormBanner, setLiveFormBanner] = useState<PublicBanner | null>(formBanner);
   const product = productId ? PRODUCTS[productId] : null;
+  const seasonKicker = getSeasonCampaignLabel();
 
   useEffect(() => {
     if (lockProduct) return;
@@ -91,7 +93,7 @@ export function LandingPage({
               ? "Групповые билеты"
               : lockProduct
                 ? product?.kicker ?? ""
-                : "Осень в КАРО"
+                : seasonKicker
           }
           title={lockProduct ? product?.title ?? "" : "Кино по твоему сценарию"}
           text={

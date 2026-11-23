@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { isWinterTheme } from "@/lib/site-theme";
 
 /**
  * Декоративный слой кампании «Осень в КАРО»: коллажные кадры, штамп и
@@ -7,11 +8,17 @@ import Image from "next/image";
  */
 
 export function AutumnHeroBanner() {
+  const winter = isWinterTheme();
+
   return (
     <div className="autumn-only autumn-hero-banner">
       <Image
-        src="/autumn/hero-banner.png"
-        alt="Кресло КАРО с пледом и попкорном в полутёмном зале"
+        src={winter ? "/winter/hero-banner.jpg" : "/autumn/hero-banner.png"}
+        alt={
+          winter
+            ? "Кресло КАРО с синим шарфом и праздничным попкорном"
+            : "Кресло КАРО с пледом и попкорном в полутёмном зале"
+        }
         fill
         priority
         sizes="100vw"
