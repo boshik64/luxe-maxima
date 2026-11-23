@@ -895,9 +895,13 @@ export function WinterSnow() {
       c.lineTo(last.x, ch);
       c.closePath();
       const grad = c.createLinearGradient(0, 0, 0, ch);
-      grad.addColorStop(0, "rgba(248, 251, 255, 0.92)");
-      grad.addColorStop(0.65, "rgba(232, 240, 248, 0.55)");
-      grad.addColorStop(1, "rgba(210, 222, 235, 0)");
+      const mobile = !isDesktop();
+      grad.addColorStop(0, mobile ? "rgba(255, 255, 255, 1)" : "rgba(248, 251, 255, 0.92)");
+      grad.addColorStop(
+        0.65,
+        mobile ? "rgba(242, 247, 252, 0.92)" : "rgba(232, 240, 248, 0.55)",
+      );
+      grad.addColorStop(1, mobile ? "rgba(230, 238, 247, 0.35)" : "rgba(210, 222, 235, 0)");
       c.fillStyle = grad;
       c.fill();
     }
@@ -1116,10 +1120,13 @@ export function WinterSnow() {
       drawFloor();
       for (const surface of surfaces) drawPile(surface);
 
-      const alphas = [0.35, 0.58, 0.82];
+      // На мобилке слои заметно плотнее — иначе снег «призрачный».
+      const alphas = isDesktop()
+        ? [0.35, 0.58, 0.82]
+        : [0.62, 0.82, 0.96];
       for (let i = 0; i < 3; i++) {
         ctx!.globalAlpha = alphas[i]!;
-        ctx!.fillStyle = "#f2f6fb";
+        ctx!.fillStyle = isDesktop() ? "#f2f6fb" : "#ffffff";
         ctx!.fill(layers[i]!);
       }
       ctx!.globalAlpha = 1;
