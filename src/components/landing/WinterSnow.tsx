@@ -47,6 +47,8 @@ type Surface = {
   heights: Float32Array;
   maxDepth: number;
   prevPosition: string;
+  /** Перерисовать шапку (дорого — не каждый кадр). */
+  dirty: boolean;
 };
 
 let surfaceSeq = 0;
@@ -224,23 +226,29 @@ function resampleContour(points: Point[], cell = CELL): Point[] {
 
 function relaxHeights(h: Float32Array, maxDepth: number) {
   const maxDiff = SLOPE * CELL;
-  for (let pass = 0; pass < 3; pass++) {
+  let changed = false;
+  for (let pass = 0; pass < 2; pass++) {
     for (let i = 0; i < h.length - 1; i++) {
       const d = h[i]! - h[i + 1]!;
       if (d > maxDiff) {
         const move = (d - maxDiff) * 0.5;
         h[i]! -= move;
         h[i + 1]! += move;
+        changed = true;
       } else if (d < -maxDiff) {
         const move = (-d - maxDiff) * 0.5;
         h[i]! += move;
         h[i + 1]! -= move;
+        changed = true;
       }
     }
   }
   for (let i = 0; i < h.length; i++) {
-    h[i] = Math.max(0, Math.min(maxDepth, h[i]!));
+    const next = Math.max(0, Math.min(maxDepth, h[i]!));
+    if (next !== h[i]!) changed = true;
+    h[i] = next;
   }
+  return changed;
 }
 
 function makeFlake(w: number, h: number, fromTop: boolean): Flake {
@@ -334,6 +342,9 @@ export function WinterSnow() {
     let lastPointerY = 0;
     let lastAccel = { x: 0, y: 0, z: 0 };
     let motionHooked = false;
+    let lastScrollY = window.scrollY;
+    let originSyncTick = 0;
+    let frameN = 0;
 
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -472,6 +483,7 @@ export function WinterSnow() {
           heights,
           maxDepth: MAX_SURFACE_DEPTH,
           prevPosition,
+          dirty: true,
         };
         rebuildLocalContour(surface, rect.width, rect.height);
         if (surface.points.length < 2) {
@@ -479,6 +491,7 @@ export function WinterSnow() {
           return;
         }
         sizeCapCanvas(surface);
+        surface.dirty = true;
         next.push(surface);
         byId.delete(id);
       });
@@ -486,8 +499,18 @@ export function WinterSnow() {
       surfaces = next;
     }
 
-    /** Только origin для hit-test; шапка в DOM и не отстаёт от скролла. */
+    /** Origin для hit-test: дельта скролла + редкий полный sync. */
     function syncSurfaceOrigins() {
+      const y = window.scrollY;
+      const dy = y - lastScrollY;
+      lastScrollY = y;
+      if (dy !== 0) {
+        for (const surface of surfaces) surface.originY -= dy;
+      }
+
+      originSyncTick += 1;
+      if (originSyncTick % 12 !== 0 && dy === 0) return;
+
       for (const surface of surfaces) {
         if (!surface.el.isConnected) {
           surface.points = [];
@@ -499,8 +522,13 @@ export function WinterSnow() {
         if (Math.abs(rect.width - surface.width) > 1.5) {
           rebuildLocalContour(surface, rect.width, rect.height);
           sizeCapCanvas(surface);
+          surface.dirty = true;
         }
       }
+    }
+
+    function surfaceInView(surface: Surface) {
+      return surface.originY < h + 80 && surface.originY > -120;
     }
 
     function sizeCapCanvas(surface: Surface) {
@@ -631,6 +659,7 @@ export function WinterSnow() {
           surface.heights[best + 1]! + amount * 0.16,
         );
       }
+      surface.dirty = true;
       return true;
     }
 
@@ -652,6 +681,7 @@ export function WinterSnow() {
           const take = Math.min(surface.heights[i]!, (0.35 + speed * 0.05) * dt);
           if (take < 0.05) continue;
           surface.heights[i]! -= take;
+          surface.dirty = true;
           flakes.push({
             x: px,
             y: top,
@@ -840,39 +870,36 @@ export function WinterSnow() {
     }
 
     function drawPile(surface: Surface) {
-      if (surface.points.length === 0) return;
+      if (!surface.dirty || surface.points.length === 0) return;
+      surface.dirty = false;
       sizeCapCanvas(surface);
       const c = surface.capCtx;
       const ch = CAP_PAD + 22;
       c.clearRect(0, 0, surface.width, ch);
 
-      for (let i = 0; i < surface.heights.length; i++) {
+      // Один силуэт вместо градиента на каждую точку — сильно дешевле.
+      c.beginPath();
+      const first = surface.points[0]!;
+      c.moveTo(first.x, ch);
+      c.lineTo(first.x, first.y + CAP_PAD - surface.heights[0]! * 0.9);
+      for (let i = 1; i < surface.points.length; i++) {
+        const p = surface.points[i]!;
         const d = surface.heights[i]!;
-        if (d < 0.55) continue;
-        const p = surface.points[i];
-        if (!p) continue;
-        const radiusX = CELL * 1.25 + d * 0.18;
-        const radiusY = d * 0.95;
-        const cx = p.x;
-        // Локальные coords → canvas со сдвигом CAP_PAD
-        const cy = p.y + CAP_PAD - d * 0.35;
-
-        const grad = c.createRadialGradient(
-          cx,
-          cy - radiusY * 0.25,
-          0.2,
-          cx,
-          cy,
-          Math.max(radiusX, radiusY),
-        );
-        grad.addColorStop(0, "rgba(248, 251, 255, 0.88)");
-        grad.addColorStop(0.55, "rgba(230, 238, 247, 0.5)");
-        grad.addColorStop(1, "rgba(210, 222, 235, 0)");
-        c.fillStyle = grad;
-        c.beginPath();
-        c.ellipse(cx, cy, radiusX, radiusY, 0, 0, Math.PI * 2);
-        c.fill();
+        if (d < 0.4) {
+          c.lineTo(p.x, p.y + CAP_PAD);
+          continue;
+        }
+        c.lineTo(p.x, p.y + CAP_PAD - d * 0.95);
       }
+      const last = surface.points[surface.points.length - 1]!;
+      c.lineTo(last.x, ch);
+      c.closePath();
+      const grad = c.createLinearGradient(0, 0, 0, ch);
+      grad.addColorStop(0, "rgba(248, 251, 255, 0.92)");
+      grad.addColorStop(0.65, "rgba(232, 240, 248, 0.55)");
+      grad.addColorStop(1, "rgba(210, 222, 235, 0)");
+      c.fillStyle = grad;
+      c.fill();
     }
 
     function drawFloor() {
@@ -960,15 +987,16 @@ export function WinterSnow() {
 
     function frame(ts: number) {
       if (!running) return;
-      const dt = Math.min(2.5, (ts - lastTs) / 16.67);
+      // Жёсткий clamp — после лагов не делаем «прыжок» на несколько кадров.
+      const dt = Math.min(1.25, (ts - lastTs) / 16.67);
       lastTs = ts;
       time += dt * 0.016;
+      frameN += 1;
 
       shakeBoost = Math.max(0, shakeBoost - dt * 0.045);
       wind = 0.12 + tiltX * 1.6 + Math.sin(time * 0.7) * 0.1;
 
-      // Редко ищем новые элементы; origin — каждый кадр для hit-test.
-      if (Math.random() < 0.03) rebuildSurfaces();
+      if (Math.random() < 0.02) rebuildSurfaces();
       syncSurfaceOrigins();
 
       brushSurfaces(dt);
@@ -977,14 +1005,19 @@ export function WinterSnow() {
 
       for (const surface of surfaces) {
         if (surface.points.length === 0) continue;
-        relaxHeights(surface.heights, surface.maxDepth);
-        spillExcess(surface);
+        if (relaxHeights(surface.heights, surface.maxDepth)) surface.dirty = true;
+        // осыпание реже — меньше работы и ровнее FPS у падающего снега
+        if (frameN % 3 === 0) {
+          spillExcess(surface);
+          surface.dirty = true;
+        }
       }
       if (isDesktop()) relaxHeights(floor, MAX_FLOOR_DEPTH);
 
-      while (flakes.length < FLAKE_COUNT) flakes.push(makeFlake(w, h, true));
-      if (flakes.length > FLAKE_COUNT * 1.4) {
-        flakes.splice(FLAKE_COUNT, flakes.length - FLAKE_COUNT);
+      const flakeTarget = isDesktop() ? FLAKE_COUNT : Math.floor(FLAKE_COUNT * 0.55);
+      while (flakes.length < flakeTarget) flakes.push(makeFlake(w, h, true));
+      if (flakes.length > flakeTarget * 1.25) {
+        flakes.splice(flakeTarget, flakes.length - flakeTarget);
       }
 
       ctx!.clearRect(0, 0, w, h);
@@ -1008,7 +1041,9 @@ export function WinterSnow() {
         let landed = false;
         if (f.vy > 0) {
           for (const surface of surfaces) {
+            if (!surfaceInView(surface) || surface.points.length === 0) continue;
             if (deposit(surface, f.x, f.y, f.size * 0.45)) {
+              surface.dirty = true;
               landed = true;
               break;
             }
@@ -1025,6 +1060,7 @@ export function WinterSnow() {
                   surface.maxDepth,
                   surface.heights[s]! + f.size * 0.5,
                 );
+                surface.dirty = true;
                 landed = true;
                 break;
               }
