@@ -10,7 +10,6 @@ import {
   type ReactNode,
 } from "react";
 import { isWinterTheme } from "@/lib/site-theme";
-import { enableWinterMotion } from "@/lib/winter-motion";
 
 const STORAGE_KEY = "karo-winter-effects";
 
@@ -40,16 +39,17 @@ export function WinterEffectsProvider({ children }: { children: ReactNode }) {
     }
   }, [available]);
 
-  const setEnabled = useCallback((next: boolean) => {
-    setEnabledState(next);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
-    } catch {
-      // ignore
-    }
-    // iOS: requestPermission только в стеке user gesture (клик снежинки).
-    if (next) void enableWinterMotion();
-  }, []);
+  const setEnabled = useCallback(
+    (next: boolean) => {
+      setEnabledState(next);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+      } catch {
+        // ignore
+      }
+    },
+    [],
+  );
 
   const toggle = useCallback(() => {
     setEnabled(!enabled);
