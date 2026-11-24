@@ -74,32 +74,12 @@ export async function PATCH(
     }
   }
 
-  const { managerId, archived, ...fields } = parsed.data;
+  const { managerId, ...fields } = parsed.data;
   const data: Prisma.ApplicationUpdateInput = { ...fields };
 
+  // Доска зависит только от статуса: «Выполнена» / «Не актуально» → «Архив».
   if (parsed.data.status && parsed.data.status !== existing.status) {
     data.statusEnteredAt = new Date();
-    // Возврат в активный статус снимает с доски «Архив».
-    if (
-      parsed.data.status !== "CLOSED" &&
-      parsed.data.status !== "REJECTED"
-    ) {
-      data.archived = false;
-    }
-  }
-
-  if (archived === true) {
-    data.archived = true;
-    if (
-      existing.status !== "CLOSED" &&
-      existing.status !== "REJECTED" &&
-      !parsed.data.status
-    ) {
-      data.status = "REJECTED";
-      data.statusEnteredAt = new Date();
-    }
-  } else if (archived === false) {
-    data.archived = false;
   }
 
   if (managerId !== undefined) {

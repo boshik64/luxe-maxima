@@ -87,6 +87,8 @@ export async function POST(request: NextRequest) {
     const result = await createApplication(parsed.data, {
       managerId: session.sub,
       skipRecentDuplicate: true,
+      // Публичная форма поле paid не принимает — только ручное создание в админке.
+      paid: raw.paid === true,
     });
     const item = await getApplication(result.id);
     return NextResponse.json(

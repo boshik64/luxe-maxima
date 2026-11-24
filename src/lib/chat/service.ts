@@ -137,7 +137,7 @@ export async function sendGuestReply(options: {
     data: {
       status: nextStatus,
       ...(statusChanged
-        ? { statusEnteredAt: new Date(), archived: false }
+        ? { statusEnteredAt: new Date() }
         : {}),
       managerId: options.application.managerId ?? options.authorId,
     },
@@ -226,7 +226,6 @@ export async function ingestInboundMessage(options: {
     data: {
       status: nextStatus,
       statusEnteredAt: new Date(),
-      archived: false,
     },
     include: { manager: true },
   });

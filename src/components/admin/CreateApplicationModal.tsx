@@ -58,6 +58,7 @@ type Draft = {
   rentalStart: string;
   comment: string;
   adminComment: string;
+  paid: boolean;
 };
 
 const emptyDraft = (productId: ProductId = "keys"): Draft => ({
@@ -88,6 +89,7 @@ const emptyDraft = (productId: ProductId = "keys"): Draft => ({
   rentalStart: "",
   comment: "",
   adminComment: "",
+  paid: false,
 });
 
 const TICKET_OPTIONS = TICKET_TYPES.map((item) => ({
@@ -421,6 +423,7 @@ export function CreateApplicationModal({
             ? catalogField(draft.sessionId, draft.sessionLabel)
             : catalogField("", "", "")
           : catalogField("", "", ""),
+      paid: draft.paid,
       consent: true as const,
       idempotencyKey,
       website: "",
@@ -748,6 +751,16 @@ export function CreateApplicationModal({
               onChange={(value) => setField("adminComment", value)}
             />
           </div>
+          <label className="flex items-center gap-2 rounded-xl border border-line bg-background/60 px-3 py-2 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              className="size-4 accent-[#22c55e]"
+              checked={draft.paid}
+              disabled={saving}
+              onChange={(event) => setField("paid", event.target.checked)}
+            />
+            <span>Оплачено</span>
+          </label>
         </div>
 
         {error ? <p className="mt-3 text-sm text-primary">{error}</p> : null}
