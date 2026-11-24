@@ -18,10 +18,10 @@ import { PRODUCT_EMOJI } from "@/lib/admin/products";
 import {
   ARCHIVE_BOARD_STATUSES,
   ARCHIVE_STATUS_LABEL,
+  isArchiveStatus,
   MAIN_BOARD_STATUSES,
   STATUS_ACCENT,
   STATUS_LABEL,
-  STATUSES,
 } from "@/lib/admin/status";
 import {
   eventDateLabel,
@@ -57,6 +57,13 @@ const filterControlClass =
 function isUrgentCard(item: ApplicationRecord) {
   return item.status === "IN_PROGRESS" && isWithinHours(item, 72);
 }
+
+/** Красная и не оплачено: скоро мероприятие, но оплаты ещё нет. */
+function isUrgentUnpaidCard(item: ApplicationRecord) {
+  return isUrgentCard(item) && !item.paid;
+}
+
+const PAID_FILTER_URGENT_UNPAID = "urgent_unpaid";
 
 function cardToneClass(item: ApplicationRecord) {
   if (isUrgentCard(item)) return "admin-card-urgent relative border";
@@ -298,7 +305,12 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
     const params = new URLSearchParams({ pageSize: "500", board });
     if (product !== "all") params.set("productId", product);
     if (statusFilter !== "all") params.set("status", statusFilter);
-    if (paidFilter !== "all") params.set("paid", paidFilter);
+    if (paidFilter === PAID_FILTER_URGENT_UNPAID) {
+      // «Красная» определяется по дате мероприятия на клиенте — сервер отдаёт неоплаченные.
+      params.set("paid", "unpaid");
+    } else if (paidFilter !== "all") {
+      params.set("paid", paidFilter);
+    }
     if (managerFilter !== "all") params.set("managerId", managerFilter);
     if (searchQuery) params.set("q", searchQuery);
     if (createdFrom) params.set("createdFrom", createdFrom);
@@ -389,7 +401,9 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
   const applySavedItem = useCallback(
     (entry: ApplicationRecord) => {
       const belongsHere =
-        board === "archive" ? entry.archived === true : entry.archived !== true;
+        board === "archive"
+          ? isArchiveStatus(entry.status)
+          : !isArchiveStatus(entry.status);
       if (!belongsHere) {
         setItems((list) => list.filter((row) => row.id !== entry.id));
         setTotal((value) => Math.max(0, value - 1));
@@ -453,9 +467,19 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
     await save(id, { status });
   }
 
+  const visibleItems = useMemo(
+    () =>
+      paidFilter === PAID_FILTER_URGENT_UNPAID
+        ? items.filter(isUrgentUnpaidCard)
+        : items,
+    [items, paidFilter],
+  );
+  const visibleTotal =
+    paidFilter === PAID_FILTER_URGENT_UNPAID ? visibleItems.length : total;
+
   const columns = boardStatuses.map((status) => ({
     status,
-    items: items.filter((item) => item.status === status),
+    items: visibleItems.filter((item) => item.status === status),
   }));
 
   function toggleStatusCollapsed(status: ApplicationStatus) {
@@ -498,7 +522,9 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
       <div className="mb-2 flex shrink-0 flex-wrap items-center justify-between gap-3">
         <h1 className="flex items-baseline gap-3 font-[family-name:var(--font-display)] text-3xl">
           {board === "archive" ? "Архив" : "Заявки"}
-          <span className="text-base font-normal text-muted">{total}</span>
+          <span className="text-base font-normal text-muted">
+            {visibleTotal}
+          </span>
         </h1>
         {board === "main" ? (
           <button
@@ -539,23 +565,29 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
           value={statusFilter}
           options={[
             { value: "all", label: "Все статусы" },
-            ...(board === "archive" ? ARCHIVE_BOARD_STATUSES : STATUSES).map(
-              (status) => ({
-                value: status,
-                label: statusLabelForBoard(board, status),
-              }),
-            ),
+            ...boardStatuses.map((status) => ({
+              value: status,
+              label: statusLabelForBoard(board, status),
+            })),
           ]}
           onChange={setStatusFilter}
         />
         <CustomSelect
           id="paid-filter"
-          className="w-44"
+          className="w-56"
           value={paidFilter}
           options={[
             { value: "all", label: "Оплата: все" },
             { value: "paid", label: "Оплачено" },
             { value: "unpaid", label: "Не оплачено" },
+            ...(board === "main"
+              ? [
+                  {
+                    value: PAID_FILTER_URGENT_UNPAID,
+                    label: "Красная и не оплачено",
+                  },
+                ]
+              : []),
           ]}
           onChange={setPaidFilter}
         />
@@ -660,7 +692,7 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
         </div>
       ) : (
         <div className="pretty-scroll min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain pr-1">
-          {items.length === 0 ? (
+          {visibleItems.length === 0 ? (
             <p className="rounded-3xl border border-line bg-card/60 px-4 py-12 text-center text-sm text-muted">
               Нет заявок по текущим фильтрам
             </p>
@@ -749,7 +781,6 @@ export function AdminDashboard({ board = "main" }: { board?: BoardKind }) {
           key={openItem.id}
           item={openItem}
           managers={managers}
-          board={board}
           saving={saving}
           error={error}
           onClose={closeModal}

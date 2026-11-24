@@ -1,6 +1,9 @@
 import { ApplicationStatus, Prisma, ProductId } from "@prisma/client";
 import { archiveOverdueWaitingApplications } from "@/lib/applications/archive-overdue";
-import { moveStaleTerminalToArchiveBoard } from "@/lib/applications/board-archive";
+import {
+  ARCHIVE_BOARD_STATUSES,
+  MAIN_BOARD_STATUSES,
+} from "@/lib/admin/status";
 import { contentChoiceLabel } from "@/lib/applications/display";
 import { ApplicationValidationError } from "@/lib/applications/errors";
 import type { ApplicationInput } from "@/lib/applications/schema";
@@ -25,7 +28,11 @@ function catalogId(field?: { id?: string } | null) {
 
 export async function createApplication(
   input: ApplicationInput,
-  options?: { managerId?: string; skipRecentDuplicate?: boolean },
+  options?: {
+    managerId?: string;
+    skipRecentDuplicate?: boolean;
+    paid?: boolean;
+  },
 ) {
   const existing = await prisma.application.findUnique({
     where: { idempotencyKey: input.idempotencyKey },
@@ -152,6 +159,7 @@ export async function createApplication(
       utmContent: input.utm?.content || null,
       utmTerm: input.utm?.term || null,
       idempotencyKey: input.idempotencyKey,
+      ...(options?.paid ? { paid: true } : {}),
       ...(options?.managerId
         ? { manager: { connect: { id: options.managerId } } }
         : {}),
@@ -217,24 +225,25 @@ export async function listApplications(params: {
   await archiveOverdueWaitingApplications().catch((error) => {
     logger.error("Failed to archive overdue waiting applications", error);
   });
-  await moveStaleTerminalToArchiveBoard().catch((error) => {
-    logger.error("Failed to move stale terminals to archive board", error);
-  });
 
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(500, Math.max(10, params.pageSize ?? 20));
   const where: Prisma.ApplicationWhereInput = {};
-  if (params.board === "archive") {
-    where.archived = true;
-    where.status = { in: ["CLOSED", "REJECTED"] };
-  } else {
-    where.archived = false;
-  }
+  // Доска определяется статусом: «Выполнена» / «Не актуально» — только в архиве.
+  const boardStatuses: ApplicationStatus[] =
+    params.board === "archive"
+      ? [...ARCHIVE_BOARD_STATUSES]
+      : MAIN_BOARD_STATUSES;
+  where.status = { in: boardStatuses };
   if (
     params.status &&
     (Object.values(ApplicationStatus) as string[]).includes(params.status)
   ) {
-    where.status = params.status as ApplicationStatus;
+    const requested = params.status as ApplicationStatus;
+    // Статус другой доски здесь не показываем — пустой результат.
+    where.status = boardStatuses.includes(requested)
+      ? requested
+      : { in: [] };
   }
   if (
     params.productId &&

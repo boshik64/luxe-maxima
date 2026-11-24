@@ -67,7 +67,6 @@
 | `/admin/events` | Блок мероприятий на лендинге (в т.ч. ссылка на PDF-презентацию) |
 | `/admin/contact-mailto` | Тема и тело `mailto` на странице «Контакты» (**только ADMIN**) |
 | `/admin/feedback` | Очередь обращений (раздел **скрыт** в навигации; API/страницы живы) |
-| `/admin/film-sales` | Механики продажи фильмов (`sale_id`) |
 | `/admin/users` | Пользователи (только ADMIN) |
 | `/admin/profile` | Профиль / подпись писем |
 
@@ -77,7 +76,9 @@
 
 UI: `src/components/admin/AdminDashboard.tsx` (`board: "main" | "archive"`), навигация — `AdminNav`.
 
-**Основная** (`/admin`, `archived = false`):
+Доска определяется **только статусом** (поле `archived` в БД устарело и не используется): `CLOSED` / `REJECTED` — только на «Архиве», остальные — на основной. Смена статуса в карточке/drag-and-drop сразу переносит заявку между досками; чтобы вернуть из архива, нужно сменить статус на активный.
+
+**Основная** (`/admin`):
 
 | Статус | Подпись колонки |
 |--------|-----------------|
@@ -85,10 +86,8 @@ UI: `src/components/admin/AdminDashboard.tsx` (`board: "main" | "archive"`), н�
 | `WAITING_REPLY` | Ждем ответа |
 | `ANSWERED` | Отвечено |
 | `IN_PROGRESS` | В работе |
-| `CLOSED` | Выполнена |
-| `REJECTED` | Не актуально |
 
-**Архив** (`/admin/archive`, `archived = true`):
+**Архив** (`/admin/archive`):
 
 | Статус | Подпись колонки |
 |--------|-----------------|
@@ -97,11 +96,11 @@ UI: `src/components/admin/AdminDashboard.tsx` (`board: "main" | "archive"`), н�
 
 На **обеих** досках справа над доской — переключение вида **канбан / список** (иконки; выбор в `localStorage` по ключу доски).
 
-Фильтры: продукт, статус, оплата (Оплачено / Не оплачено), менеджер, даты создания, **поиск** по полям/комментариям/`KM-N`.
+Фильтры: продукт, статус, оплата (Оплачено / Не оплачено / **Красная и не оплачено** — только на основной доске; красные = «В работе» и ≤ 72 ч до мероприятия, считается на клиенте), менеджер, даты создания, **поиск** по полям/комментариям/`KM-N`.
 
 ### Карточка заявки
 
-`ApplicationModal`: смена статуса и **менеджера**, checkbox **Оплачено**, дата/время через `DateTimePicker` (как на сайте), кнопка **В архив** / **На доску заявок**, переписка с гостем (до **10** вложений на сообщение — `src/lib/chat/limits.ts`).
+`ApplicationModal`: смена статуса и **менеджера**, checkbox **Оплачено**, дата/время через `DateTimePicker` (как на сайте), переписка с гостем (до **10** вложений на сообщение — `src/lib/chat/limits.ts`).
 
 Подсветка карточек на доске (CSS в `globals.css`: `.admin-card-paid`, `.admin-card-urgent`, `.admin-card-paid-sticker`):
 
@@ -110,10 +109,10 @@ UI: `src/components/admin/AdminDashboard.tsx` (`board: "main" | "archive"`), н�
 
 ### Автопереносы
 
-1. **Ждем ответа** + время мероприятия уже прошло → `REJECTED` («Не актуально»), флаг `autoRejectedOverdue`. Ответ гостя возвращает в `WAITING_REPLY` (без повторного автопереноса). Код: `src/lib/applications/archive-overdue.ts`, `src/lib/chat/service.ts`.
-2. `CLOSED` / `REJECTED` на основной доске дольше **7 дней** (`statusEnteredAt`) → `archived = true` (доска «Архив»). Код: `src/lib/applications/board-archive.ts`. Ручной перенос — PATCH `archived: true` (если статус не terminal — ставится `REJECTED`).
+**Ждем ответа** + время мероприятия уже прошло → `REJECTED` («Не актуально»), флаг `autoRejectedOverdue`. Ответ гостя возвращает в `WAITING_REPLY` (без повторного автопереноса). Код: `src/lib/applications/archive-overdue.ts`, `src/lib/chat/service.ts`.
+Перенос в архив срабатывает автоматически: «Не актуально» из-за прошедшего мероприятия сразу попадает на доску «Архив». Ответ гостя меняет статус на активный и возвращает заявку на основную доску. Правила «7 дней» и кнопок «В архив» / «На доску заявок» больше нет.
 
-Оба джоба дергаются при листинге заявок и в cron `/api/cron/inbound-mail`.
+Джоб дергается при листинге заявок и в cron `/api/cron/inbound-mail`.
 
 Константы статусов/подписей: `src/lib/admin/status.ts`. Парсинг даты мероприятия: `src/lib/applications/event-time.ts`.
 
@@ -122,14 +121,14 @@ UI: `src/components/admin/AdminDashboard.tsx` (`board: "main" | "archive"`), н�
 ## Доменная модель (Prisma)
 
 - **User** — админы/операторы, prefs уведомлений, подпись
-- **Application** — заявка (+ UTM, idempotencyKey, snapshot зала/цен, `contactLastName`, `wantRepertoireFilm`, `wantCustomContent`, **`paid`**, **`archived`**, **`statusEnteredAt`**, **`autoRejectedOverdue`**)
+- **Application** — заявка (+ UTM, idempotencyKey, snapshot зала/цен, `contactLastName`, `wantRepertoireFilm`, `wantCustomContent`, **`paid`**, **`statusEnteredAt`**, **`autoRejectedOverdue`**)
 - **ApplicationMessage** + **ApplicationAttachment** — чат по заявке (email in/out)
 - **Feedback** — обращения (публичная форма отключена)
 - **RentalCinema / Hall / HallFormat** — каталог аренды
 - **SiteBanner / CarouselSettings / CarouselSlide** — баннеры и карусель
 - **EventPromo** — тексты блока мероприятий + `presentationHref` / `presentationLabel`
 - **ContactMailto** — тема и тело письма для клика по почте на «Контактах»
-- **FilmSaleMechanic** — какие `sale_id` показывать в формах
+- **FilmSaleMechanic** — какие `sale_id` показывать в формах (раздел в админке убран; `getEnabledSaleIds` по-прежнему применяет сохранённое в БД)
 
 Схема: `prisma/schema.prisma`.
 
@@ -143,9 +142,9 @@ UI: `src/components/admin/AdminDashboard.tsx` (`board: "main" | "archive"`), н�
 `/api/applications`, `/api/feedback` (бэкенд формы ОС ещё есть), `/api/captcha`, `/api/catalog/*` (залы: `cinemaId`, `formatId` опционален), `/api/schedule/*` (прокси KARO), `/api/banners`, `/api/carousel`, `/api/events`, `/api/hall-showcase`
 
 **Админ:**  
-`/api/admin/login|logout|me`, applications (`?board=main|archive`, `paid`, `q`, …) (+ messages/files), catalogs, banners, carousel, events, **contact-mailto** (ADMIN), feedback, users, managers, film-sales
+`/api/admin/login|logout|me`, applications (`?board=main|archive`, `paid`, `q`, …) (+ messages/files), catalogs, banners, carousel, events, **contact-mailto** (ADMIN), feedback, users, managers
 
-PATCH заявки: `src/lib/applications/admin-patch.ts` — в т.ч. `paid`, `archived`, `managerId`. Смена статуса обновляет `statusEnteredAt`; уход с `CLOSED`/`REJECTED` снимает `archived`. Проверка mailbox только если email реально меняется. Ответ PATCH без `messages` (клиент сохраняет уже загруженную переписку).
+PATCH заявки: `src/lib/applications/admin-patch.ts` — в т.ч. `paid`, `managerId`. Смена статуса обновляет `statusEnteredAt`. Создание заявки в админке (POST) принимает `paid` (публичный `/api/applications` — нет). Проверка mailbox только если email реально меняется. Ответ PATCH без `messages` (клиент сохраняет уже загруженную переписку).
 
 **Cron:** `/api/cron/inbound-mail` — входящая почта + автопереносы статусов/архива, защита `CRON_SECRET`
 
@@ -195,6 +194,13 @@ npm run dev
 После `git pull` с новыми миграциями: `npx prisma migrate deploy` (при необходимости `npx prisma generate` и перезапуск dev).
 
 ---
+
+## Git и ветки
+
+- `main` — актуальная база (синхронизирована с `origin/main`, origin: `git@github.com:boshik64/luxe-maxima.git`)
+- Текущая рабочая ветка для доработок — **`improvements`**, создана от `main` (2026-11-24). Вносить правки и коммиты в ней, в `main` не коммитить
+- Ветка пока только локальная; для отправки: `git push -u origin improvements`
+- Прочие ветки на origin: `pravki`, `stage`, `winter`, `test` (не трогать без запроса)
 
 ## Важно при доработках
 

@@ -161,7 +161,6 @@ type ManagerOption = { id: string; name: string };
 export function ApplicationModal({
   item,
   managers,
-  board = "main",
   saving,
   error,
   onClose,
@@ -170,7 +169,6 @@ export function ApplicationModal({
 }: {
   item: ApplicationRecord;
   managers: ManagerOption[];
-  board?: "main" | "archive";
   saving: boolean;
   error: string;
   onClose: () => void;
@@ -757,26 +755,6 @@ export function ApplicationModal({
                 Изменить данные
               </button>
             )}
-            {board === "main" && !current.archived ? (
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded-full border border-line px-3 py-1 text-sm disabled:opacity-60"
-                onClick={() => void persist({ archived: true })}
-              >
-                В архив
-              </button>
-            ) : null}
-            {board === "archive" && current.archived ? (
-              <button
-                type="button"
-                disabled={busy}
-                className="rounded-full border border-line px-3 py-1 text-sm disabled:opacity-60"
-                onClick={() => void persist({ archived: false })}
-              >
-                На доску заявок
-              </button>
-            ) : null}
             <button
               type="button"
               className="rounded-full border border-line px-3 py-1 text-sm"

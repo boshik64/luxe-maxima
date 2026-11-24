@@ -9,16 +9,25 @@ export const STATUSES: ApplicationStatus[] = [
   "REJECTED",
 ];
 
-/** Колонки основной доски. */
-export const MAIN_BOARD_STATUSES: ApplicationStatus[] = [...STATUSES];
-
-/** Колонки доски «Архив». */
+/** Колонки доски «Архив»: заявки в этих статусах живут только там. */
 export const ARCHIVE_BOARD_STATUSES = [
   "CLOSED",
   "REJECTED",
 ] as const satisfies readonly ApplicationStatus[];
 
 export type ArchiveBoardStatus = (typeof ARCHIVE_BOARD_STATUSES)[number];
+
+/** Колонки основной доски (всё, кроме архивных статусов). */
+export const MAIN_BOARD_STATUSES: ApplicationStatus[] = STATUSES.filter(
+  (status) => !(ARCHIVE_BOARD_STATUSES as readonly ApplicationStatus[]).includes(status),
+);
+
+/** Заявка с таким статусом отображается только на доске «Архив». */
+export function isArchiveStatus(status: ApplicationStatus) {
+  return (ARCHIVE_BOARD_STATUSES as readonly ApplicationStatus[]).includes(
+    status,
+  );
+}
 
 export const STATUS_LABEL: Record<ApplicationStatus, string> = {
   NEW: "Новые заявки",
@@ -51,5 +60,3 @@ export const ASSIGNING_STATUSES: ApplicationStatus[] = [
   "CLOSED",
   "REJECTED",
 ];
-
-export const BOARD_ARCHIVE_AFTER_DAYS = 7;
