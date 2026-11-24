@@ -28,7 +28,6 @@ const primaryLinks: NavLink[] = [
 
 const menuLinks: NavLink[] = [
   { href: "/admin/catalogs", label: "Справочники" },
-  { href: "/admin/film-sales", label: "Механики продажи" },
   { href: "/admin/events", label: "Мероприятия" },
   {
     href: "/admin/contact-mailto",
