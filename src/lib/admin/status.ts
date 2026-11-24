@@ -41,7 +41,7 @@ export const STATUS_LABEL: Record<ApplicationStatus, string> = {
 /** Подписи колонок на доске архива. */
 export const ARCHIVE_STATUS_LABEL: Record<ArchiveBoardStatus, string> = {
   CLOSED: "Выполнены",
-  REJECTED: "Архив",
+  REJECTED: "Не актуально",
 };
 
 export const STATUS_ACCENT: Record<ApplicationStatus, string> = {
