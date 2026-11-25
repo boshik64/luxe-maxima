@@ -4,7 +4,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -24,32 +23,30 @@ const WinterEffectsContext = createContext<WinterEffectsContextValue | null>(
   null,
 );
 
+function readStoredEnabled() {
+  if (typeof window === "undefined") return true;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw === "0") return false;
+    if (raw === "1") return true;
+  } catch {
+    // ignore
+  }
+  return true;
+}
+
 export function WinterEffectsProvider({ children }: { children: ReactNode }) {
   const available = isWinterTheme();
-  const [enabled, setEnabledState] = useState(true);
+  const [enabled, setEnabledState] = useState(readStoredEnabled);
 
-  useEffect(() => {
-    if (!available) return;
+  const setEnabled = useCallback((next: boolean) => {
+    setEnabledState(next);
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw === "0") setEnabledState(false);
-      if (raw === "1") setEnabledState(true);
+      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
     } catch {
       // ignore
     }
-  }, [available]);
-
-  const setEnabled = useCallback(
-    (next: boolean) => {
-      setEnabledState(next);
-      try {
-        window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
-      } catch {
-        // ignore
-      }
-    },
-    [],
-  );
+  }, []);
 
   const toggle = useCallback(() => {
     setEnabled(!enabled);
