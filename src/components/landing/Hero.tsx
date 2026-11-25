@@ -1,8 +1,10 @@
 import { AutumnHeroBanner } from "@/components/landing/AutumnDecor";
+import { WinterGarland } from "@/components/landing/WinterGarland";
 import { HashLink } from "@/components/ui/HashLink";
+import { getSeasonCampaignLabel } from "@/lib/site-theme";
 
 export function Hero({
-  kicker = "Осень в КАРО",
+  kicker = getSeasonCampaignLabel(),
   title = "Кино по твоему сценарию",
   text = "Приватный зал, билеты для большой компании или мероприятие в КАРО — выбирай свой формат.",
   ctaHref = "#products",
@@ -17,9 +19,9 @@ export function Hero({
   note?: string;
 }) {
   return (
-    <section className="relative overflow-hidden border-b border-line">
+    <section className="relative border-b border-line">
       <div className="hero-glow pointer-events-none absolute inset-0 opacity-40" />
-      <div className="hero-stage relative">
+      <div className="hero-stage relative overflow-hidden">
         <AutumnHeroBanner />
         <div className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:py-24 lg:py-28">
           <div className="hero-copy">
@@ -46,6 +48,7 @@ export function Hero({
           </div>
         </div>
       </div>
+      <WinterGarland />
     </section>
   );
 }

@@ -12,18 +12,25 @@ import "@fontsource/oswald/600.css";
 import "@fontsource/oswald/700.css";
 import "@fontsource/caveat/500.css";
 import "@fontsource/caveat/600.css";
+import { WinterEffectsProvider } from "@/components/landing/WinterEffects";
+import { WinterSnow } from "@/components/landing/WinterSnow";
+import {
+  getSeasonCampaignLabel,
+  getSiteTheme,
+  getSiteThemeClass,
+} from "@/lib/site-theme";
 import "./globals.css";
 
-// NEXT_PUBLIC_SITE_THEME=classic возвращает прежнее оформление без правок кода.
-const themeClass =
-  process.env.NEXT_PUBLIC_SITE_THEME === "classic" ? "" : "theme-autumn";
+const siteTheme = getSiteTheme();
+const themeClass = getSiteThemeClass(siteTheme);
+const campaign = getSeasonCampaignLabel(siteTheme);
 
 export const metadata: Metadata = {
-  title: "Осень в КАРО — заберите зал себе",
+  title: `${campaign} — заберите зал себе`,
   description:
     "Частный сеанс или мероприятие в кинотеатрах КАРО. Оставьте заявку — менеджер подберёт зал, время и формат.",
   openGraph: {
-    title: "Осень в КАРО — заберите зал себе",
+    title: `${campaign} — заберите зал себе`,
     description:
       "Свой фильм, своя компания, свой вечер: аренда зала и мероприятия в КАРО.",
     locale: "ru_RU",
@@ -40,10 +47,13 @@ export default function RootLayout({
     <html
       lang="ru"
       data-scroll-behavior="smooth"
-      className={`${themeClass} h-full antialiased`}
+      className={`${themeClass} h-full antialiased`.trim()}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        {children}
+        <WinterEffectsProvider>
+          <WinterSnow />
+          {children}
+        </WinterEffectsProvider>
       </body>
     </html>
   );

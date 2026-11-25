@@ -53,7 +53,7 @@
 ## Публичные маршруты
 
 - `/`, `/keys`, `/group`, `/event`, `/feedback` (UI: «Контакты»)
-- Тема: `NEXT_PUBLIC_SITE_THEME=autumn` (по умолчанию) или `classic`; токены в `src/app/globals.css` (`.theme-autumn`)
+- Тема: `NEXT_PUBLIC_SITE_THEME=winter` (по умолчанию), `autumn` или `classic`; токены в `src/app/globals.css` (`.theme-autumn` / `.theme-winter`), снег — `WinterSnow`
 - Герой на главной: картинка full-bleed, текст в контейнере `max-w-6xl` как у остального контента
 
 ## Админка `/admin`

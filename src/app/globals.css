@@ -1517,3 +1517,226 @@ select {
     transform: none;
   }
 }
+
+/*
+ * Зимняя кампания: та же раскладка блоков (.theme-autumn),
+ * но холодная палитра, шапка на логотипе и canvas-снег.
+ */
+.theme-winter {
+  --karo-ink: #070b12;
+  --karo-graphite: #10161f;
+  --karo-wine-deep: #0c1828;
+  --karo-wine: #163552;
+  --karo-wine-bright: #2f5f92;
+  --karo-red: #d4152f;
+  --karo-ivory: #eef3f8;
+  --karo-paper: #e2eaf3;
+  --karo-caramel: #9eb6d4;
+
+  --background: var(--karo-ink);
+  --foreground: var(--karo-ivory);
+  --muted: #8e9aab;
+  --line: rgba(238, 243, 248, 0.14);
+  --card: var(--karo-graphite);
+  --primary: var(--karo-red);
+  --gold: var(--karo-caramel);
+}
+
+.theme-winter body {
+  background-color: var(--karo-ink);
+  background-image:
+    radial-gradient(
+      1000px 620px at 88% -14%,
+      color-mix(in srgb, #1a4068 55%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      820px 520px at 4% 6%,
+      color-mix(in srgb, #0a1c32 75%, transparent),
+      transparent
+    ),
+    linear-gradient(180deg, #0a1018 0%, var(--karo-ink) 46%, #080d14 100%);
+}
+
+.theme-winter .hero-glow {
+  background:
+    radial-gradient(
+      900px 460px at 72% -18%,
+      color-mix(in srgb, #2a5a8c 38%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      680px 420px at 6% 116%,
+      color-mix(in srgb, #9eb6d4 16%, transparent),
+      transparent
+    );
+}
+
+.theme-winter .autumn-card {
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, #122338 40%, transparent),
+    transparent 58%
+  );
+}
+
+.theme-winter .autumn-card:hover {
+  border-color: color-mix(in srgb, #3d6ea8 55%, transparent);
+}
+
+.theme-winter .autumn-card-accent {
+  background: linear-gradient(180deg, #f3f7fb 0%, #dbe5f0 100%);
+}
+
+.theme-winter .logo-mark-winter {
+  overflow: visible;
+}
+
+/* В админке (theme-neutral) шапку не показываем, даже если html = winter. */
+.theme-neutral .logo-santa-hat {
+  display: none;
+}
+
+.theme-winter .logo-santa-hat {
+  position: absolute;
+  left: -6px;
+  top: -13px;
+  width: 22px;
+  height: auto;
+  line-height: 0;
+  pointer-events: none;
+  transform: rotate(-22deg);
+  transform-origin: 70% 90%;
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+}
+
+.theme-winter .logo-santa-hat svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-winter .logo-santa-hat {
+    transform: rotate(-18deg);
+  }
+}
+
+/* Зимний баннер: лёгкий холодный грейд (без hue-rotate — иначе красный попкорн уедет). */
+.theme-winter .autumn-hero-banner img {
+  filter: saturate(0.94) brightness(0.97) contrast(1.04);
+}
+
+.theme-winter .autumn-hero-banner::after {
+  background: linear-gradient(
+    90deg,
+    rgb(7 11 18 / 0.9) 0%,
+    rgb(7 11 18 / 0.62) 28%,
+    rgb(7 11 18 / 0.2) 52%,
+    transparent 70%
+  );
+}
+
+@media (max-width: 1023px) {
+  .theme-winter .autumn-hero-banner::after {
+    background: linear-gradient(
+      180deg,
+      rgb(7 11 18 / 0.84) 0%,
+      rgb(7 11 18 / 0.55) 48%,
+      rgb(7 11 18 / 0.22) 72%,
+      transparent 100%
+    );
+  }
+}
+
+.theme-winter .winter-fx-toggle {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--karo-caramel) 55%, transparent);
+  background: color-mix(in srgb, var(--karo-graphite) 80%, transparent);
+  color: var(--karo-ivory);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.theme-winter .winter-fx-toggle:hover {
+  border-color: var(--karo-caramel);
+  transform: translateY(-1px);
+}
+
+.theme-winter .winter-fx-toggle.is-on {
+  background: color-mix(in srgb, #2f5f92 45%, var(--karo-graphite));
+  border-color: color-mix(in srgb, #9eb6d4 70%, transparent);
+  color: #eef6ff;
+}
+
+.theme-winter .winter-garland {
+  position: relative;
+  z-index: 12;
+  height: 3.6rem;
+  margin-top: -0.5rem;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.theme-winter .winter-garland-wire {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.theme-winter .winter-garland-bulb-svg {
+  opacity: 0.45;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: winter-garland-blink 1.8s ease-in-out infinite;
+}
+
+.theme-winter .winter-garland-bulb-svg.is-0 {
+  fill: #ff5a6a;
+  filter: drop-shadow(0 0 4px #ff5a6a);
+}
+.theme-winter .winter-garland-bulb-svg.is-1 {
+  fill: #6ad0ff;
+  filter: drop-shadow(0 0 4px #6ad0ff);
+}
+.theme-winter .winter-garland-bulb-svg.is-2 {
+  fill: #ffe066;
+  filter: drop-shadow(0 0 4px #ffe066);
+}
+.theme-winter .winter-garland-bulb-svg.is-3 {
+  fill: #8dff9a;
+  filter: drop-shadow(0 0 4px #8dff9a);
+}
+
+@keyframes winter-garland-blink {
+  0%,
+  100% {
+    opacity: 0.35;
+    filter: brightness(0.85);
+  }
+  40% {
+    opacity: 1;
+    filter: brightness(1.35);
+  }
+  70% {
+    opacity: 0.55;
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-winter .winter-garland-bulb-svg {
+    animation: none;
+    opacity: 0.75;
+  }
+}
